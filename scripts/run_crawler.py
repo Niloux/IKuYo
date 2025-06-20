@@ -211,15 +211,11 @@ def main():
         print(f"加载配置文件失败: {e}")
         sys.exit(1)
 
-    # 合并参数：命令行优先
-    if args.limit is not None:
-        config.limit = args.limit
-
     # 打印爬取信息
     print_crawl_info(args, config)
 
     # 确认是否继续
-    if args.mode in ["full", "year"] and not config.limit:
+    if args.mode in ["full", "year"]:
         print("\n⚠️  警告: 这将爬取大量数据，可能需要很长时间")
         response = input("是否继续? (y/N): ")
         if response.lower() not in ["y", "yes"]:

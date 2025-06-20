@@ -1,5 +1,3 @@
-# limit: 10
-
 database:
   path: data/database/ikuyo.db
 
