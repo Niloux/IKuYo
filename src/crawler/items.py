@@ -57,6 +57,10 @@ class CrawlLogItem(scrapy.Item):
     items_count = scrapy.Field()
     status = scrapy.Field()
     error_message = scrapy.Field()
+    crawl_mode = scrapy.Field()
+    crawl_year = scrapy.Field()
+    crawl_season = scrapy.Field()
+    reason = scrapy.Field()
 
 
 class AnimeSubtitleGroupItem(scrapy.Item):
