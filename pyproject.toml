@@ -10,5 +10,4 @@ dependencies = [
     "pyyaml>=6.0.2",
     "requests>=2.32.4",
     "scrapy>=2.13.2",
-    "selenium>=4.33.0",
 ]
