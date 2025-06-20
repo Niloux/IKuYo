@@ -228,9 +228,9 @@ IKuYo/
 
 <div align="center">
 
-🐛 **遇到问题？** 欢迎通过 [GitHub Issues](../../issues) 反馈
+🐛 **遇到问题？** 欢迎通过 [GitHub Issues](https://github.com/Niloux/IKuYo/issues) 反馈
 
-💡 **有好想法？** 随时提交 [Pull Request](../../pulls) 
+💡 **有好想法？** 随时提交 [Pull Request](https://github.com/Niloux/IKuYo/pulls) 
 
 📧 **其他交流** 请在 Issue 区留言，作者会及时回复
 
