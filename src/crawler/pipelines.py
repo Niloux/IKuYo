@@ -4,61 +4,12 @@
 负责将爬取的数据保存到数据库
 """
 
-import json
 import sqlite3
-from datetime import datetime
 
-from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
 
 from ..config import get_config
 from .items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
-
-
-class IkuyoScrapyPipeline:
-    def process_item(self, item, spider):
-        return item
-
-
-class JsonWriterPipeline:
-    """JSON输出Pipeline"""
-
-    def open_spider(self, spider):
-        self.file = open(
-            f"output/anime_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json",
-            "w",
-            encoding="utf-8",
-        )
-        self.file.write("[\n")
-        self.first_item = True
-
-    def close_spider(self, spider):
-        self.file.write("\n]")
-        self.file.close()
-
-    def process_item(self, item, spider):
-        if not self.first_item:
-            self.file.write(",\n")
-        line = json.dumps(dict(item), ensure_ascii=False, indent=2)
-        self.file.write(line)
-        self.first_item = False
-        return item
-
-
-class DataValidationPipeline:
-    """数据验证Pipeline"""
-
-    def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-
-        # 验证必要字段
-        if hasattr(item, "mikan_id") and not adapter.get("mikan_id"):
-            spider.logger.warning(f"缺少mikan_id: {item}")
-
-        if hasattr(item, "title") and not adapter.get("title"):
-            spider.logger.warning(f"缺少title: {item}")
-
-        return item
 
 
 class ValidationPipeline:
