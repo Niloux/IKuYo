@@ -2,6 +2,7 @@ import datetime
 import re
 from urllib.parse import urljoin
 
+from config import get_config, get_test_limit, is_test_mode
 from scrapy import Request, Spider
 
 from ikuyo_scrapy.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
@@ -9,30 +10,63 @@ from ikuyo_scrapy.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGr
 
 class MikanSpider(Spider):
     name = "mikan"
-    allowed_domains = ["mikanani.me"]
-    start_urls = ["https://mikanani.me/Home"]
+    allowed_domains = get_config("site", "allowed_domains")
+    start_urls = get_config("site", "start_urls")
 
     # 配置常量
-    BASE_URL = "https://mikanani.me"
-    MAX_ANIME_LIMIT = 3  # 限制爬取的动画数量
+    BASE_URL = get_config("site", "base_url")
 
-    def __init__(self, limit=None, *args, **kwargs):
+    def __init__(self, limit=None, start_url=None, *args, **kwargs):
         super(MikanSpider, self).__init__(*args, **kwargs)
-        self.limit = int(limit) if limit else self.MAX_ANIME_LIMIT
+
+        # 测试模式：限制爬取数量
+        if is_test_mode():
+            self.limit = int(limit) if limit else get_test_limit()
+            self.logger.info(f"测试模式：限制爬取 {self.limit} 个动画")
+        else:
+            self.limit = None  # 实际运行时不限制
+            self.logger.info("生产模式：不限制爬取数量")
+
+        self.start_url = start_url  # 可指定起始URL
+
+        # 初始化爬取日志
         self.crawl_log = CrawlLogItem()
         self.crawl_log["spider_name"] = self.name
         self.crawl_log["start_time"] = datetime.datetime.now().isoformat()
         self.crawl_log["status"] = "running"
         self.crawl_log["items_count"] = 0
 
+        # 如果指定了起始URL，直接使用
+        if self.start_url:
+            self.start_urls = [self.start_url]
+            self.logger.info(f"使用指定起始URL: {self.start_url}")
+
     def parse(self, response):
         """解析首页，获取动画列表"""
-        self.logger.info("开始解析动画列表页面")
+        if is_test_mode():
+            self.logger.info(f"测试模式：开始解析动画列表页面，限制爬取数量: {self.limit}")
+        else:
+            self.logger.info("生产模式：开始解析动画列表页面，爬取所有动画")
+
+        # 如果是指定的起始URL，直接解析详情页
+        if self.start_url and "/Home/Bangumi/" in self.start_url:
+            mikan_id = self._extract_mikan_id(self.start_url)
+            if mikan_id:
+                self.logger.info(f"直接解析指定动画 (ID: {mikan_id})")
+                yield Request(
+                    url=self.start_url,
+                    callback=self.parse_anime_detail,
+                    meta={"mikan_id": mikan_id, "title": "指定动画"},
+                )
+            return
 
         # 查找动画链接
         anime_links = response.css('div.m-week-square a[href*="/Home/Bangumi/"]')
 
-        for link in anime_links[: self.limit]:
+        # 根据模式决定是否限制数量
+        links_to_process = anime_links[: self.limit] if self.limit else anime_links
+
+        for link in links_to_process:
             href = link.attrib.get("href")
             title = link.attrib.get("title", "")
 
