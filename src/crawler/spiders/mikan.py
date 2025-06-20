@@ -331,6 +331,9 @@ class MikanSpider(Spider):
                 "file_size": resource["size"],
                 "release_date": resource["date"],
                 "magnet_url": resource["magnet_link"],
+                "magnet_hash": resource["magnet_hash"],
+                "torrent_url": resource["torrent_url"],
+                "play_url": resource["play_url"],
                 "created_at": resource["created_at"],
             })
 
@@ -538,6 +541,23 @@ class MikanSpider(Spider):
             # 第4列：磁力链接（在data-clipboard-text属性中）
             magnet_link = cols[0].css("a.js-magnet::attr(data-clipboard-text)").get()
 
+            # 提取磁力链接的hash值
+            magnet_hash = None
+            if magnet_link and magnet_link.startswith("magnet:?"):
+                import re
+
+                hash_match = re.search(r"xt=urn:btih:([a-fA-F0-9]{40})", magnet_link)
+                if hash_match:
+                    magnet_hash = hash_match.group(1).lower()
+
+            # 第4列：种子下载链接
+            torrent_url = cols[3].css("a::attr(href)").get()
+            torrent_url = urljoin(self.BASE_URL, torrent_url) if torrent_url else None
+
+            # 第5列：在线播放链接
+            play_url = cols[4].css("a::attr(href)").get()
+            play_url = urljoin(self.BASE_URL, play_url) if play_url else None
+
             if title and magnet_link:
                 return {
                     "mikan_id": mikan_id,
@@ -547,6 +567,9 @@ class MikanSpider(Spider):
                     "size": size.strip() if size else None,
                     "date": date.strip() if date else None,
                     "magnet_link": magnet_link,
+                    "magnet_hash": magnet_hash,
+                    "torrent_url": torrent_url,
+                    "play_url": play_url,
                     "created_at": datetime.datetime.now().isoformat(),
                 }
         except Exception as e:
