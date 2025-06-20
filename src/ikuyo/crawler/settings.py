@@ -1,4 +1,4 @@
-# Scrapy settings for ikuyo_scrapy project
+# Scrapy settings for ikuyo project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -7,12 +7,13 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from config import get_config
 
-BOT_NAME = "ikuyo_scrapy"
+from src.ikuyo.config import get_config
 
-SPIDER_MODULES = ["spiders"]
-NEWSPIDER_MODULE = "spiders"
+BOT_NAME = "ikuyo"
+
+SPIDER_MODULES = ["src.ikuyo.crawler.spiders"]
+NEWSPIDER_MODULE = "src.ikuyo.crawler.spiders"
 
 # 从配置文件获取设置
 CRAWLER_CONFIG = get_config("crawler")
@@ -60,10 +61,10 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "pipelines.ValidationPipeline": 100,
-    "pipelines.DuplicatesPipeline": 200,
-    "pipelines.SQLitePipeline": 300,
-    # "pipelines.JsonWriterPipeline": 400,
+    "src.ikuyo.crawler.pipelines.ValidationPipeline": 100,
+    "src.ikuyo.crawler.pipelines.DuplicatesPipeline": 200,
+    "src.ikuyo.crawler.pipelines.SQLitePipeline": 300,
+    # "src.ikuyo.crawler.pipelines.JsonWriterPipeline": 400,
 }
 
 # 启用和配置HTTP缓存 (默认禁用)

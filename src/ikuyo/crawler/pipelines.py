@@ -1,10 +1,9 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+#!/usr/bin/env python3
+"""
+数据处理管道
+负责将爬取的数据保存到数据库
+"""
 
-
-# useful for handling different item types with a single interface
 import json
 import sqlite3
 from datetime import datetime
@@ -12,8 +11,9 @@ from datetime import datetime
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
 
-from config import get_config
-from items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
+from src.ikuyo.config import get_config
+
+from .items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
 class IkuyoScrapyPipeline:

@@ -4,7 +4,10 @@ Mikan爬虫配置文件
 
 import os
 
-os.makedirs("data", exist_ok=True)
+# 确保数据目录存在
+os.makedirs("data/database", exist_ok=True)
+os.makedirs("data/logs", exist_ok=True)
+os.makedirs("data/output", exist_ok=True)
 
 # 爬虫基础配置
 CRAWLER_CONFIG = {
@@ -28,12 +31,40 @@ SITE_CONFIG = {
 
 # 数据库配置
 DATABASE_CONFIG = {
-    "sqlite_db": "data/ikuyo.db",
+    "sqlite_db": "data/database/ikuyo.db",
 }
 
 # 输出配置
 OUTPUT_CONFIG = {
     "output_dir": "output",
+}
+
+# 定时任务配置
+SCHEDULER_CONFIG = {
+    # 是否启用定时任务
+    "enabled": True,
+    # 默认调度时间 (每天凌晨2点执行)
+    "default_cron": "0 2 * * *",
+    # 时区设置
+    "timezone": "Asia/Shanghai",
+    # 任务配置
+    "jobs": [
+        {
+            "id": "mikan_crawler",
+            "name": "Mikan爬虫定时任务",
+            "cron": "0 2 * * *",  # 每天凌晨2点
+            "enabled": True,
+            "description": "定时爬取Mikan Project动画资源",
+        }
+    ],
+    # 调度器设置
+    "scheduler_settings": {
+        "job_defaults": {
+            "coalesce": False,
+            "max_instances": 1,
+            "misfire_grace_time": 300,  # 5分钟容错时间
+        }
+    },
 }
 
 
@@ -44,6 +75,7 @@ def get_config(section, key=None):
         "site": SITE_CONFIG,
         "database": DATABASE_CONFIG,
         "output": OUTPUT_CONFIG,
+        "scheduler": SCHEDULER_CONFIG,
     }
 
     if section not in configs:
