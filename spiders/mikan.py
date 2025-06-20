@@ -2,10 +2,10 @@ import datetime
 import re
 from urllib.parse import urljoin
 
-from config import get_config, get_test_limit, is_test_mode
 from scrapy import Request, Spider
 
-from ikuyo_scrapy.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
+from config import get_config, get_test_limit, is_test_mode
+from items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
 class MikanSpider(Spider):

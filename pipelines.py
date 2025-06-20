@@ -12,7 +12,8 @@ from datetime import datetime
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
 
-from ikuyo_scrapy.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
+from config import get_config
+from items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
 class IkuyoScrapyPipeline:
@@ -87,7 +88,8 @@ class SQLitePipeline:
 
     def open_spider(self, spider):
         """打开数据库连接"""
-        self.conn = sqlite3.connect("mikan_data.db")
+        db_path = get_config("database", "sqlite_db")
+        self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         if self.cursor:
             self.create_tables()

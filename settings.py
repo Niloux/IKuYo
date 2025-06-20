@@ -7,18 +7,12 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-import os
-import sys
-
-# 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from config import get_config
 
 BOT_NAME = "ikuyo_scrapy"
 
-SPIDER_MODULES = ["ikuyo_scrapy.spiders"]
-NEWSPIDER_MODULE = "ikuyo_scrapy.spiders"
+SPIDER_MODULES = ["spiders"]
+NEWSPIDER_MODULE = "spiders"
 
 # 从配置文件获取设置
 CRAWLER_CONFIG = get_config("crawler")
@@ -66,10 +60,10 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "ikuyo_scrapy.pipelines.ValidationPipeline": 100,
-    "ikuyo_scrapy.pipelines.DuplicatesPipeline": 200,
-    "ikuyo_scrapy.pipelines.SQLitePipeline": 300,
-    "ikuyo_scrapy.pipelines.JsonWriterPipeline": 400,
+    "pipelines.ValidationPipeline": 100,
+    "pipelines.DuplicatesPipeline": 200,
+    "pipelines.SQLitePipeline": 300,
+    # "pipelines.JsonWriterPipeline": 400,
 }
 
 # 启用和配置HTTP缓存 (默认禁用)
@@ -101,11 +95,11 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 FEED_EXPORT_ENCODING = "utf-8"
 
 # 输出设置
-FEEDS = {
-    "output/anime_%(time)s.json": {
-        "format": "json",
-        "encoding": "utf8",
-        "indent": 2,
-        "overwrite": True,
-    },
-}
+# FEEDS = {
+#     "output/anime_%(time)s.json": {
+#         "format": "json",
+#         "encoding": "utf8",
+#         "indent": 2,
+#         "overwrite": True,
+#     },
+# }

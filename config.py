@@ -1,5 +1,6 @@
 """
 Mikan爬虫配置文件
+简化配置，专注于定时任务需求
 """
 
 # 爬虫基础配置
@@ -24,7 +25,7 @@ SITE_CONFIG = {
 
 # 数据库配置
 DATABASE_CONFIG = {
-    "sqlite_db": "mikan_data.db",
+    "sqlite_db": "data/mikan_data.db",
 }
 
 # 输出配置
