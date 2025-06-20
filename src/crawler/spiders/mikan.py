@@ -135,7 +135,8 @@ class MikanSpider(Spider):
     def parse_full_range(self, response):
         """全量爬取"""
         self.logger.info("开始全量爬取")
-        year_range = getattr(self.config, "year_range", {"start": 2013, "end": 2025})
+        current_year = datetime.datetime.now().year
+        year_range = getattr(self.config, "year_range", {"start": 2013, "end": current_year})
         start_year = year_range["start"]
         end_year = year_range["end"]
         self.logger.info(f"爬取年份范围: {start_year} - {end_year}")

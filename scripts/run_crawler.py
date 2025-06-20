@@ -5,6 +5,7 @@ Mikan Project 爬虫运行脚本
 """
 
 import argparse
+import datetime
 import sys
 from pathlib import Path
 
@@ -33,7 +34,7 @@ def parse_arguments():
   # 季度模式 - 爬取2024年春季
   python scripts/run_crawler.py --mode season --year 2024 --season 春
   
-  # 全量模式 - 爬取2013-2025年所有动画
+  # 全量模式 - 爬取2013年至今所有动画
   python scripts/run_crawler.py --mode full
   
   # 增量模式 - 只爬取新增动画
@@ -86,20 +87,21 @@ def parse_arguments():
 def validate_arguments(args):
     """验证命令行参数"""
     errors = []
+    current_year = datetime.datetime.now().year
 
     # 检查年份模式参数
     if args.mode == "year":
         if not args.year:
             errors.append("年份模式需要指定 --year 参数")
-        elif args.year < 2013 or args.year > 2025:
-            errors.append("年份必须在 2013-2025 范围内")
+        elif args.year < 2013 or args.year > current_year + 1:
+            errors.append(f"年份必须在 2013-{current_year + 1} 范围内")
 
     # 检查季度模式参数
     if args.mode == "season":
         if not args.year:
             errors.append("季度模式需要指定 --year 参数")
-        elif args.year < 2013 or args.year > 2025:
-            errors.append("年份必须在 2013-2025 范围内")
+        elif args.year < 2013 or args.year > current_year + 1:
+            errors.append(f"年份必须在 2013-{current_year + 1} 范围内")
         if not args.season:
             errors.append("季度模式需要指定 --season 参数")
 
@@ -131,7 +133,8 @@ def print_crawl_info(args, config):
     elif args.mode == "season":
         print(f"目标: {args.year}年{args.season}季动画")
     elif args.mode == "full":
-        print("目标: 2013-2025年所有动画")
+        current_year = datetime.datetime.now().year
+        print(f"目标: 2013-{current_year}年所有动画")
     elif args.mode == "incremental":
         print("目标: 增量更新动画")
 
