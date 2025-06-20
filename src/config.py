@@ -14,6 +14,8 @@ class Config:
         for k, v in config_dict.items():
             if isinstance(v, dict):
                 v = Config(v)
+            elif isinstance(v, list):
+                v = [Config(item) if isinstance(item, dict) else item for item in v]
             self._data[k] = v
 
     def __getattr__(self, name):
@@ -32,6 +34,9 @@ class Config:
 
     def __setitem__(self, key, value):
         self._data[key] = value
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
 
 
 def load_config(yaml_path="config.yaml"):

@@ -144,24 +144,27 @@ class CrawlerScheduler:
         return jobs
 
     def _run_crawler(self) -> None:
-        """执行爬虫任务"""
+        """执行爬虫任务（通过统一入口）"""
         try:
             self.logger.info("开始执行定时爬虫任务")
+            from src.config import load_config
+            from src.core.crawler_runner import run_crawler
 
-            # 导入并运行爬虫
-            from scrapy.crawler import CrawlerProcess
-            from scrapy.utils.project import get_project_settings
+            config = load_config()
+            # 构造最小args对象，兼容run_crawler
 
-            # 获取项目设置
-            settings = get_project_settings()
+            class Args:
+                mode = "homepage"
+                log_level = "INFO"
+                year = None
+                season = None
+                start_url = None
+                limit = None
+                output = None
 
-            # 创建爬虫进程
-            process = CrawlerProcess(settings)
-            process.crawl("mikan")
-            process.start()
-
+            args = Args()
+            run_crawler(args, config)
             self.logger.info("定时爬虫任务执行完成")
-
         except Exception as e:
             self.logger.error(f"执行爬虫任务失败: {e}")
             raise

@@ -12,11 +12,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from scrapy.crawler import CrawlerProcess
-from scrapy.utils.project import get_project_settings
 
 from src.config import load_config
-from src.crawler.spiders.mikan import MikanSpider
+from src.core.crawler_runner import run_crawler
 
 
 def parse_arguments():
@@ -148,53 +146,6 @@ def print_crawl_info(args, config):
     print("=" * 60)
 
 
-def run_crawler(args, config):
-    """运行爬虫"""
-    try:
-        # 获取Scrapy设置
-        settings = get_project_settings()
-
-        # 设置日志级别
-        settings.set("LOG_LEVEL", args.log_level)
-
-        # 设置输出文件
-        if args.output:
-            settings.set("FEED_FORMAT", "json")
-            settings.set("FEED_URI", args.output)
-
-        # 创建爬虫进程
-        process = CrawlerProcess(settings)
-
-        # 准备爬虫参数
-        spider_kwargs = {
-            "config": config,
-            "mode": args.mode,
-        }
-
-        if args.year:
-            spider_kwargs["year"] = args.year
-        if args.season:
-            spider_kwargs["season"] = args.season
-        if args.start_url:
-            spider_kwargs["start_url"] = args.start_url
-        if args.limit is not None:
-            spider_kwargs["limit"] = args.limit
-
-        # 添加爬虫到进程
-        process.crawl(MikanSpider, **spider_kwargs)
-
-        # 启动爬虫
-        print("开始爬取...")
-        process.start()
-
-        print("爬取完成!")
-        return True
-
-    except Exception as e:
-        print(f"爬虫运行失败: {e}")
-        return False
-
-
 def main():
     """主函数"""
     # 解析命令行参数
@@ -223,13 +174,12 @@ def main():
             sys.exit(0)
 
     # 运行爬虫
-    success = run_crawler(args, config)
-
-    if success:
+    try:
+        run_crawler(args, config)
         print("✅ 爬取成功完成")
         sys.exit(0)
-    else:
-        print("❌ 爬取失败")
+    except Exception as e:
+        print(f"❌ 爬取失败: {e}")
         sys.exit(1)
 
 
