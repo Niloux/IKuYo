@@ -1,7 +1,10 @@
 """
 Mikan爬虫配置文件
-简化配置，专注于定时任务需求
 """
+
+import os
+
+os.makedirs("data", exist_ok=True)
 
 # 爬虫基础配置
 CRAWLER_CONFIG = {
@@ -25,7 +28,7 @@ SITE_CONFIG = {
 
 # 数据库配置
 DATABASE_CONFIG = {
-    "sqlite_db": "data/mikan_data.db",
+    "sqlite_db": "data/ikuyo.db",
 }
 
 # 输出配置
