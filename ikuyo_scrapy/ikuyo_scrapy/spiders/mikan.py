@@ -146,7 +146,7 @@ class MikanSpider(Spider):
         """通过文本查找官方网站链接"""
         # 查找包含"官方网站"文本的链接
         official_links = response.xpath(
-            '//a[contains(text(), "官方网站") or contains(following-sibling::text(), "官方网站")]/@href'
+            '//a[contains(text(), "官方网站") or contains(following-sibling::text(), "官方网站")]/@href'  # noqa: E501
         ).getall()
 
         # 查找在"官方网站"文本附近的链接
@@ -357,5 +357,5 @@ class MikanSpider(Spider):
         self.crawl_log["end_time"] = datetime.datetime.now().isoformat()
         self.crawl_log["status"] = "success" if reason == "finished" else "error"
         self.logger.info(
-            f"爬虫结束，状态: {self.crawl_log['status']}, 总资源数: {self.crawl_log['items_count']}"
+            f"爬虫结束，状态: {self.crawl_log['status']}, 总资源数: {self.crawl_log['items_count']}"  # noqa: E501
         )
