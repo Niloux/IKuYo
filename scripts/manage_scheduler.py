@@ -13,7 +13,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config import get_config
+from src.config import load_config
 from src.core.scheduler import CrawlerScheduler
 
 
@@ -28,23 +28,26 @@ def show_status():
     """显示任务状态"""
 
     # 检查是否启用定时任务
-    if not get_config("scheduler", "enabled"):
+    config = load_config()
+    scheduler_config = getattr(config, "scheduler", {})
+
+    if not getattr(scheduler_config, "enabled", False):
         print("❌ 定时任务未启用")
         return
 
     print("📋 定时任务状态:")
-    print(f"   启用状态: {'✅ 已启用' if get_config('scheduler', 'enabled') else '❌ 未启用'}")
-    print(f"   时区设置: {get_config('scheduler', 'timezone')}")
+    print(f"   启用状态: {'✅ 已启用' if getattr(scheduler_config, 'enabled') else '❌ 未启用'}")
+    print(f"   时区设置: {getattr(scheduler_config, 'timezone', 'Asia/Shanghai')}")
 
     # 显示任务配置
-    jobs = get_config("scheduler", "jobs")
+    jobs = getattr(scheduler_config, "jobs", [])
     print("\n📅 任务配置:")
     for job in jobs:
-        status = "✅ 启用" if job.get("enabled", True) else "❌ 禁用"
-        print(f"   {job['name']} ({job['id']})")
+        status = "✅ 启用" if getattr(job, "enabled", True) else "❌ 禁用"
+        print(f"   {getattr(job, 'name')} ({getattr(job, 'id')})")
         print(f"     状态: {status}")
-        print(f"     调度: {job['cron']}")
-        print(f"     描述: {job.get('description', '无')}")
+        print(f"     调度: {getattr(job, 'cron')}")
+        print(f"     描述: {getattr(job, 'description', '无')}")
         print()
 
 
@@ -115,6 +118,21 @@ IKuYo 定时任务管理工具
 
 def main():
     """主函数"""
+    config = load_config()
+    scheduler_config = getattr(config, "scheduler", {})
+
+    if not getattr(scheduler_config, "enabled", False):
+        print("❌ 定时任务未启用")
+        return
+
+    print("📅 IKuYo 定时任务管理器")
+    print("=" * 40)
+    print(f"   启用状态: {'✅ 已启用' if getattr(scheduler_config, 'enabled') else '❌ 未启用'}")
+    print(f"   时区设置: {getattr(scheduler_config, 'timezone', 'Asia/Shanghai')}")
+    print()
+
+    jobs = getattr(scheduler_config, "jobs", [])
+
     setup_logging()
 
     parser = argparse.ArgumentParser(description="IKuYo 定时任务管理工具", add_help=False)

@@ -4,50 +4,33 @@ from urllib.parse import quote, urljoin
 
 from scrapy import Request, Spider
 
-from src.config import (
-    get_config,
-    get_crawl_mode,
-    get_crawl_season,
-    get_crawl_year,
-    get_seasons,
-    get_test_limit,
-    get_year_range,
-    is_test_mode,
-)
 from src.crawler.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
 class MikanSpider(Spider):
     name = "mikan"
-    allowed_domains = get_config("site", "allowed_domains")
-    start_urls = get_config("site", "start_urls")
-
-    # 配置常量
-    BASE_URL = get_config("site", "base_url")
 
     def __init__(
-        self, limit=None, start_url=None, mode=None, year=None, season=None, *args, **kwargs
+        self,
+        config,
+        limit=None,
+        start_url=None,
+        mode=None,
+        year=None,
+        season=None,
+        *args,
+        **kwargs,
     ):
         super(MikanSpider, self).__init__(*args, **kwargs)
-
-        # 测试模式：限制爬取数量
-        # 优先使用命令行传入的limit参数，其次使用配置文件中的test_limit
-        if limit is not None:
-            self.limit = int(limit)
-            self.logger.info(f"使用命令行limit参数：限制爬取 {self.limit} 个动画")
-        elif is_test_mode():
-            self.limit = get_test_limit()
-            self.logger.info(f"测试模式：限制爬取 {self.limit} 个动画")
-        else:
-            self.limit = None  # 实际运行时不限制
-            self.logger.info("生产模式：不限制爬取数量")
-
-        self.start_url = start_url  # 可指定起始URL
-
-        # 爬取模式配置
-        self.mode = mode or get_crawl_mode()
-        self.year = year or get_crawl_year()
-        self.season = season or get_crawl_season()
+        self.config = config
+        self.limit = limit if limit is not None else getattr(config, "limit", None)
+        self.start_url = start_url
+        self.mode = mode or getattr(config, "crawl_mode", None) or getattr(config, "mode", None)
+        self.year = year or getattr(config, "year", None)
+        self.season = season or getattr(config, "season", None)
+        self.allowed_domains = getattr(config.site, "allowed_domains", ["mikanani.me"])
+        self.start_urls = getattr(config.site, "start_urls", ["https://mikanani.me/Home"])
+        self.BASE_URL = getattr(config.site, "base_url", "https://mikanani.me")
 
         self.logger.info(f"爬取模式: {self.mode}")
         if self.year:
@@ -103,10 +86,9 @@ class MikanSpider(Spider):
 
     def parse_homepage(self, response):
         """解析首页，获取动画列表（原有逻辑）"""
-        if is_test_mode():
-            self.logger.info(f"测试模式：开始解析动画列表页面，限制爬取数量: {self.limit}")
-        else:
-            self.logger.info("生产模式：开始解析动画列表页面，爬取所有动画")
+        self.logger.info(
+            f"开始解析动画列表页面，限制爬取数量: {self.limit if self.limit else '不限制'}"
+        )
 
         # 查找动画链接
         anime_links = response.css('div.m-week-square a[href*="/Home/Bangumi/"]')
@@ -133,8 +115,7 @@ class MikanSpider(Spider):
     def parse_by_year(self, response, year):
         """按年份爬取"""
         self.logger.info(f"按年份爬取: {year}年")
-
-        seasons = get_seasons()
+        seasons = getattr(self.config, "seasons", ["春", "夏", "秋", "冬"])
         for season in seasons:
             self.logger.info(f"爬取 {year}年{season}季")
             yield from self.parse_by_season(response, year, season)
@@ -154,13 +135,10 @@ class MikanSpider(Spider):
     def parse_full_range(self, response):
         """全量爬取"""
         self.logger.info("开始全量爬取")
-
-        year_range = get_year_range()
+        year_range = getattr(self.config, "year_range", {"start": 2013, "end": 2025})
         start_year = year_range["start"]
         end_year = year_range["end"]
-
         self.logger.info(f"爬取年份范围: {start_year} - {end_year}")
-
         for year in range(start_year, end_year + 1):
             self.logger.info(f"爬取 {year} 年")
             yield from self.parse_by_year(response, year)
@@ -168,13 +146,9 @@ class MikanSpider(Spider):
     def parse_incremental(self, response):
         """增量爬取"""
         self.logger.info("开始增量爬取")
-
-        # 获取上次爬取时间
-        last_crawl_time = get_config("crawl_mode", "incremental")["last_crawl_time"]
-
+        last_crawl_time = getattr(self.config, "last_crawl_time", None)
         if last_crawl_time:
             self.logger.info(f"上次爬取时间: {last_crawl_time}")
-            # 这里可以实现增量逻辑，暂时使用首页模式
             self.logger.info("增量模式暂时使用首页模式")
             yield from self.parse_homepage(response)
         else:
@@ -183,9 +157,8 @@ class MikanSpider(Spider):
 
     def _call_api_or_fallback(self, year, season):
         """调用API接口或降级处理"""
-        api_config = get_config("crawl_mode", "api")
-
-        if not api_config["enabled"]:
+        api_config = getattr(self.config, "api", {})
+        if not api_config.get("enabled", True):
             return False
 
         # 使用正确的API端点格式

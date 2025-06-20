@@ -8,7 +8,7 @@ import sqlite3
 
 from scrapy.exceptions import DropItem
 
-from ..config import get_config
+from ..config import load_config
 from .items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
@@ -38,7 +38,8 @@ class SQLitePipeline:
 
     def open_spider(self, spider):
         """打开数据库连接"""
-        db_path = get_config("database", "sqlite_db")
+        config = load_config()
+        db_path = getattr(config.database, "path", "data/database/ikuyo.db")
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
         if self.cursor:

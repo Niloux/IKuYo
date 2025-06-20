@@ -15,7 +15,7 @@ sys.path.insert(0, str(project_root))
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from src.config import get_test_limit
+from src.config import load_config
 from src.crawler.spiders.mikan import MikanSpider
 
 
@@ -41,8 +41,8 @@ def parse_arguments():
   # 增量模式 - 只爬取新增动画
   python scripts/run_crawler.py --mode incremental
   
-  # 测试模式 - 限制爬取数量
-  python scripts/run_crawler.py --mode year --year 2024 --test --limit 5
+  # 限制爬取数量
+  python scripts/run_crawler.py --limit 5
         """,
     )
 
@@ -62,10 +62,8 @@ def parse_arguments():
         "--season", choices=["春", "夏", "秋", "冬"], help="爬取季度 (季度模式时使用)"
     )
 
-    # 测试模式参数
-    parser.add_argument("--test", action="store_true", help="启用测试模式，限制爬取数量")
-
-    parser.add_argument("--limit", type=int, help="测试模式下的爬取数量限制")
+    # 限制参数
+    parser.add_argument("--limit", type=int, help="爬取数量限制")
 
     # 起始URL参数
     parser.add_argument("--start-url", help="指定起始URL，直接爬取指定动画")
@@ -82,7 +80,7 @@ def parse_arguments():
     )
 
     # 配置参数
-    parser.add_argument("--config", help="配置文件路径")
+    parser.add_argument("--config", default="config.yaml", help="配置文件路径")
 
     return parser.parse_args()
 
@@ -107,9 +105,9 @@ def validate_arguments(args):
         if not args.season:
             errors.append("季度模式需要指定 --season 参数")
 
-    # 检查测试模式参数
-    if args.test and args.limit and args.limit <= 0:
-        errors.append("测试模式的数量限制必须大于0")
+    # 检查限制参数
+    if args.limit and args.limit <= 0:
+        errors.append("数量限制必须大于0")
 
     if errors:
         print("参数错误:")
@@ -120,7 +118,7 @@ def validate_arguments(args):
     return True
 
 
-def print_crawl_info(args):
+def print_crawl_info(args, config):
     """打印爬取信息"""
     print("=" * 60)
     print("Mikan Project 爬虫")
@@ -139,9 +137,9 @@ def print_crawl_info(args):
     elif args.mode == "incremental":
         print("目标: 增量更新动画")
 
-    if args.test:
-        limit = args.limit or get_test_limit()
-        print(f"测试模式: 限制爬取 {limit} 个动画")
+    limit = args.limit if args.limit is not None else getattr(config, "limit", None)
+    if limit:
+        print(f"数量限制: {limit} 个动画")
 
     if args.start_url:
         print(f"起始URL: {args.start_url}")
@@ -150,7 +148,7 @@ def print_crawl_info(args):
     print("=" * 60)
 
 
-def run_crawler(args):
+def run_crawler(args, config):
     """运行爬虫"""
     try:
         # 获取Scrapy设置
@@ -158,12 +156,6 @@ def run_crawler(args):
 
         # 设置日志级别
         settings.set("LOG_LEVEL", args.log_level)
-
-        # 设置测试模式
-        if args.test:
-            settings.set("TEST_MODE", True)
-            if args.limit:
-                settings.set("TEST_LIMIT", args.limit)
 
         # 设置输出文件
         if args.output:
@@ -175,6 +167,7 @@ def run_crawler(args):
 
         # 准备爬虫参数
         spider_kwargs = {
+            "config": config,
             "mode": args.mode,
         }
 
@@ -184,7 +177,7 @@ def run_crawler(args):
             spider_kwargs["season"] = args.season
         if args.start_url:
             spider_kwargs["start_url"] = args.start_url
-        if args.test and args.limit:
+        if args.limit is not None:
             spider_kwargs["limit"] = args.limit
 
         # 添加爬虫到进程
@@ -211,11 +204,22 @@ def main():
     if not validate_arguments(args):
         sys.exit(1)
 
+    # 加载配置文件
+    try:
+        config = load_config(args.config)
+    except Exception as e:
+        print(f"加载配置文件失败: {e}")
+        sys.exit(1)
+
+    # 合并参数：命令行优先
+    if args.limit is not None:
+        config.limit = args.limit
+
     # 打印爬取信息
-    print_crawl_info(args)
+    print_crawl_info(args, config)
 
     # 确认是否继续
-    if args.mode in ["full", "year"] and not args.test:
+    if args.mode in ["full", "year"] and not config.limit:
         print("\n⚠️  警告: 这将爬取大量数据，可能需要很长时间")
         response = input("是否继续? (y/N): ")
         if response.lower() not in ["y", "yes"]:
@@ -223,7 +227,7 @@ def main():
             sys.exit(0)
 
     # 运行爬虫
-    success = run_crawler(args)
+    success = run_crawler(args, config)
 
     if success:
         print("✅ 爬取成功完成")

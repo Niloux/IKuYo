@@ -8,22 +8,24 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 
-from ..config import get_config
+from ..config import load_config
 
 BOT_NAME = "ikuyo"
 
 SPIDER_MODULES = ["src.crawler.spiders"]
 NEWSPIDER_MODULE = "src.crawler.spiders"
 
-# 从配置文件获取设置
-CRAWLER_CONFIG = get_config("crawler")
+# 加载配置
+config = load_config()
 
-# 爬虫设置
-DOWNLOAD_DELAY = CRAWLER_CONFIG["download_delay"]
-CONCURRENT_REQUESTS = CRAWLER_CONFIG["concurrent_requests"]
+# 爬虫设置 - 使用默认值避免配置缺失错误
+DOWNLOAD_DELAY = getattr(config.crawler, "download_delay", 1) if hasattr(config, "crawler") else 1
+CONCURRENT_REQUESTS = (
+    getattr(config.crawler, "concurrent_requests", 16) if hasattr(config, "crawler") else 16
+)
 
 # 重试设置
-RETRY_TIMES = CRAWLER_CONFIG["retry_times"]
+RETRY_TIMES = getattr(config.crawler, "retry_times", 3) if hasattr(config, "crawler") else 3
 
 # 遵守robots.txt规则
 ROBOTSTXT_OBEY = True
@@ -64,7 +66,6 @@ ITEM_PIPELINES = {
     "src.crawler.pipelines.ValidationPipeline": 100,
     "src.crawler.pipelines.DuplicatesPipeline": 200,
     "src.crawler.pipelines.SQLitePipeline": 300,
-    # "src.ikuyo.crawler.pipelines.JsonWriterPipeline": 400,
 }
 
 # 启用和配置HTTP缓存 (默认禁用)

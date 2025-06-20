@@ -11,7 +11,7 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from ..config import get_config
+from ..config import load_config
 
 
 class CrawlerScheduler:
@@ -22,13 +22,17 @@ class CrawlerScheduler:
         self.scheduler: Optional[BackgroundScheduler] = None
         self.is_running = False
 
+        config = load_config()
+        self.scheduler_config = getattr(config, "scheduler", {})
+
     def init_scheduler(self) -> bool:
         """初始化调度器"""
         try:
             # 获取调度器配置
-            scheduler_config = get_config("scheduler")
-            timezone = scheduler_config.get("timezone", "Asia/Shanghai")
-            job_defaults = scheduler_config.get("scheduler_settings", {}).get("job_defaults", {})
+            timezone = self.scheduler_config.get("timezone", "Asia/Shanghai")
+            job_defaults = self.scheduler_config.get("scheduler_settings", {}).get(
+                "job_defaults", {}
+            )
 
             # 创建后台调度器
             self.scheduler = BackgroundScheduler(timezone=timezone, job_defaults=job_defaults)
@@ -53,8 +57,7 @@ class CrawlerScheduler:
             return
 
         try:
-            scheduler_config = get_config("scheduler")
-            jobs = scheduler_config.get("jobs", [])
+            jobs = self.scheduler_config.get("jobs", [])
 
             for job_config in jobs:
                 if not job_config.get("enabled", True):
@@ -183,7 +186,9 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     # 检查是否启用定时任务
-    if not get_config("scheduler", "enabled"):
+    config = load_config()
+    scheduler_config = getattr(config, "scheduler", {})
+    if not scheduler_config.get("enabled", False):
         logger.info("定时任务未启用，退出")
         return
 

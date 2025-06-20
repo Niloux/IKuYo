@@ -1,0 +1,39 @@
+# limit: 10
+
+database:
+  path: data/database/ikuyo.db
+
+site:
+  base_url: https://mikanani.me
+  allowed_domains:
+    - mikanani.me
+  start_urls:
+    - https://mikanani.me/Home
+
+crawler:
+  download_delay: 0.1
+  concurrent_requests: 32
+  retry_times: 3
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+
+scheduler:
+  enabled: true
+  default_cron: "0 2 * * *"
+  timezone: Asia/Shanghai
+  jobs:
+    - id: mikan_crawler
+      name: Mikan爬虫定时任务
+      cron: "0 2 * * *"
+      enabled: true
+      description: 定时爬取Mikan Project动画资源
+      mode: homepage
+  scheduler_settings:
+    job_defaults:
+      coalesce: false
+      max_instances: 1
+      misfire_grace_time: 300
+
+output:
+  output_dir: output
+
+# 可扩展更多参数，如year、season、api等 
