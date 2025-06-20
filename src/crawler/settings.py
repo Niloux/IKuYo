@@ -8,12 +8,12 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 
-from src.ikuyo.config import get_config
+from ..config import get_config
 
 BOT_NAME = "ikuyo"
 
-SPIDER_MODULES = ["src.ikuyo.crawler.spiders"]
-NEWSPIDER_MODULE = "src.ikuyo.crawler.spiders"
+SPIDER_MODULES = ["src.crawler.spiders"]
+NEWSPIDER_MODULE = "src.crawler.spiders"
 
 # 从配置文件获取设置
 CRAWLER_CONFIG = get_config("crawler")
@@ -61,9 +61,9 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "src.ikuyo.crawler.pipelines.ValidationPipeline": 100,
-    "src.ikuyo.crawler.pipelines.DuplicatesPipeline": 200,
-    "src.ikuyo.crawler.pipelines.SQLitePipeline": 300,
+    "src.crawler.pipelines.ValidationPipeline": 100,
+    "src.crawler.pipelines.DuplicatesPipeline": 200,
+    "src.crawler.pipelines.SQLitePipeline": 300,
     # "src.ikuyo.crawler.pipelines.JsonWriterPipeline": 400,
 }
 

@@ -11,7 +11,7 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from src.ikuyo.config import get_config
+from ..config import get_config
 
 
 class CrawlerScheduler:

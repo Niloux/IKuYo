@@ -7,8 +7,8 @@
 import argparse
 import logging
 
-from src.ikuyo.config import get_config
-from src.ikuyo.core.scheduler import CrawlerScheduler
+from src.config import get_config
+from src.core.scheduler import CrawlerScheduler
 
 
 def setup_logging():

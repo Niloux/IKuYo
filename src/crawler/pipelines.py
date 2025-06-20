@@ -11,8 +11,7 @@ from datetime import datetime
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
 
-from src.ikuyo.config import get_config
-
+from ..config import get_config
 from .items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 

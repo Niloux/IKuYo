@@ -4,8 +4,8 @@ from urllib.parse import urljoin
 
 from scrapy import Request, Spider
 
-from src.ikuyo.config import get_config, get_test_limit, is_test_mode
-from src.ikuyo.crawler.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
+from src.config import get_config, get_test_limit, is_test_mode
+from src.crawler.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
 class MikanSpider(Spider):
