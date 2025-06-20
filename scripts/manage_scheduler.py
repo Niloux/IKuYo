@@ -6,6 +6,12 @@
 
 import argparse
 import logging
+import os
+
+# 指定项目根目录
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import get_config
 from src.core.scheduler import CrawlerScheduler
