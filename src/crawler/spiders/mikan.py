@@ -165,7 +165,7 @@ class MikanSpider(Spider):
         # 使用正确的API端点格式
         # URL编码季度名称
         season_encoded = quote(season, encoding="utf-8")
-        api_url = f"{self.BASE_URL}/Home/BangumiCoverFlowByDayOfWeek?year={year}&seasonStr={season_encoded}"
+        api_url = f"{self.BASE_URL}/Home/BangumiCoverFlowByDayOfWeek?year={year}&seasonStr={season_encoded}"  # noqa: E501
 
         self.logger.info(f"调用API端点: {api_url}")
 
@@ -211,7 +211,8 @@ class MikanSpider(Spider):
                 self.logger.info("成功解析API数据，包含动画信息")
                 yield from self._extract_bangumi_from_api(data, year, season)
                 return
-        except:
+        except Exception as e:
+            self.logger.warning(f"备用方案解析JSON响应失败: {e}")
             pass
 
         self.logger.warning(f"无法解析API响应: {endpoint}")
@@ -225,7 +226,7 @@ class MikanSpider(Spider):
         self.logger.info(f"使用动态页面解析: {year}年{season}季")
 
         # 这里可以实现Selenium或Playwright的页面交互
-        # 暂时返回空，后续实现
+        # 暂时返回空，如果后续出现爬取API失败再实现
         self.logger.info("动态页面解析功能待实现")
         return []
 
