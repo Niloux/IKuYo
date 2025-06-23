@@ -4,7 +4,20 @@ from urllib.parse import quote, urljoin
 
 from scrapy import Request, Spider
 
-from src.crawler.items import AnimeItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
+from src.crawler.items import (
+    AnimeItem,
+    AnimeSubtitleGroupItem,
+    CrawlLogItem,
+    ResourceItem,
+    SubtitleGroupItem,
+)
+from src.utils.text_parser import (
+    extract_episode_number,
+    extract_resolution,
+    extract_subtitle_type,
+    get_current_timestamp,
+    parse_datetime_to_timestamp,
+)
 
 
 class MikanSpider(Spider):
@@ -38,15 +51,17 @@ class MikanSpider(Spider):
         if self.season:
             self.logger.info(f"爬取季度: {self.season}")
 
-        # 初始化爬取日志
+        # 初始化爬取日志（使用时间戳）
+        current_timestamp = get_current_timestamp()
         self.crawl_log = CrawlLogItem()
         self.crawl_log["spider_name"] = self.name
-        self.crawl_log["start_time"] = datetime.datetime.now().isoformat()
+        self.crawl_log["start_time"] = current_timestamp
         self.crawl_log["status"] = "running"
         self.crawl_log["items_count"] = 0
         self.crawl_log["crawl_mode"] = self.mode
         self.crawl_log["crawl_year"] = self.year
         self.crawl_log["crawl_season"] = self.season
+        self.crawl_log["created_at"] = current_timestamp
 
         # 如果指定了起始URL，直接使用
         if self.start_url:
@@ -299,18 +314,21 @@ class MikanSpider(Spider):
 
         self.logger.info(f"解析动画详情: {title} (ID: {mikan_id})")
 
-        # 创建Anime Item
+        current_timestamp = get_current_timestamp()
+
+        # 创建Anime Item（使用时间戳）
         anime = AnimeItem()
         anime["mikan_id"] = mikan_id
         anime["title"] = self._extract_title(response)
         anime["bangumi_id"] = self._extract_bangumi_id(response)
         anime["broadcast_day"] = self._extract_broadcast_day(response)
-        anime["broadcast_start"] = self._extract_broadcast_start(response)
+        anime["broadcast_start"] = self._parse_broadcast_start_timestamp(response)
         anime["official_website"] = self._extract_official_website(response)
         anime["bangumi_url"] = self._extract_bangumi_url(response)
         anime["description"] = self._extract_description(response)
-        anime["created_at"] = datetime.datetime.now().isoformat()
-        anime["updated_at"] = datetime.datetime.now().isoformat()
+        anime["status"] = "active"
+        anime["created_at"] = current_timestamp
+        anime["updated_at"] = current_timestamp
 
         yield anime
 
@@ -320,23 +338,78 @@ class MikanSpider(Spider):
             yield SubtitleGroupItem({
                 "id": group["group_id"],
                 "name": group["group_name"],
-                "created_at": datetime.datetime.now().isoformat(),
+                "last_update": current_timestamp,
+                "is_subscribed": 0,
+                "created_at": current_timestamp,
             })
 
-        # 提取资源信息
+        # 提取资源信息（使用增强解析）
         resources = self._extract_resources(response, mikan_id, subtitle_groups)
+
+        # 创建动画-字幕组关联
+        anime_subtitle_groups = {}
+
         for resource in resources:
+            # 创建ResourceItem（使用增强字段）
             yield ResourceItem({
                 "mikan_id": resource["mikan_id"],
                 "subtitle_group_id": resource["group_id"],
+                "episode_number": resource["episode_number"],  # 新增：解析的集数
                 "title": resource["title"],
                 "file_size": resource["size"],
-                "release_date": resource["date"],
+                "resolution": resource["resolution"],  # 新增：解析的分辨率
+                "subtitle_type": resource["subtitle_type"],  # 新增：解析的字幕类型
+                "release_date": resource["release_timestamp"],  # 使用时间戳
                 "magnet_url": resource["magnet_link"],
                 "magnet_hash": resource["magnet_hash"],
                 "torrent_url": resource["torrent_url"],
                 "play_url": resource["play_url"],
                 "created_at": resource["created_at"],
+                "updated_at": current_timestamp,
+            })
+
+            # 收集动画-字幕组关联信息
+            group_id = resource["group_id"]
+            if group_id not in anime_subtitle_groups:
+                anime_subtitle_groups[group_id] = {
+                    "first_release_date": resource["release_timestamp"],
+                    "last_update_date": resource["release_timestamp"],
+                    "resource_count": 0,
+                }
+
+            # 更新关联信息
+            if resource["release_timestamp"]:
+                if (
+                    anime_subtitle_groups[group_id]["first_release_date"] is None
+                    or resource["release_timestamp"]
+                    < anime_subtitle_groups[group_id]["first_release_date"]
+                ):
+                    anime_subtitle_groups[group_id]["first_release_date"] = resource[
+                        "release_timestamp"
+                    ]
+
+                if (
+                    anime_subtitle_groups[group_id]["last_update_date"] is None
+                    or resource["release_timestamp"]
+                    > anime_subtitle_groups[group_id]["last_update_date"]
+                ):
+                    anime_subtitle_groups[group_id]["last_update_date"] = resource[
+                        "release_timestamp"
+                    ]
+
+            anime_subtitle_groups[group_id]["resource_count"] += 1
+
+        # 创建动画-字幕组关联Items
+        for group_id, group_info in anime_subtitle_groups.items():
+            yield AnimeSubtitleGroupItem({
+                "mikan_id": mikan_id,
+                "subtitle_group_id": group_id,
+                "first_release_date": group_info["first_release_date"],
+                "last_update_date": group_info["last_update_date"],
+                "resource_count": group_info["resource_count"],
+                "is_active": 1,
+                "created_at": current_timestamp,
+                "updated_at": current_timestamp,
             })
 
         # 更新爬取日志
@@ -381,7 +454,10 @@ class MikanSpider(Spider):
         """提取放送开始时间"""
         for text in response.css("*::text").getall():
             if text and "放送开始：" in text:
-                return text.replace("放送开始：", "").strip()
+                # 提取冒号后的时间部分
+                time_part = text.replace("放送开始：", "").strip()
+                if time_part:
+                    return time_part
         return None
 
     def _extract_official_website(self, response):
@@ -527,8 +603,10 @@ class MikanSpider(Spider):
         return resources
 
     def _parse_resource_row(self, cols, mikan_id, group_id, group_name):
-        """解析资源行"""
+        """解析资源行 - 增强版"""
         try:
+            current_timestamp = get_current_timestamp()
+
             # 提取资源信息
             # 第1列：标题（包含磁力链接）
             title_element = cols[0].css("a.magnet-link-wrap")
@@ -561,6 +639,16 @@ class MikanSpider(Spider):
             play_url = urljoin(self.BASE_URL, play_url) if play_url else None
 
             if title and magnet_link:
+                # 使用文本解析器增强信息提取
+                episode_number = extract_episode_number(title)
+                resolution = extract_resolution(title)
+                subtitle_type = extract_subtitle_type(title)
+
+                # 转换日期为时间戳
+                release_timestamp = None
+                if date:
+                    release_timestamp = parse_datetime_to_timestamp(date.strip())
+
                 return {
                     "mikan_id": mikan_id,
                     "group_id": group_id,
@@ -568,20 +656,33 @@ class MikanSpider(Spider):
                     "title": title.strip(),
                     "size": size.strip() if size else None,
                     "date": date.strip() if date else None,
+                    "release_timestamp": release_timestamp,
+                    "episode_number": episode_number,  # 新增：解析的集数
+                    "resolution": resolution,  # 新增：解析的分辨率
+                    "subtitle_type": subtitle_type,  # 新增：解析的字幕类型
                     "magnet_link": magnet_link,
                     "magnet_hash": magnet_hash,
                     "torrent_url": torrent_url,
                     "play_url": play_url,
-                    "created_at": datetime.datetime.now().isoformat(),
+                    "created_at": current_timestamp,
                 }
         except Exception as e:
             self.logger.warning(f"解析资源行失败: {e}")
 
         return None
 
+    def _parse_broadcast_start_timestamp(self, response):
+        """提取放送开始时间并转换为时间戳"""
+        broadcast_start = self._extract_broadcast_start(response)
+        if broadcast_start:
+            timestamp = parse_datetime_to_timestamp(broadcast_start)
+            return timestamp
+        return None
+
     def closed(self, reason):
         """爬虫关闭时的处理"""
-        self.crawl_log["end_time"] = datetime.datetime.now().isoformat()
+        current_timestamp = get_current_timestamp()
+        self.crawl_log["end_time"] = current_timestamp
         self.crawl_log["status"] = "completed" if reason == "finished" else "failed"
         self.crawl_log["reason"] = reason
 
@@ -591,3 +692,6 @@ class MikanSpider(Spider):
             f"模式: {self.crawl_log['crawl_mode']}, "
             f"总资源数: {self.crawl_log['items_count']}"
         )
+
+        # 输出最终的爬取日志
+        yield self.crawl_log
