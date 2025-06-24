@@ -67,7 +67,7 @@ async def get_stats(db: DatabaseManager = Depends(get_database)):
 
             # 获取最新更新时间
             cursor.execute(
-                "SELECT MAX(updated_at) FROM animes UNION SELECT MAX(updated_at) FROM resources ORDER BY 1 DESC LIMIT 1"
+                "SELECT MAX(updated_at) FROM animes UNION SELECT MAX(updated_at) FROM resources ORDER BY 1 DESC LIMIT 1"  # noqa: E501
             )
             result = cursor.fetchone()
             latest_update = result[0] if result else None
