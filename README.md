@@ -26,6 +26,7 @@ IKuYo 是一个面向追番爱好者的动漫资源爬虫，自动化采集 **Mi
 - 🎯 **精准解析**：智能识别番剧信息、字幕组、资源链接等关键数据
 - 💾 **本地存储**：SQLite 数据库持久化，支持数据导出和分析
 - 🔧 **配置驱动**：YAML 配置文件，灵活自定义采集参数
+- 🚀 **RESTful API**：FastAPI驱动的查询接口，支持分页、搜索、过滤
 
 ---
 
@@ -56,6 +57,16 @@ uv sync
 | 🍃 **按季模式** | `uv run python scripts/run_crawler.py --mode season --year 2024 --season 春` | 采集2024年春季番剧 |
 | 🌐 **全量模式** | `uv run python scripts/run_crawler.py --mode full` | 采集所有年份番剧 |
 | 🔄 **增量模式** | `uv run python scripts/run_crawler.py --mode incremental` | 仅采集新增/更新番剧 |
+
+### 🎮 启动API服务
+
+```bash
+# 开发模式（支持热重载）
+uv run python scripts/run_api.py --reload --debug
+
+# 生产模式
+uv run python scripts/run_api.py --host 0.0.0.0 --port 8000
+```
 
 ---
 
@@ -170,6 +181,14 @@ IKuYo/
 │   │   ├── items.py           # 数据结构定义
 │   │   ├── pipelines.py       # 数据处理管道
 │   │   └── settings.py        # 爬虫配置
+│   ├── api/                   # RESTful API模块
+│   │   ├── main.py           # FastAPI应用入口
+│   │   ├── routes/           # API路由
+│   │   │   ├── animes.py     # 动画相关API
+│   │   │   ├── resources.py  # 资源相关API
+│   │   │   └── health.py     # 健康检查API
+│   │   └── models/           # 数据模型
+│   │   └── schemas.py        # Pydantic模型定义
 │   └── utils/                 # 工具模块
 │       └── text_parser.py     # 文本解析工具
 ├── 📁 data/                   # 数据存储
@@ -238,6 +257,7 @@ IKuYo/
 
 - **`ikuyo/core/`** - 核心功能模块：配置管理、数据库抽象层、任务调度等
 - **`ikuyo/crawler/`** - 爬虫模块：专注数据采集，包含Scrapy相关组件
+- **`ikuyo/api/`** - RESTful API模块：提供查询接口
 - **`ikuyo/utils/`** - 工具模块：提供通用的工具函数
 
 此架构设计便于：
@@ -269,6 +289,97 @@ IKuYo/
 - `pyyaml` - YAML 配置文件支持
 
 ---
+
+## 📞 联系方式
+
+<div align="center">
+
+🐛 **遇到问题？** 欢迎通过 [GitHub Issues](https://github.com/Niloux/IKuYo/issues) 反馈
+
+💡 **有好想法？** 随时提交 [Pull Request](https://github.com/Niloux/IKuYo/pulls) 
+
+📧 **其他交流** 请在 Issue 区留言，作者会及时回复
+
+---
+
+*Made with ❤️ by [@归去来兮](https://zh.moegirl.org.cn/%E5%96%9C%E5%A4%9A%E9%83%81%E4%BB%A3)*
+
+</div>
+
+---
+
+## 🎯 API使用指南
+
+### 基础信息
+
+- **API地址**：http://localhost:8000
+- **API文档**：http://localhost:8000/docs
+- **健康检查**：http://localhost:8000/api/v1/health/
+
+### 主要接口
+
+#### 1. 健康检查
+
+```bash
+# 基础健康检查
+GET /api/v1/health/
+
+# 统计信息
+GET /api/v1/health/stats
+```
+
+#### 2. 动画相关
+
+```bash
+# 获取动画列表（支持分页、搜索）
+GET /api/v1/animes/?page=1&per_page=20&q=关键词
+
+# 获取动画详情
+GET /api/v1/animes/{mikan_id}
+
+# 获取动画资源
+GET /api/v1/animes/{mikan_id}/resources
+
+# 搜索动画
+GET /api/v1/animes/search/{keyword}
+```
+
+#### 3. 资源相关
+
+```bash
+# 获取资源列表（支持过滤）
+GET /api/v1/resources/?page=1&per_page=20&anime_id=123&resolution=1080p
+
+# 获取资源详情
+GET /api/v1/resources/{resource_id}
+
+# 按动画查询资源
+GET /api/v1/resources/anime/{anime_id}
+
+# 按分辨率搜索
+GET /api/v1/resources/search/resolution/{resolution}
+
+# 获取最新资源
+GET /api/v1/resources/latest/{count}
+```
+
+### 响应格式
+
+所有API响应都遵循统一格式：
+
+```json
+{
+  "success": true,
+  "message": "操作成功",
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 100,
+    "pages": 5
+  }
+}
+```
 
 ## 📞 联系方式
 
