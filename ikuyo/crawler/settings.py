@@ -8,12 +8,12 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 
-from ..config import load_config
+from ..core.config import load_config
 
 BOT_NAME = "ikuyo"
 
-SPIDER_MODULES = ["src.crawler.spiders"]
-NEWSPIDER_MODULE = "src.crawler.spiders"
+SPIDER_MODULES = ["ikuyo.crawler.spiders"]
+NEWSPIDER_MODULE = "ikuyo.crawler.spiders"
 
 # 加载配置
 config = load_config()
@@ -63,9 +63,9 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "src.crawler.pipelines.ValidationPipeline": 100,
-    "src.crawler.pipelines.DuplicatesPipeline": 200,
-    "src.crawler.pipelines.SQLitePipeline": 300,
+    "ikuyo.crawler.pipelines.ValidationPipeline": 100,
+    "ikuyo.crawler.pipelines.DuplicatesPipeline": 200,
+    "ikuyo.crawler.pipelines.SQLitePipeline": 300,
 }
 
 # 启用和配置HTTP缓存 (默认禁用)

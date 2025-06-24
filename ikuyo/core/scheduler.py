@@ -11,7 +11,7 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from ..config import load_config
+from .config import load_config
 
 
 class CrawlerScheduler:
@@ -147,8 +147,8 @@ class CrawlerScheduler:
         """执行爬虫任务（通过统一入口）"""
         try:
             self.logger.info("开始执行定时爬虫任务")
-            from src.config import load_config
-            from src.core.crawler_runner import run_crawler
+            from ikuyo.core.config import load_config
+            from ikuyo.core.crawler_runner import run_crawler
 
             config = load_config()
             # 构造最小args对象，兼容run_crawler

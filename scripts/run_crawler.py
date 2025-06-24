@@ -14,8 +14,8 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
-from src.config import load_config
-from src.core.crawler_runner import run_crawler
+from ikuyo.core.config import load_config
+from ikuyo.core.crawler_runner import run_crawler
 
 
 def parse_arguments():

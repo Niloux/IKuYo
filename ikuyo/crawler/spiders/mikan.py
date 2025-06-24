@@ -4,14 +4,14 @@ from urllib.parse import quote, urljoin
 
 from scrapy import Request, Spider
 
-from src.crawler.items import (
+from ikuyo.crawler.items import (
     AnimeItem,
     AnimeSubtitleGroupItem,
     CrawlLogItem,
     ResourceItem,
     SubtitleGroupItem,
 )
-from src.utils.text_parser import (
+from ikuyo.utils.text_parser import (
     extract_episode_number,
     extract_resolution,
     extract_subtitle_type,

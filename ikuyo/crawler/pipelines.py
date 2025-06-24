@@ -8,7 +8,7 @@ import sqlite3
 
 from scrapy.exceptions import DropItem
 
-from ..config import load_config
+from ..core.config import load_config
 from .items import AnimeItem, AnimeSubtitleGroupItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 

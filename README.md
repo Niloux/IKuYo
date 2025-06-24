@@ -51,11 +51,11 @@ uv sync
 
 | 模式 | 命令 | 说明 |
 |------|------|------|
-| 🏠 **首页模式** | `python scripts/run_crawler.py` | 采集首页推荐番剧 |
-| 📅 **按年模式** | `python scripts/run_crawler.py --mode year --year 2024` | 采集2024年所有番剧 |
-| 🍃 **按季模式** | `python scripts/run_crawler.py --mode season --year 2024 --season 春` | 采集2024年春季番剧 |
-| 🌐 **全量模式** | `python scripts/run_crawler.py --mode full` | 采集所有年份番剧 |
-| 🔄 **增量模式** | `python scripts/run_crawler.py --mode incremental` | 仅采集新增/更新番剧 |
+| 🏠 **首页模式** | `uv run python scripts/run_crawler.py` | 采集首页推荐番剧 |
+| 📅 **按年模式** | `uv run python scripts/run_crawler.py --mode year --year 2024` | 采集2024年所有番剧 |
+| 🍃 **按季模式** | `uv run python scripts/run_crawler.py --mode season --year 2024 --season 春` | 采集2024年春季番剧 |
+| 🌐 **全量模式** | `uv run python scripts/run_crawler.py --mode full` | 采集所有年份番剧 |
+| 🔄 **增量模式** | `uv run python scripts/run_crawler.py --mode incremental` | 仅采集新增/更新番剧 |
 
 ---
 
@@ -129,13 +129,13 @@ scheduler:
 
 ```bash
 # 📊 查看任务状态
-python scripts/manage_scheduler.py status
+uv run python scripts/manage_scheduler.py status
 
 # 🚀 启动定时调度
-python scripts/manage_scheduler.py start
+uv run python scripts/manage_scheduler.py start
 
 # 🧪 测试任务执行
-python scripts/manage_scheduler.py test
+uv run python scripts/manage_scheduler.py test
 ```
 
 ### 💾 数据输出
@@ -159,14 +159,24 @@ IKuYo/
 ├── 📁 scripts/                 # 启动与管理脚本
 │   ├── run_crawler.py
 │   └── manage_scheduler.py
-├── 📁 src/                     # 核心代码
-│   ├── core/                  # 调度与运行核心
-│   ├── crawler/               # 爬虫实现与数据结构
+├── 📁 ikuyo/                   # 主要代码包
+│   ├── core/                  # 核心功能模块
+│   │   ├── config.py          # 配置管理
+│   │   ├── database.py        # 数据库抽象层
+│   │   ├── scheduler.py       # 任务调度器
+│   │   └── crawler_runner.py  # 爬虫运行器
+│   ├── crawler/               # 爬虫模块（独立）
+│   │   ├── spiders/           # 爬虫实现
+│   │   ├── items.py           # 数据结构定义
+│   │   ├── pipelines.py       # 数据处理管道
+│   │   └── settings.py        # 爬虫配置
 │   └── utils/                 # 工具模块
+│       └── text_parser.py     # 文本解析工具
 ├── 📁 data/                   # 数据存储
-│   ├── database/
-│   ├── logs/
-│   └── output/
+│   ├── database/              # SQLite 数据库
+│   ├── logs/                  # 运行日志
+│   └── output/                # 导出数据
+├── 📁 tests/                  # 测试代码
 └── 📁 docs/                   # 用法文档
     ├── CRAWL_MODES_USAGE.md
     └── SCHEDULER_USAGE.md
@@ -209,6 +219,7 @@ IKuYo/
 
 ### 🎯 高优先级
 - ✅ ~~**数据库表结构优化**~~ - 提升查询性能和存储效率
+- ✅ ~~**项目架构重构**~~ - 采用模块平行架构，职责分离清晰
 - 🔍 **数据查询API** - 封装数据库查询功能，提供便捷的数据访问接口
 - 📺 **追番功能实现** - 个人追番列表管理，订阅更新提醒
 - 🐧 **RSS订阅功能实现** - 通过mikan的rss链接订阅某个番剧或某个番剧+某个字幕组的动画资源
@@ -219,7 +230,20 @@ IKuYo/
 ### 🚀 低优先级
 - ⬇️ **自动下载功能** - 集成aria2等下载器，实现追番资源自动下载
 
-> 💡 开发优先级：数据库优化 → 查询API → 追番功能 → Bangumi集成 → 自动下载
+> 💡 开发优先级：架构重构 → 查询API → 追番功能 → Bangumi集成 → 自动下载
+
+### 🏗️ 架构说明
+
+项目采用**模块平行架构**，各模块职责清晰：
+
+- **`ikuyo/core/`** - 核心功能模块：配置管理、数据库抽象层、任务调度等
+- **`ikuyo/crawler/`** - 爬虫模块：专注数据采集，包含Scrapy相关组件
+- **`ikuyo/utils/`** - 工具模块：提供通用的工具函数
+
+此架构设计便于：
+- 🔧 **独立开发**：各模块可以独立开发和测试
+- 🚀 **功能扩展**：后续API、追番、RSS等功能可作为平行模块添加
+- 🏃 **维护升级**：模块间依赖清晰，便于维护和升级
 
 欢迎对功能需求和优先级提出建议！
 
