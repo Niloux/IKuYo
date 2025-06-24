@@ -168,38 +168,38 @@ class SQLitePipeline:
 
             # anime_subtitle_groups表索引
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_mikan_id 
+            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_mikan_id
             ON anime_subtitle_groups(mikan_id)
         """)
 
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_subtitle_group_id 
+            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_subtitle_group_id
             ON anime_subtitle_groups(subtitle_group_id)
         """)
 
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_last_update 
+            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_last_update
             ON anime_subtitle_groups(last_update_date)
         """)
 
         # resources表索引
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_resources_mikan_id_created_at 
+            CREATE INDEX IF NOT EXISTS idx_resources_mikan_id_created_at
             ON resources(mikan_id, created_at)
         """)
 
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_resources_release_date 
+            CREATE INDEX IF NOT EXISTS idx_resources_release_date
             ON resources(release_date)
         """)
 
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_resources_episode_number 
+            CREATE INDEX IF NOT EXISTS idx_resources_episode_number
             ON resources(mikan_id, episode_number)
         """)
 
         self.cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_resources_resolution 
+            CREATE INDEX IF NOT EXISTS idx_resources_resolution
             ON resources(resolution)
         """)
 
@@ -285,8 +285,8 @@ class SQLitePipeline:
             (mikan_id, subtitle_group_id, first_release_date, last_update_date,
              resource_count, is_active, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(mikan_id, subtitle_group_id) 
-            DO UPDATE SET 
+            ON CONFLICT(mikan_id, subtitle_group_id)
+            DO UPDATE SET
                 last_update_date = excluded.last_update_date,
                 resource_count = excluded.resource_count,
                 is_active = excluded.is_active,
@@ -313,11 +313,11 @@ class SQLitePipeline:
             """
             INSERT INTO resources
             (mikan_id, subtitle_group_id, episode_number, title, file_size,
-             resolution, subtitle_type, magnet_url, torrent_url, play_url, 
+             resolution, subtitle_type, magnet_url, torrent_url, play_url,
              magnet_hash, release_date, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(mikan_id, subtitle_group_id, magnet_hash) 
-            DO UPDATE SET 
+            ON CONFLICT(mikan_id, subtitle_group_id, magnet_hash)
+            DO UPDATE SET
                 title = excluded.title,
                 episode_number = excluded.episode_number,
                 resolution = excluded.resolution,

@@ -6,13 +6,11 @@ Mikan Project 爬虫运行脚本
 
 import argparse
 import datetime
+import os
 import sys
-from pathlib import Path
 
-# 添加项目根目录到Python路径
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
+# 指定项目根目录
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ikuyo.core.config import load_config
 from ikuyo.core.crawler_runner import run_crawler
@@ -27,19 +25,19 @@ def parse_arguments():
 使用示例:
   # 首页模式（默认）
   python scripts/run_crawler.py
-  
+
   # 年份模式 - 爬取2024年所有季度
   python scripts/run_crawler.py --mode year --year 2024
-  
+
   # 季度模式 - 爬取2024年春季
   python scripts/run_crawler.py --mode season --year 2024 --season 春
-  
+
   # 全量模式 - 爬取2013年至今所有动画
   python scripts/run_crawler.py --mode full
-  
+
   # 增量模式 - 只爬取新增动画
   python scripts/run_crawler.py --mode incremental
-  
+
   # 限制爬取数量
   python scripts/run_crawler.py --limit 5
         """,
@@ -84,7 +82,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def validate_arguments(args):
+def validate_arguments(args):  # noqa: C901
     """验证命令行参数"""
     errors = []
     current_year = datetime.datetime.now().year

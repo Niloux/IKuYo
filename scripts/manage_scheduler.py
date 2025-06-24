@@ -131,8 +131,6 @@ def main():
     print(f"   时区设置: {getattr(scheduler_config, 'timezone', 'Asia/Shanghai')}")
     print()
 
-    jobs = getattr(scheduler_config, "jobs", [])
-
     setup_logging()
 
     parser = argparse.ArgumentParser(description="IKuYo 定时任务管理工具", add_help=False)
