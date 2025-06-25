@@ -339,7 +339,6 @@ class MikanSpider(Spider):
                 "id": group["group_id"],
                 "name": group["group_name"],
                 "last_update": current_timestamp,
-                "is_subscribed": 0,
                 "created_at": current_timestamp,
             })
 

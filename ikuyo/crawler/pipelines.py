@@ -93,7 +93,6 @@ class SQLitePipeline:
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
                 last_update INTEGER,
-                is_subscribed INTEGER DEFAULT 0,
                 created_at INTEGER NOT NULL
             )
         """)
@@ -262,14 +261,13 @@ class SQLitePipeline:
         self.cursor.execute(
             """
             INSERT OR REPLACE INTO subtitle_groups
-            (id, name, last_update, is_subscribed, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            (id, name, last_update, created_at)
+            VALUES (?, ?, ?, ?)
         """,
             (
                 item.get("id"),
                 item.get("name"),
                 item.get("last_update"),
-                item.get("is_subscribed", 0),
                 item.get("created_at"),
             ),
         )

@@ -98,7 +98,6 @@ class SubtitleGroupResponse(BaseModel):
 
     id: int = Field(..., description="字幕组ID")
     name: str = Field(..., description="字幕组名称")
-    is_subscribed: bool = Field(..., description="是否已订阅")
 
 
 class ResourceResponse(BaseModel):

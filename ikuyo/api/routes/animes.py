@@ -96,7 +96,6 @@ async def get_anime_detail(mikan_id: int, repo: AnimeRepository = Depends(get_an
                 subtitle_groups[sg_id] = {
                     "id": sg_id,
                     "name": sg_name,
-                    "is_subscribed": False,  # 暂时设为False，后续可以添加订阅功能
                 }
 
         # 构建详情响应

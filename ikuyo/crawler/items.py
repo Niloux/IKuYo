@@ -24,7 +24,6 @@ class SubtitleGroupItem(scrapy.Item):
     id = scrapy.Field()
     name = scrapy.Field()
     last_update = scrapy.Field()  # 存储时间戳
-    is_subscribed = scrapy.Field()
     created_at = scrapy.Field()  # 存储时间戳
 
 
