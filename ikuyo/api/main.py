@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
 FastAPI主应用
-IKuYo动漫资源查询API
+IKuYo动漫资源查询API - 简洁版本
+专注于资源获取场景
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ikuyo.api.routes import animes, health, resources
+from ikuyo.api.routes import health, resources
 
 # 创建FastAPI应用实例
 app = FastAPI(
     title="IKuYo动漫资源API",
-    description="基于Mikan Project的动漫资源查询API服务",
-    version="1.0.0",
+    description="专注于资源获取的简洁API服务，与Bangumi API配合使用",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -28,10 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # 注册路由
 app.include_router(health.router, prefix="/api/v1")
-app.include_router(animes.router, prefix="/api/v1")
 app.include_router(resources.router, prefix="/api/v1")
 
 
@@ -43,10 +42,16 @@ async def root():
     """
     return {
         "service": "IKuYo动漫资源API",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "description": "专注于资源获取的简洁API服务",
         "status": "running",
         "docs": "/docs",
         "redoc": "/redoc",
+        "core_endpoints": [
+            "/api/v1/animes/bangumi/{bangumi_id}/progress",
+            "/api/v1/animes/bangumi/{bangumi_id}/episodes/{episode}/resources",
+            "/api/v1/animes/bangumi/{bangumi_id}/episodes/availability",
+        ],
     }
 
 

@@ -2,5 +2,6 @@ __pycache__/
 .tasks/
 *.db
 *.html
+*.json
 
 output/

@@ -4,11 +4,11 @@
 提供API和数据库状态检查
 """
 
-import time
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
-from ikuyo.api.models.schemas import HealthResponse, StatsResponse
+from ikuyo.api.models.schemas import HealthResponse
 from ikuyo.core.database import DatabaseManager
 
 router = APIRouter(prefix="/health", tags=["Health"])
@@ -39,44 +39,8 @@ async def health_check(db: DatabaseManager = Depends(get_database)):
         db_status = "unhealthy"
 
     return HealthResponse(
-        status="healthy", version="1.0.0", timestamp=int(time.time()), database_status=db_status
+        status="healthy",
+        version="2.0.0",
+        timestamp=datetime.now().isoformat(),
+        database_status=db_status,
     )
-
-
-@router.get("/stats", response_model=StatsResponse)
-async def get_stats(db: DatabaseManager = Depends(get_database)):
-    """
-    获取统计信息
-    返回数据库中的统计数据
-    """
-    try:
-        with db.get_connection() as conn:
-            cursor = conn.cursor()
-
-            # 获取动画总数
-            cursor.execute("SELECT COUNT(*) FROM animes")
-            total_animes = cursor.fetchone()[0]
-
-            # 获取资源总数
-            cursor.execute("SELECT COUNT(*) FROM resources")
-            total_resources = cursor.fetchone()[0]
-
-            # 获取字幕组总数
-            cursor.execute("SELECT COUNT(*) FROM subtitle_groups")
-            total_subtitle_groups = cursor.fetchone()[0]
-
-            # 获取最新更新时间
-            cursor.execute(
-                "SELECT MAX(updated_at) FROM animes UNION SELECT MAX(updated_at) FROM resources ORDER BY 1 DESC LIMIT 1"  # noqa: E501
-            )
-            result = cursor.fetchone()
-            latest_update = result[0] if result else None
-
-        return StatsResponse(
-            total_animes=total_animes,
-            total_resources=total_resources,
-            total_subtitle_groups=total_subtitle_groups,
-            latest_update=latest_update,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取统计信息失败: {str(e)}")
