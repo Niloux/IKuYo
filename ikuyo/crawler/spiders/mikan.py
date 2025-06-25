@@ -16,6 +16,7 @@ from ikuyo.utils.text_parser import (
     extract_resolution,
     extract_subtitle_type,
     get_current_timestamp,
+    normalize_subtitle_type,
     parse_datetime_to_timestamp,
 )
 
@@ -641,7 +642,10 @@ class MikanSpider(Spider):
                 # 使用文本解析器增强信息提取
                 episode_number = extract_episode_number(title)
                 resolution = extract_resolution(title)
-                subtitle_type = extract_subtitle_type(title)
+                raw_subtitle_type = extract_subtitle_type(title)
+                subtitle_type = (
+                    normalize_subtitle_type(raw_subtitle_type) if raw_subtitle_type else None
+                )
 
                 # 转换日期为时间戳
                 release_timestamp = None
