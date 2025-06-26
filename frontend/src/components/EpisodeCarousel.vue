@@ -43,25 +43,20 @@
             <p class="episode-subtitle" v-if="episode.subtitle">{{ episode.subtitle }}</p>
             
             <div class="episode-meta">
-              <span v-if="episode.duration" class="duration">⏱️ {{ episode.duration }}</span>
-              <span v-if="episode.airdate" class="airdate">📅 {{ formatDate(episode.airdate) }}</span>
-              <span v-if="episode.comment !== undefined" class="comments">💬 {{ episode.comment }}条评论</span>
-            </div>
-            
-            <div v-if="episode.desc" class="episode-desc">
-              <p>{{ truncateDesc(episode.desc) }}</p>
+              <span v-if="episode.duration" class="duration">时长: {{ episode.duration }}</span>
+              <span v-if="episode.airdate" class="airdate">首播: {{ formatDate(episode.airdate) }}</span>
             </div>
           </div>
           
           <!-- 资源状态 -->
           <div class="resource-status">
             <div v-if="episode.available" class="has-resources">
-              <span class="resource-count">✅ {{ episode.resourceCount }}个资源</span>
-              <button class="download-btn">📥 下载</button>
+              <span class="resource-count">{{ episode.resourceCount }}个资源</span>
+              <button class="download-btn">下载</button>
             </div>
             <div v-else class="no-resources">
-              <span class="no-resource-text">❌ 暂无资源</span>
-              <button class="refresh-btn">🔄 刷新</button>
+              <span class="no-resource-text">暂无资源</span>
+              <button class="refresh-btn">刷新</button>
             </div>
           </div>
         </div>
@@ -397,16 +392,29 @@ const loadEpisodeAvailability = async () => {
 }
 
 .episode-card.available {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff6b9d 0%, #c2185b 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(194, 24, 91, 0.3);
+  position: relative;
+}
+
+.episode-card.available::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .episode-card.unavailable {
-  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+  background: linear-gradient(135deg, #ffe1e9 0%, #f8bbd9 100%);
   color: #2d3436;
   opacity: 0.8;
-  box-shadow: 0 4px 12px rgba(255, 171, 160, 0.3);
+  box-shadow: 0 4px 12px rgba(248, 187, 217, 0.3);
 }
 
 .episode-card:hover {
@@ -418,6 +426,7 @@ const loadEpisodeAvailability = async () => {
   position: absolute;
   top: 1rem;
   right: 1rem;
+  z-index: 1;
 }
 
 .number {
@@ -430,39 +439,40 @@ const loadEpisodeAvailability = async () => {
 
 .episode-info {
   flex: 1;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .episode-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
   margin-bottom: 0.25rem;
   line-height: 1.3;
 }
 
 .episode-subtitle {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-bottom: 0.3rem;
 }
 
 .episode-meta {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  gap: 1rem;
   font-size: 0.8rem;
   opacity: 0.9;
   margin-bottom: 0.5rem;
 }
 
-.episode-desc {
-  font-size: 0.75rem;
-  opacity: 0.8;
-  line-height: 1.4;
-}
+
 
 .resource-status {
   margin-top: auto;
+  padding-top: 0.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .has-resources, .no-resources {
@@ -479,16 +489,20 @@ const loadEpisodeAvailability = async () => {
 .download-btn, .refresh-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
   color: inherit;
   cursor: pointer;
   font-size: 0.8rem;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
 }
 
 .download-btn:hover, .refresh-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .carousel-controls {
