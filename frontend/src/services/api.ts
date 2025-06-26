@@ -68,7 +68,7 @@ apiClient.interceptors.response.use(
       name: string
       name_cn: string
       summary: string
-      air_date: string
+      date: string
       air_weekday: number
       eps: number
       rating: {total: number

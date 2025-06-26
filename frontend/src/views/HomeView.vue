@@ -3,7 +3,7 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="title">IKuYo - 追番助手</h1>
-      <p class="subtitle">今日放送</p>
+      <p class="subtitle">每日放送</p>
     </div>
 
     <!-- 加载状态 -->
@@ -24,7 +24,10 @@
         :key="day.weekday.id" 
         class="day-section"
       >
-        <h2 class="day-title">{{ day.weekday.cn }}</h2>
+        <h2 class="day-title" :class="{ 'today': isToday(day.weekday.id) }">
+          {{ day.weekday.cn }}
+          <span v-if="isToday(day.weekday.id)" class="today-badge">今天</span>
+        </h2>
         <div class="anime-grid">
           <AnimeCard
             v-for="anime in day.items"
@@ -51,6 +54,27 @@ const calendar = ref<BangumiWeekday[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+// 按照现实周期排序每日放送
+const sortCalendarByWeek = (data: BangumiWeekday[]): BangumiWeekday[] => {
+  // 获取今天是星期几 (0=星期日, 1=星期一, ..., 6=星期六)
+  const today = new Date().getDay()
+  
+  // 将星期日从0调整为7，这样更容易计算
+  const todayId = today === 0 ? 7 : today
+  
+  // 按照今天开始的顺序排序
+  return data.sort((a, b) => {
+    // 计算距离今天的天数
+    const getDaysFromToday = (weekdayId: number) => {
+      const adjustedId = weekdayId === 0 ? 7 : weekdayId
+      const diff = adjustedId - todayId
+      return diff >= 0 ? diff : diff + 7
+    }
+    
+    return getDaysFromToday(a.weekday.id) - getDaysFromToday(b.weekday.id)
+  })
+}
+
 // 加载每日放送数据
 const loadCalendar = async () => {
   try {
@@ -59,19 +83,25 @@ const loadCalendar = async () => {
     
     console.log('开始加载每日放送数据...')
     const data = await BangumiApiService.getCalendar()
-    console.log('API响应数据:', data)
-    console.log('数据长度:', data?.length)
-    if (data && data.length > 0) {
-      console.log('第一天数据:', data[0])
-      console.log('第一天番剧数量:', data[0]?.items?.length)
-    }
-    calendar.value = data
+    
+    // 按照现实周期排序，今天的放在最前面
+    calendar.value = sortCalendarByWeek(data)
+    
+    console.log('数据排序完成，今天是:', new Date().toLocaleDateString('zh-CN', { weekday: 'long' }))
   } catch (err) {
     console.error('加载每日放送失败:', err)
     error.value = '加载失败，请检查网络连接或API服务状态'
   } finally {
     loading.value = false
   }
+}
+
+// 判断是否是今天
+const isToday = (weekdayId: number): boolean => {
+  const today = new Date().getDay()
+  const todayId = today === 0 ? 7 : today
+  const adjustedWeekdayId = weekdayId === 0 ? 7 : weekdayId
+  return adjustedWeekdayId === todayId
 }
 
 // 跳转到番剧详情页
@@ -153,6 +183,24 @@ onMounted(() => {
   margin-bottom: 1.5rem;
   border-bottom: 2px solid #3498db;
   padding-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.day-title.today {
+  color: #e74c3c;
+  border-bottom-color: #e74c3c;
+}
+
+.today-badge {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
 }
 
 .anime-grid {

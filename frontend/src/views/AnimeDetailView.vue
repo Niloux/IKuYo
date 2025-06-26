@@ -39,7 +39,7 @@
           <div class="anime-meta">
             <div class="meta-item">
               <span class="meta-label">播出日期:</span>
-              <span class="meta-value">{{ formatAirDate(anime.air_date) }}</span>
+              <span class="meta-value">{{ formatAirDate(anime.date) }}</span>
             </div>
             <div class="meta-item" v-if="anime.eps">
               <span class="meta-label">总集数:</span>
