@@ -58,27 +58,18 @@
             </div>
           </div>
 
-          <!-- 收藏统计 -->
-          <div class="collection-stats" v-if="anime.collection">
-            <div class="stat-item">
-              <span class="stat-label">想看</span>
-              <span class="stat-value">{{ anime.collection.wish }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">看过</span>
-              <span class="stat-value">{{ anime.collection.collect }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">在看</span>
-              <span class="stat-value">{{ anime.collection.doing }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">搁置</span>
-              <span class="stat-value">{{ anime.collection.on_hold }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">抛弃</span>
-              <span class="stat-value">{{ anime.collection.dropped }}</span>
+          <!-- 动画标签 -->
+          <div class="anime-tags" v-if="anime.tags && anime.tags.length > 0">
+            <div class="tags-container">
+              <span 
+                v-for="tag in getTopTags(anime.tags)" 
+                :key="tag.name"
+                class="tag-item"
+                :class="getTagType(tag.name)"
+              >
+                {{ tag.name }}
+                <span class="tag-count">{{ tag.count }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -170,6 +161,35 @@ const formatAirDate = (dateStr: string): string => {
 // 计算评分条宽度
 const getBarWidth = (count: number, total: number): number => {
   return total > 0 ? (count / total) * 100 : 0
+}
+
+// 获取前15个热门标签
+const getTopTags = (tags: any[]) => {
+  return tags
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15)
+}
+
+// 根据标签名称返回标签类型（用于样式）
+const getTagType = (tagName: string): string => {
+  // 媒体类型标签
+  if (['TV', 'TV动画', 'OVA', 'OAD', '电影', '特别篇'].includes(tagName)) {
+    return 'tag-media'
+  }
+  // 题材类型标签
+  if (['恋爱', '治愈', '奇幻', '科幻', '日常', '冒险', '悬疑', '战斗', '搞笑'].includes(tagName)) {
+    return 'tag-genre'
+  }
+  // 改编类型标签
+  if (tagName.includes('改') || tagName.includes('GAL') || tagName.includes('游戏') || tagName.includes('小说') || tagName.includes('漫画')) {
+    return 'tag-source'
+  }
+  // 制作相关标签
+  if (tagName.includes('年') || tagName.includes('月') || /^[A-Z][a-z]*\.?$/.test(tagName)) {
+    return 'tag-production'
+  }
+  // 默认标签
+  return 'tag-default'
 }
 
 // 图片加载失败处理
@@ -323,32 +343,65 @@ onMounted(() => {
   font-weight: normal;
 }
 
-.collection-stats {
+.anime-tags {
+  margin-top: 1.5rem;
+}
+
+.tags-container {
   display: flex;
-  gap: 1rem;
   flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
+.tag-item {
+  display: inline-flex;
   align-items: center;
-  padding: 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  min-width: 60px;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: default;
 }
 
-.stat-label {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-  margin-bottom: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1rem;
+.tag-count {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 0.125rem 0.375rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #2c3e50;
+}
+
+/* 不同类型标签的颜色 */
+.tag-media {
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: white;
+}
+
+.tag-genre {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+.tag-source {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+  color: white;
+}
+
+.tag-production {
+  background: linear-gradient(45deg, #9b59b6, #8e44ad);
+  color: white;
+}
+
+.tag-default {
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+  color: white;
+}
+
+.tag-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .anime-summary {
@@ -452,7 +505,7 @@ onMounted(() => {
     justify-content: center;
   }
   
-  .collection-stats {
+  .tags-container {
     justify-content: center;
   }
 }

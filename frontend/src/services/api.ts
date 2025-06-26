@@ -63,6 +63,12 @@ apiClient.interceptors.response.use(
   items: BangumiCalendarItem[]
     }
 
+    export interface BangumiTag {
+      name: string
+      count: number
+      total_cont: number
+    }
+
     export interface BangumiSubject {
       id: number
       name: string
@@ -89,6 +95,7 @@ apiClient.interceptors.response.use(
     on_hold: number
     dropped: number
   }
+  tags: BangumiTag[]
     }
 
     // API服务类
