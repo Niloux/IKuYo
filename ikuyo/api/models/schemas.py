@@ -72,6 +72,21 @@ class EpisodeAvailabilityResponse(BaseResponse):
     data: dict = Field(..., description="集数可用性数据")
 
 
+# =============== Bangumi API模型 ===============
+
+
+class BangumiCalendarResponse(BaseResponse):
+    """Bangumi每日放送响应模型"""
+
+    data: List[dict] = Field(..., description="每日放送数据")
+
+
+class BangumiSubjectResponse(BaseResponse):
+    """Bangumi番剧详情响应模型"""
+
+    data: dict = Field(..., description="番剧详情数据")
+
+
 # =============== 健康检查模型 ===============
 
 

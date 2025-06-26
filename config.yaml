@@ -34,4 +34,9 @@ scheduler:
 output:
   output_dir: output
 
+bangumi:
+  base_url: https://api.bgm.tv
+  timeout: 10
+  user_agent: "IKuYo/2.0.0"
+
 # 可扩展更多参数，如year、season、api等 
