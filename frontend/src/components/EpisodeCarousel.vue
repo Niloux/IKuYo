@@ -477,6 +477,7 @@ const loadEpisodeAvailability = async () => {
   margin-bottom: 0.5rem;
   position: relative;
   z-index: 1;
+  margin-right: 60px;
 }
 
 .episode-title {
@@ -484,12 +485,20 @@ const loadEpisodeAvailability = async () => {
   font-weight: 700;
   margin-bottom: 0.25rem;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 70px;
 }
 
 .episode-subtitle {
   font-size: 0.8rem;
   opacity: 0.7;
   margin-bottom: 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 70px;
 }
 
 .episode-meta {
