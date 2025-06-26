@@ -3,5 +3,6 @@ __pycache__/
 *.db
 *.html
 *.json
+.DS_Store
 
 output/

@@ -392,9 +392,9 @@ const loadEpisodeAvailability = async () => {
 }
 
 .episode-card.available {
-  background: linear-gradient(135deg, #ff6b9d 0%, #c2185b 100%);
+  background: linear-gradient(135deg, #D34642 0%, #B73B3B 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(194, 24, 91, 0.3);
+  box-shadow: 0 4px 12px rgba(183, 59, 59, 0.3);
   position: relative;
 }
 
@@ -411,10 +411,10 @@ const loadEpisodeAvailability = async () => {
 }
 
 .episode-card.unavailable {
-  background: linear-gradient(135deg, #ffe1e9 0%, #f8bbd9 100%);
+  background: linear-gradient(135deg, #F5B5B3 0%, #E87572 100%);
   color: #2d3436;
   opacity: 0.8;
-  box-shadow: 0 4px 12px rgba(248, 187, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(232, 117, 114, 0.3);
 }
 
 .episode-card:hover {
