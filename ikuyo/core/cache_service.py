@@ -29,6 +29,7 @@ class CacheManager:
         self.cache_ttl = {
             "calendar": 3600,  # 每日放送：1小时
             "subject": 86400,  # 番剧详情：24小时
+            "episodes": 43200,  # 章节信息：12小时
             "default": 1800,  # 默认：30分钟
         }
 

@@ -98,3 +98,48 @@ class HealthResponse(BaseModel):
     timestamp: str = Field(..., description="检查时间")
     database_status: str = Field(..., description="数据库状态")
     cache_stats: Optional[Dict[str, Any]] = Field(None, description="缓存统计信息")
+
+
+# =============== Bangumi章节模型 ===============
+
+
+class BangumiEpisode(BaseModel):
+    """Bangumi章节信息模型"""
+
+    id: int = Field(..., description="章节ID")
+    type: int = Field(..., description="章节类型(0:正片, 1:SP, 2:OP, 3:ED, 4:PV, 5:MAD, 6:其他)")
+    name: str = Field(..., description="章节名称")
+    name_cn: str = Field(..., description="章节中文名称")
+    sort: float = Field(..., description="章节排序")
+    ep: Optional[float] = Field(None, description="章节编号")
+    airdate: Optional[str] = Field(None, description="播出日期")
+    comment: int = Field(0, description="评论数")
+    duration: str = Field("", description="时长")
+    desc: str = Field("", description="简介")
+    disc: int = Field(0, description="碟片编号")
+    duration_seconds: Optional[int] = Field(None, description="时长(秒)")
+
+
+class BangumiEpisodesResponse(BaseResponse):
+    """Bangumi章节列表响应模型"""
+
+    data: List[BangumiEpisode] = Field(..., description="章节列表")
+    total: int = Field(..., description="总章节数")
+
+
+class BangumiEpisodesStats(BaseModel):
+    """Bangumi章节统计信息模型"""
+
+    total: int = Field(..., description="总章节数")
+    main_episodes: int = Field(0, description="正片章节数")
+    special_episodes: int = Field(0, description="特典章节数")
+    opening_episodes: int = Field(0, description="OP章节数")
+    ending_episodes: int = Field(0, description="ED章节数")
+    pv_episodes: int = Field(0, description="PV章节数")
+    other_episodes: int = Field(0, description="其他章节数")
+
+
+class BangumiEpisodesStatsResponse(BaseResponse):
+    """Bangumi章节统计响应模型"""
+
+    data: BangumiEpisodesStats = Field(..., description="章节统计信息")

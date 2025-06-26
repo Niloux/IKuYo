@@ -92,6 +92,117 @@ class BangumiService:
             print(f"获取番剧详情失败 (bangumi_id={bangumi_id}): {e}")
             return None
 
+    def get_episodes(
+        self,
+        subject_id: int,
+        episode_type: Optional[int] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        获取番剧章节信息
+        为章节展示提供数据
+        使用12小时缓存
+
+        Args:
+            subject_id: 番剧ID
+            episode_type: 章节类型筛选 (0:正片, 1:SP, 2:OP, 3:ED, 4:PV, 6:其他)
+            limit: 返回数量限制
+            offset: 偏移量
+        """
+        # 构建缓存键，包含筛选参数
+        type_suffix = f"_type_{episode_type}" if episode_type is not None else ""
+        cache_key = f"bangumi_episodes_{subject_id}{type_suffix}_{limit}_{offset}"
+
+        # 1. 尝试从缓存获取
+        cached_data = self.cache.get(cache_key, "episodes")
+        if cached_data is not None:
+            print(f"✅ 从缓存获取章节信息 (subject_id: {subject_id})")
+            return cached_data
+
+        # 2. 缓存未命中，请求API
+        try:
+            print(f"🌐 请求Bangumi API获取章节信息 (subject_id: {subject_id})...")
+
+            # 构建请求参数
+            params = {"subject_id": subject_id, "limit": limit, "offset": offset}
+            if episode_type is not None:
+                params["type"] = episode_type
+
+            url = f"{self.base_url}/v0/episodes"
+            response = requests.get(url, headers=self.headers, params=params, timeout=self.timeout)
+            response.raise_for_status()
+            data = response.json()
+
+            # 3. API返回的数据结构处理
+            episodes_data = {
+                "data": data.get("data", []),
+                "total": data.get("total", 0),
+                "limit": data.get("limit", limit),
+                "offset": data.get("offset", offset),
+            }
+
+            # 4. 存入缓存 (12小时)
+            self.cache.set(cache_key, episodes_data, "episodes")
+            print(f"💾 章节信息已缓存 (subject_id: {subject_id})，有效期：12小时")
+
+            return episodes_data
+        except Exception as e:
+            print(f"获取章节信息失败 (subject_id={subject_id}): {e}")
+            return None
+
+    def get_episodes_stats(self, subject_id: int) -> Optional[Dict[str, Any]]:
+        """
+        获取番剧章节统计信息
+        统计各类型章节数量
+        使用12小时缓存
+        """
+        cache_key = f"bangumi_episodes_stats_{subject_id}"
+
+        # 1. 尝试从缓存获取
+        cached_data = self.cache.get(cache_key, "episodes")
+        if cached_data is not None:
+            print(f"✅ 从缓存获取章节统计 (subject_id: {subject_id})")
+            return cached_data
+
+        # 2. 获取所有章节数据
+        episodes_data = self.get_episodes(subject_id, limit=1000)  # 获取足够多的章节
+        if not episodes_data:
+            return None
+
+        # 3. 统计各类型章节数量
+        episodes = episodes_data.get("data", [])
+        stats = {
+            "total": len(episodes),
+            "main_episodes": 0,  # type 0: 正片
+            "special_episodes": 0,  # type 1: SP
+            "opening_episodes": 0,  # type 2: OP
+            "ending_episodes": 0,  # type 3: ED
+            "pv_episodes": 0,  # type 4: PV
+            "other_episodes": 0,  # type 6: 其他
+        }
+
+        for episode in episodes:
+            episode_type = episode.get("type", 0)
+            if episode_type == 0:
+                stats["main_episodes"] += 1
+            elif episode_type == 1:
+                stats["special_episodes"] += 1
+            elif episode_type == 2:
+                stats["opening_episodes"] += 1
+            elif episode_type == 3:
+                stats["ending_episodes"] += 1
+            elif episode_type == 4:
+                stats["pv_episodes"] += 1
+            else:
+                stats["other_episodes"] += 1
+
+        # 4. 存入缓存
+        self.cache.set(cache_key, stats, "episodes")
+        print(f"💾 章节统计已缓存 (subject_id: {subject_id})，有效期：12小时")
+
+        return stats
+
     def clear_cache(self, cache_key: Optional[str] = None) -> None:
         """
         清理缓存

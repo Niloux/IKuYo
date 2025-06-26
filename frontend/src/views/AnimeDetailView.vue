@@ -101,6 +101,13 @@
           </div>
         </div>
       </div>
+
+      <!-- 智能集数展示 -->
+      <EpisodeDisplay 
+        v-if="anime.eps > 0"
+        :bangumi-id="animeId"
+        :show-debug-info="true"
+      />
     </div>
   </div>
 </template>
@@ -109,6 +116,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BangumiApiService, { type BangumiSubject } from '../services/api'
+import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 
 const route = useRoute()
 const router = useRouter()

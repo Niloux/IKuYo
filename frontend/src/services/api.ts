@@ -98,6 +98,51 @@ apiClient.interceptors.response.use(
   tags: BangumiTag[]
     }
 
+    // 集数可用性相关类型定义
+    export interface EpisodeAvailabilityData {
+      bangumi_id: number
+      episodes: Record < string, {available: boolean
+    resource_count: number
+  }>
+    }
+
+    // Bangumi章节相关类型定义
+    export interface BangumiEpisode {
+      id: number
+      type: number  // 0:正片, 1:SP, 2:OP, 3:ED, 4:PV, 6:其他
+      name: string
+      name_cn: string
+      sort: number
+      ep?: number
+      airdate?: string
+      comment: number
+      duration: string
+      desc: string
+      disc: number
+      duration_seconds?: number
+    }
+
+    export interface BangumiEpisodesData {
+      data: BangumiEpisode[]
+      total: number
+    }
+
+    // 后端章节API响应格式
+    export interface BangumiEpisodesResponse extends
+        ApiResponse<BangumiEpisode[]> {
+      total: number
+    }
+
+    export interface BangumiEpisodesStats {
+      total: number
+      main_episodes: number
+      special_episodes: number
+      opening_episodes: number
+      ending_episodes: number
+      pv_episodes: number
+      other_episodes: number
+    }
+
     // API服务类
     export class BangumiApiService {
       /**
@@ -116,6 +161,45 @@ apiClient.interceptors.response.use(
         const response: ApiResponse<BangumiSubject> =
             await apiClient.get(`/bangumi/subjects/${bangumiId}`)
         return response.data
+      }
+
+      /**
+       * 获取集数可用性状态
+       */
+      static async getEpisodeAvailability(bangumiId: number):
+          Promise<EpisodeAvailabilityData> {
+        const response: ApiResponse<EpisodeAvailabilityData> =
+            await apiClient.get(
+                `/animes/bangumi/${bangumiId}/episodes/availability`)
+        return response.data
+      }
+
+      /**
+       * 获取Bangumi章节信息
+       */
+      static async getBangumiEpisodes(
+          subjectId: number, episodeType?: number, limit: number = 100,
+          offset: number = 0): Promise<BangumiEpisodesData> {
+        const params: Record<string, any> = {limit, offset};
+        if (episodeType !== undefined) {
+          params.episode_type = episodeType;
+        }
+
+        const response: BangumiEpisodesResponse = await apiClient.get(
+            `/bangumi/subjects/${subjectId}/episodes`, {params});
+
+        // 后端返回的是包装过的响应，需要提取实际数据
+        return {data: response.data, total: response.total};
+      }
+
+      /**
+       * 获取Bangumi章节统计信息
+       */
+      static async getBangumiEpisodesStats(subjectId: number):
+          Promise<BangumiEpisodesStats> {
+        const response: ApiResponse<BangumiEpisodesStats> = await apiClient.get(
+            `/bangumi/subjects/${subjectId}/episodes/stats`);
+        return response.data;
       }
     }
 
