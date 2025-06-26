@@ -25,7 +25,6 @@
         :bangumi-id="bangumiId"
         :total-episodes="episodeStats.main_episodes"
         :bangumi-episodes="bangumiEpisodes"
-        :episode-stats="episodeStats"
         :preloaded-availability="episodeAvailability"
       />
       
@@ -63,56 +62,52 @@
   
 
   
-  // 获取Bangumi章节数据（并行优化）
+  // 获取Bangumi章节数据（核心API优先，资源API优雅降级）
   const fetchBangumiEpisodes = async () => {
     try {
       loading.value = true
       error.value = null
       
-      console.log(`🚀 开始并行获取Bangumi章节信息 (subject_id: ${props.bangumiId})`)
-      const startTime = performance.now()
+      // 先获取少量数据判断总集数，然后决定获取策略
+      const initialData = await BangumiApiService.getBangumiEpisodes(props.bangumiId, 0, 50)
       
-      // 智能获取章节信息：先获取少量数据判断总数，再决定是否需要更多
-      const [initialEpisodesData, availabilityData] = await Promise.all([
-        BangumiApiService.getBangumiEpisodes(
-          props.bangumiId,
-          0, // 只获取正片
-          50 // 先获取前50集，足够判断大部分动画
-        ),
-        BangumiApiService.getEpisodeAvailability(props.bangumiId)
-      ])
+      let episodesData = initialData
       
-      let episodesData = initialEpisodesData
-      
-      // 如果是长篇动画且还有更多集数，继续获取
-      if (initialEpisodesData.total > 50) {
-        console.log(`📺 检测到长篇动画，总集数: ${initialEpisodesData.total}，继续获取剩余集数...`)
-        const remainingEpisodesData = await BangumiApiService.getBangumiEpisodes(
-          props.bangumiId,
-          0,
-          Math.min(initialEpisodesData.total, 500) // 最多获取500集，防止过度请求
-        )
-        episodesData = remainingEpisodesData
+      // 如果总集数超过50，使用最大limit获取完整数据
+      if (initialData.total > 50) {
+        const fullLimit = Math.min(initialData.total, 1000) // API最大限制1000
+        episodesData = await BangumiApiService.getBangumiEpisodes(props.bangumiId, 0, fullLimit)
       }
       
-      // 在前端计算统计信息，避免重复API调用
+      // 基于实际episodes数据计算统计信息（使用API返回的真实总数）
       const episodes = episodesData.data
-      const stats = {
-        total: episodes.length,
-        main_episodes: episodes.filter(ep => ep.type === 0).length,
-        special_episodes: episodes.filter(ep => ep.type === 1).length, 
+      const actualMainEpisodes = episodes.filter(ep => ep.type === 0)
+      
+      const calculatedStats = {
+        total: episodesData.total, // 使用API返回的真实总数，而不是获取的数据长度
+        main_episodes: episodesData.total > 1000 
+          ? episodesData.total // 如果总数超过1000，使用API报告的总数
+          : actualMainEpisodes.length, // 否则使用实际获取的数据
+        special_episodes: episodes.filter(ep => ep.type === 1).length,
         opening_episodes: episodes.filter(ep => ep.type === 2).length,
         ending_episodes: episodes.filter(ep => ep.type === 3).length,
         pv_episodes: episodes.filter(ep => ep.type === 4).length,
         other_episodes: episodes.filter(ep => ep.type === 6).length
       }
       
-      episodeStats.value = stats
+      // 设置核心数据
+      episodeStats.value = calculatedStats
       bangumiEpisodes.value = episodes
-      episodeAvailability.value = availabilityData
       
-      const loadTime = performance.now() - startTime
-      console.log(`✅ 并行获取章节信息完成: 正片${stats.main_episodes}集，耗时: ${loadTime.toFixed(2)}ms`)
+      // 尝试获取资源可用性数据（可选，失败时优雅降级）
+      try {
+        const availabilityData = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
+        episodeAvailability.value = availabilityData
+      } catch (availabilityErr) {
+        console.warn('资源可用性获取失败，将显示为暂无资源:', availabilityErr)
+        // 设置为null，子组件会优雅处理（显示所有章节为"暂无资源"）
+        episodeAvailability.value = null
+      }
       
     } catch (err) {
       console.error('获取Bangumi章节信息失败:', err)
