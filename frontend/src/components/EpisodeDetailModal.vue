@@ -50,25 +50,82 @@
       <div class="resources-section">
         <h3 class="section-title">资源下载</h3>
         
-        <div v-if="episodeData?.available" class="resources-available">
+        <!-- 加载状态 -->
+        <div v-if="resourcesLoading" class="resources-loading">
+          <div class="loading-spinner"></div>
+          <p>正在加载资源列表...</p>
+        </div>
+
+        <!-- 加载错误 -->
+        <div v-else-if="resourcesError" class="resources-error">
+          <div class="error-message">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="error-icon">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="m15 9-6 6m0-6 6 6" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <p>{{ resourcesError }}</p>
+            <button class="retry-btn" @click="loadEpisodeResources">重试</button>
+          </div>
+        </div>
+        
+        <!-- 有资源数据 -->
+        <div v-else-if="resourcesData && resourcesData.subtitle_groups.length > 0" class="resources-available">
           <div class="resource-stats">
-            找到 {{ episodeData.resourceCount }} 个可用资源
+            找到 {{ resourcesData.total_resources }} 个可用资源，来自 {{ resourcesData.subtitle_groups.length }} 个字幕组
           </div>
           
-          <!-- 资源列表占位 - 待后续实现 -->
-          <div class="resource-list-placeholder">
-            <div class="placeholder-item" v-for="i in episodeData.resourceCount" :key="i">
-              <div class="resource-item">
-                <div class="resource-info">
-                  <span class="resource-title">资源 {{ i }} - 字幕组名称</span>
-                  <span class="resource-size">1.2GB</span>
+          <!-- 按字幕组分类的资源列表 -->
+          <div class="subtitle-groups">
+            <div 
+              v-for="group in resourcesData.subtitle_groups" 
+              :key="group.id" 
+              class="subtitle-group"
+            >
+              <div class="group-header">
+                <h4 class="group-name">{{ group.name }}</h4>
+                <span class="group-count">{{ group.resource_count }} 个资源</span>
+              </div>
+              
+              <div class="group-resources">
+                <div 
+                  v-for="resource in group.resources" 
+                  :key="resource.id" 
+                  class="resource-item"
+                >
+                  <div class="resource-info">
+                    <div class="resource-title">{{ resource.title }}</div>
+                    <div class="resource-meta">
+                      <span v-if="resource.resolution" class="meta-tag resolution">{{ resource.resolution }}</span>
+                      <span v-if="resource.subtitle_type" class="meta-tag subtitle">{{ resource.subtitle_type }}</span>
+                      <span v-if="resource.file_size" class="meta-tag size">{{ resource.file_size }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="resource-actions">
+                    <button 
+                      v-if="resource.magnet_url" 
+                      @click="downloadResource(resource.magnet_url, 'magnet')"
+                      class="download-btn magnet-btn"
+                      title="磁力链接下载"
+                    >
+                      磁力
+                    </button>
+                    <button 
+                      v-if="resource.torrent_url" 
+                      @click="downloadResource(resource.torrent_url, 'torrent')"
+                      class="download-btn torrent-btn"
+                      title="种子文件下载"
+                    >
+                      种子
+                    </button>
+                  </div>
                 </div>
-                <button class="download-button">下载</button>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- 无资源状态 -->
         <div v-else class="resources-unavailable">
           <div class="no-resources-message">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-resources-icon">
@@ -87,6 +144,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import BangumiApiService, { type EpisodeResourcesData, type SubtitleGroupData } from '../services/api'
 
 // 集数详细信息类型
 interface EpisodeDetail {
@@ -106,6 +164,7 @@ interface EpisodeDetail {
 interface Props {
   visible: boolean
   episodeData: EpisodeDetail | null
+  bangumiId?: number
 }
 
 const props = defineProps<Props>()
@@ -122,6 +181,11 @@ const DESC_COLLAPSE_LENGTH = 150 // 收起时显示的字符数
 
 // 关闭动画状态
 const isClosing = ref(false)
+
+// 资源数据状态
+const resourcesData = ref<EpisodeResourcesData | null>(null)
+const resourcesLoading = ref(false)
+const resourcesError = ref<string | null>(null)
 
 // 计算属性：判断剧情简介是否足够长需要展开/收起功能
 const isDescLong = computed(() => {
@@ -148,10 +212,63 @@ const handleOverlayClick = () => {
   closeModal()
 }
 
+// 加载资源数据
+const loadEpisodeResources = async () => {
+  if (!props.bangumiId || !props.episodeData?.number) {
+    return
+  }
+
+  try {
+    resourcesLoading.value = true
+    resourcesError.value = null
+    resourcesData.value = null
+
+    const data = await BangumiApiService.getEpisodeResources(
+      props.bangumiId,
+      props.episodeData.number
+    )
+    resourcesData.value = data
+    console.log('✅ 资源数据加载成功:', data)
+
+  } catch (err: any) {
+    console.error('❌ 加载资源数据失败:', err)
+    resourcesError.value = err.response?.data?.message || '加载资源数据失败'
+  } finally {
+    resourcesLoading.value = false
+  }
+}
+
 // 刷新资源
 const refreshResources = () => {
   if (props.episodeData) {
+    loadEpisodeResources()
     emit('refreshResources', props.episodeData.number)
+  }
+}
+
+// 下载资源
+const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
+  if (!url) return
+  
+  try {
+    if (type === 'magnet') {
+      // 磁力链接可以直接在浏览器中打开
+      window.location.href = url
+    } else if (type === 'torrent') {
+      // 种子文件需要下载
+      const link = document.createElement('a')
+      link.href = url
+      link.download = '' // 让浏览器决定文件名
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+    
+    console.log(`🔗 ${type === 'magnet' ? '磁力链接' : '种子文件'}下载触发:`, url)
+  } catch (err) {
+    console.error('下载失败:', err)
+    alert('下载失败，请检查链接或重试')
   }
 }
 
@@ -214,6 +331,7 @@ watch(() => props.visible, (newVisible) => {
     disableBodyScroll() // 禁止背景滚动并补偿偏移
     descExpanded.value = false // 重置展开状态
     isClosing.value = false // 重置关闭状态
+    loadEpisodeResources() // 加载资源数据
   } else {
     document.removeEventListener('keydown', handleKeyDown)
     enableBodyScroll() // 恢复背景滚动
@@ -427,55 +545,206 @@ watch(() => props.visible, (newVisible) => {
   margin-bottom: 1rem;
 }
 
+/* 资源统计信息 */
 .resource-stats {
   color: #27ae60;
   font-weight: 500;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: #f8fff8;
+  border-radius: 6px;
+  border-left: 4px solid #27ae60;
 }
 
-.resource-list-placeholder {
-  space-y: 0.75rem;
-}
-
-.resource-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-}
-
-.resource-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.resource-title {
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.resource-size {
-  font-size: 0.85rem;
+/* 加载状态 */
+.resources-loading {
+  text-align: center;
+  padding: 2rem;
   color: #7f8c8d;
 }
 
-.download-button {
-  background-color: #3498db;
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.resources-error {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.error-icon {
+  color: #e74c3c;
+}
+
+.retry-btn {
+  background-color: #e74c3c;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.3s;
 }
 
-.download-button:hover {
+.retry-btn:hover {
+  background-color: #c0392b;
+}
+
+/* 字幕组列表 */
+.subtitle-groups {
+  space-y: 1.5rem;
+}
+
+.subtitle-group {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.group-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.group-count {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  background-color: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+.group-resources {
+  padding: 0.5rem;
+}
+
+.resource-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background-color: white;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.resource-item:hover {
+  border-color: #3498db;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+}
+
+.resource-item:last-child {
+  margin-bottom: 0;
+}
+
+.resource-info {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.resource-title {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.resource-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.meta-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.meta-tag.resolution {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.meta-tag.subtitle {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.meta-tag.size {
+  background-color: #e8f5e8;
+  color: #388e3c;
+}
+
+.resource-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.download-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.3s;
+  min-width: 60px;
+}
+
+.magnet-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.magnet-btn:hover {
+  background-color: #c0392b;
+  transform: translateY(-1px);
+}
+
+.torrent-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.torrent-btn:hover {
   background-color: #2980b9;
+  transform: translateY(-1px);
 }
 
 .resources-unavailable {

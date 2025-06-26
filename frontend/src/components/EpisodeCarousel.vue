@@ -90,6 +90,7 @@
     <EpisodeDetailModal
       :visible="modalVisible"
       :episode-data="selectedEpisode"
+      :bangumi-id="bangumiId"
       @close="closeModal"
       @refresh-resources="handleRefreshResources"
     />

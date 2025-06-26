@@ -143,6 +143,32 @@ apiClient.interceptors.response.use(
       other_episodes: number
     }
 
+    // 资源相关类型定义
+    export interface SubtitleGroupResource {
+      id: number
+      title: string
+      resolution?: string
+      subtitle_type?: string
+      file_size?: string
+      magnet_url?: string
+      torrent_url?: string
+      release_date?: string
+    }
+
+    export interface SubtitleGroupData {
+      id: number
+      name: string
+      resource_count: number
+      resources: SubtitleGroupResource[]
+    }
+
+    export interface EpisodeResourcesData {
+      bangumi_id: number
+      episode: number
+      total_resources: number
+      subtitle_groups: SubtitleGroupData[]
+    }
+
     // API服务类
     export class BangumiApiService {
       /**
@@ -199,6 +225,16 @@ apiClient.interceptors.response.use(
           Promise<BangumiEpisodesStats> {
         const response: ApiResponse<BangumiEpisodesStats> = await apiClient.get(
             `/bangumi/subjects/${subjectId}/episodes/stats`);
+        return response.data;
+      }
+
+      /**
+       * 获取特定集数的资源列表
+       */
+      static async getEpisodeResources(bangumiId: number, episode: number):
+          Promise<EpisodeResourcesData> {
+        const response: ApiResponse<EpisodeResourcesData> = await apiClient.get(
+            `/animes/bangumi/${bangumiId}/episodes/${episode}/resources`);
         return response.data;
       }
     }
