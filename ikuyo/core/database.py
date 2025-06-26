@@ -23,6 +23,19 @@ class DatabaseManager:
         self.db_path = Path(str(db_path))
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # 创建持久连接（只用于读操作）
+        self._read_conn = None
+        self._init_read_connection()
+
+    def _init_read_connection(self):
+        """初始化只读连接"""
+        try:
+            self._read_conn = sqlite3.connect(self.db_path)
+            self._read_conn.row_factory = sqlite3.Row
+            self._read_conn.execute("PRAGMA foreign_keys = ON")
+        except Exception:
+            self._read_conn = None
+
     @contextmanager
     def get_connection(self):
         """获取数据库连接的上下文管理器"""
@@ -36,12 +49,33 @@ class DatabaseManager:
 
     def execute_query(self, query: str, params: tuple = ()) -> List[Dict[str, Any]]:
         """执行查询并返回结果"""
+        # 尝试使用持久连接进行读操作
+        if self._read_conn:
+            try:
+                cursor = self._read_conn.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+            except Exception:
+                # 连接失效，重新创建
+                self._init_read_connection()
+
+        # 回退到原有方式
         with self.get_connection() as conn:
             cursor = conn.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
 
     def execute_one(self, query: str, params: tuple = ()) -> Optional[Dict[str, Any]]:
         """执行查询并返回单个结果"""
+        # 尝试使用持久连接进行读操作
+        if self._read_conn:
+            try:
+                cursor = self._read_conn.execute(query, params)
+                row = cursor.fetchone()
+                return dict(row) if row else None
+            except Exception:
+                # 连接失效，重新创建
+                self._init_read_connection()
+
+        # 回退到原有方式
         with self.get_connection() as conn:
             cursor = conn.execute(query, params)
             row = cursor.fetchone()

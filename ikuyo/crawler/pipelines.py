@@ -181,6 +181,12 @@ class SQLitePipeline:
             ON anime_subtitle_groups(last_update_date)
         """)
 
+        # animes表索引 (重要：bangumi_id查询优化)
+        self.cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_animes_bangumi_id
+            ON animes(bangumi_id)
+        """)
+
         # resources表索引
         self.cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_resources_mikan_id_created_at

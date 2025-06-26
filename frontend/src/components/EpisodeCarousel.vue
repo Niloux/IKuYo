@@ -108,6 +108,7 @@ interface Props {
   totalEpisodes: number
   bangumiEpisodes?: BangumiEpisode[]
   episodeStats?: any
+  preloadedAvailability?: EpisodeAvailabilityData
 }
 
 const props = defineProps<Props>()
@@ -294,8 +295,17 @@ const updateScrollButtons = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   if (props.bangumiId && props.totalEpisodes > 0) {
+    // 如果有预加载的资源可用性数据，直接使用
+    if (props.preloadedAvailability) {
+      console.log('⚡ 使用预加载的资源可用性数据，无需额外API调用')
+      availabilityData.value = props.preloadedAvailability
+      loading.value = false
+      nextTick(() => {
+        updateScrollButtons()
+      })
+    }
     // 如果已有Bangumi章节数据，只加载资源可用性
-    if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
+    else if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
       console.log('🎯 使用传入的Bangumi章节数据，只获取资源可用性')
       loadEpisodeAvailability()
     } else {

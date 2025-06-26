@@ -129,14 +129,25 @@ const error = ref<string | null>(null)
 // 获取番剧ID
 const animeId = parseInt(route.params.id as string)
 
-// 加载番剧详情
+// 并行加载所有数据
 const loadAnimeDetail = async () => {
   try {
     loading.value = true
     error.value = null
     
-    const data = await BangumiApiService.getSubject(animeId)
-    anime.value = data
+    console.log('🚀 开始并行加载番剧数据...')
+    const startTime = performance.now()
+    
+    // 并行执行所有API调用
+    const [subjectData] = await Promise.all([
+      BangumiApiService.getSubject(animeId)
+    ])
+    
+    anime.value = subjectData
+    
+    const loadTime = performance.now() - startTime
+    console.log(`✅ 番剧基本信息加载完成，耗时: ${loadTime.toFixed(2)}ms`)
+    
   } catch (err) {
     console.error('加载番剧详情失败:', err)
     error.value = '加载失败，请检查网络连接或API服务状态'

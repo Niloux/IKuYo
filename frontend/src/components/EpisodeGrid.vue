@@ -51,6 +51,7 @@ import BangumiApiService, { type EpisodeAvailabilityData } from '../services/api
 interface Props {
   bangumiId: number
   totalEpisodes: number
+  preloadedAvailability?: EpisodeAvailabilityData
 }
 
 const props = defineProps<Props>()
@@ -148,7 +149,14 @@ const handleEpisodeClick = (episode: { number: number, available: boolean, resou
 // 组件挂载时加载数据
 onMounted(() => {
   if (props.bangumiId && props.totalEpisodes > 0) {
-    loadEpisodeAvailability()
+    // 如果有预加载的资源可用性数据，直接使用
+    if (props.preloadedAvailability) {
+      console.log('⚡ 使用预加载的资源可用性数据，无需额外API调用')
+      availabilityData.value = props.preloadedAvailability
+      loading.value = false
+    } else {
+      loadEpisodeAvailability()
+    }
   } else {
     error.value = '无效的番剧信息'
     loading.value = false

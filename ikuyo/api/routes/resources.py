@@ -23,9 +23,13 @@ from ikuyo.core.database import DatabaseManager
 router = APIRouter(prefix="/animes", tags=["Resources"])
 
 
+# 创建全局数据库管理器实例
+_db_manager = DatabaseManager()
+
+
 def get_db_manager():
     """获取数据库管理器"""
-    return DatabaseManager()
+    return _db_manager
 
 
 def get_subtitle_type_priority(subtitle_type: str) -> int:
