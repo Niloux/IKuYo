@@ -104,9 +104,8 @@
 
       <!-- 智能集数展示 -->
       <EpisodeDisplay 
-        v-if="anime.eps > 0"
+        v-if="anime.total_episodes > 0 || anime.eps > 0"
         :bangumi-id="animeId"
-        :show-debug-info="true"
       />
     </div>
   </div>
@@ -129,24 +128,14 @@ const error = ref<string | null>(null)
 // 获取番剧ID
 const animeId = parseInt(route.params.id as string)
 
-// 并行加载所有数据
+// 加载番剧详情数据
 const loadAnimeDetail = async () => {
   try {
     loading.value = true
     error.value = null
     
-    console.log('🚀 开始并行加载番剧数据...')
-    const startTime = performance.now()
-    
-    // 并行执行所有API调用
-    const [subjectData] = await Promise.all([
-      BangumiApiService.getSubject(animeId)
-    ])
-    
+    const subjectData = await BangumiApiService.getSubject(animeId)
     anime.value = subjectData
-    
-    const loadTime = performance.now() - startTime
-    console.log(`✅ 番剧基本信息加载完成，耗时: ${loadTime.toFixed(2)}ms`)
     
   } catch (err) {
     console.error('加载番剧详情失败:', err)

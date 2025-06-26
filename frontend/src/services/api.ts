@@ -77,6 +77,7 @@ apiClient.interceptors.response.use(
       date: string
       air_weekday: number
       eps: number
+      total_episodes: number  // 总集数（用于长期连载动画）
       rating: {total: number
     count: Record<string, number>
     score: number
