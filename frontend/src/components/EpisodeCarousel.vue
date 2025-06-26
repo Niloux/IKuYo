@@ -85,12 +85,21 @@
     <div v-else class="no-data-state">
       <p>暂无集数信息</p>
     </div>
+
+    <!-- 章节详情模态框 -->
+    <EpisodeDetailModal
+      :visible="modalVisible"
+      :episode-data="selectedEpisode"
+      @close="closeModal"
+      @refresh-resources="handleRefreshResources"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import BangumiApiService, { type EpisodeAvailabilityData, type BangumiEpisode } from '../services/api'
+import EpisodeDetailModal from './EpisodeDetailModal.vue'
 
 // Props定义
 interface Props {
@@ -123,6 +132,10 @@ const availabilityData = ref<EpisodeAvailabilityData | null>(null)
 const carouselContainer = ref<HTMLElement>()
 const isAtStart = ref(true)
 const isAtEnd = ref(false)
+
+// 模态框相关状态
+const modalVisible = ref(false)
+const selectedEpisode = ref<EpisodeDetail | null>(null)
 
 // 计算属性 - 集数列表（现在使用真实Bangumi数据）
 const episodes = computed((): EpisodeDetail[] => {
@@ -211,9 +224,29 @@ const loadEpisodeData = async () => {
 // 处理集数点击
 const handleEpisodeClick = (episode: EpisodeDetail) => {
   if (episode.available) {
-    alert(`第${episode.number}集资源详情功能开发中...`)
+    selectedEpisode.value = episode
+    modalVisible.value = true
   } else {
     alert(`第${episode.number}集暂无资源`)
+  }
+}
+
+// 关闭模态框
+const closeModal = () => {
+  modalVisible.value = false
+  selectedEpisode.value = null
+}
+
+// 处理刷新资源
+const handleRefreshResources = async (episodeNumber: number) => {
+  console.log(`刷新第${episodeNumber}集资源`)
+  // TODO: 实现刷新特定集数资源的逻辑
+  try {
+    // 重新加载该集数的资源信息
+    await loadEpisodeAvailability()
+    console.log(`第${episodeNumber}集资源已刷新`)
+  } catch (err) {
+    console.error('刷新资源失败:', err)
   }
 }
 
