@@ -121,12 +121,21 @@
     <div v-else class="no-data-state">
       <p>暂无集数信息</p>
     </div>
+
+    <!-- 章节详情模态框 -->
+    <EpisodeDetailModal
+      :visible="showEpisodeModal"
+      :episode-data="selectedEpisodeData"
+      :bangumi-id="bangumiId"
+      @close="closeEpisodeModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import BangumiApiService, { type EpisodeAvailabilityData } from '../services/api'
+import EpisodeDetailModal from './EpisodeDetailModal.vue'
 
 // Props定义
 interface Props {
@@ -147,6 +156,10 @@ const availabilityData = ref<EpisodeAvailabilityData | null>(null)
 const currentPage = ref(1)
 const episodesPerPage = 85 // 5行 × 17列
 const jumpPage = ref<number>(1)
+
+// 模态框相关状态
+const showEpisodeModal = ref(false)
+const selectedEpisodeData = ref<any>(null)
 
 // 计算属性 - 集数列表
 const episodes = computed(() => {
@@ -309,13 +322,29 @@ const handleJumpToPage = () => {
 }
 
 // 处理集数点击
-const handleEpisodeClick = (episode: { number: number, available: boolean, resourceCount: number }) => {
-  if (episode.available) {
-    // 暂时显示提示信息，后续替换为路由跳转
-    alert(`第${episode.number}集资源详情功能开发中...`)
-  } else {
-    alert(`第${episode.number}集暂无资源`)
+const handleEpisodeClick = (episode: { number: number, available: boolean, resourceCount: number, title: string, bangumiData: any }) => {
+  // 构造章节详情数据
+  selectedEpisodeData.value = {
+    number: episode.number,
+    title: episode.title,
+    subtitle: episode.bangumiData?.name || episode.bangumiData?.name_cn || null,
+    duration: episode.bangumiData?.duration || null,
+    airdate: episode.bangumiData?.airdate || null,
+    desc: episode.bangumiData?.desc || null,
+    comment: episode.bangumiData?.comment || 0,
+    available: episode.available,
+    resourceCount: episode.resourceCount,
+    bangumiData: episode.bangumiData
   }
+  
+  // 显示模态框
+  showEpisodeModal.value = true
+}
+
+// 关闭章节详情模态框
+const closeEpisodeModal = () => {
+  showEpisodeModal.value = false
+  selectedEpisodeData.value = null
 }
 
 // 组件挂载时加载数据

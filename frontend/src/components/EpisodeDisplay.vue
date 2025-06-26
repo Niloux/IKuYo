@@ -2,7 +2,16 @@
     <div class="episode-display">
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state">
-        <p>正在加载章节信息...</p>
+        <p>{{ loadingProgress || '正在加载章节信息...' }}</p>
+        <div v-if="batchProgress" class="batch-progress">
+          <p>进度：{{ batchProgress.current }} / {{ batchProgress.total }}</p>
+          <div class="progress-bar">
+            <div 
+              class="progress-fill" 
+              :style="{ width: (batchProgress.current / batchProgress.total) * 100 + '%' }"
+            ></div>
+          </div>
+        </div>
       </div>
       
       <!-- 错误状态 -->
@@ -16,7 +25,6 @@
         :bangumi-id="bangumiId"
         :total-episodes="episodeStats.main_episodes"
         :bangumi-episodes="bangumiEpisodes"
-        :episode-stats="episodeStats"
         :preloaded-availability="episodeAvailability"
       />
       
@@ -52,6 +60,10 @@
   const episodeStats = ref<BangumiEpisodesStats | null>(null)
   const episodeAvailability = ref<any>(null)
   
+  // 批量获取进度状态
+  const loadingProgress = ref<string>('')
+  const batchProgress = ref<{ current: number; total: number } | null>(null)
+  
   // 智能显示模式判断
   const MODERN_ANIME_THRESHOLD = 26
   
@@ -60,34 +72,62 @@
     return episodeStats.value.main_episodes <= MODERN_ANIME_THRESHOLD ? 'carousel' : 'grid'
   })
   
+  // 分页获取完整章节数据
+  const fetchAllEpisodes = async (): Promise<BangumiEpisode[]> => {
+    const allEpisodes: BangumiEpisode[] = []
+    let offset = 0
+    const limit = 1000
+    let totalCount = 0
+    
+    while (true) {
+      const batchData = await BangumiApiService.getBangumiEpisodes(props.bangumiId, 0, limit, offset)
+      
+      // 首次获取时初始化进度信息
+      if (offset === 0) {
+        totalCount = batchData.total
+        const totalBatches = Math.ceil(totalCount / limit)
+        batchProgress.value = { current: 1, total: totalBatches }
+        
+        if (totalBatches > 1) {
+          loadingProgress.value = `章节较多，需分 ${totalBatches} 批获取 (总计 ${totalCount} 集)`
+        }
+      } else {
+        const currentBatch = Math.floor(offset / limit) + 1
+        batchProgress.value = { 
+          current: currentBatch, 
+          total: batchProgress.value?.total || 1 
+        }
+        loadingProgress.value = `正在获取第 ${currentBatch} 批章节数据...`
+      }
+      
+      allEpisodes.push(...batchData.data)
+      
+      // 检查是否获取完毕
+      if (batchData.data.length < limit || allEpisodes.length >= totalCount) {
+        break
+      }
+      
+      offset += limit
+    }
+    
+    return allEpisodes
+  }
 
-  
-  // 获取Bangumi章节数据（核心API优先，资源API优雅降级）
+  // 主数据获取函数
   const fetchBangumiEpisodes = async () => {
     try {
       loading.value = true
       error.value = null
+      loadingProgress.value = '正在获取章节信息...'
+      batchProgress.value = null
       
-      // 先获取少量数据判断总集数，然后决定获取策略
-      const initialData = await BangumiApiService.getBangumiEpisodes(props.bangumiId, 0, 50)
+      // 获取所有章节数据
+      const episodes = await fetchAllEpisodes()
       
-      let episodesData = initialData
-      
-      // 如果总集数超过50，使用最大limit获取完整数据
-      if (initialData.total > 50) {
-        const fullLimit = Math.min(initialData.total, 1000) // API最大限制1000
-        episodesData = await BangumiApiService.getBangumiEpisodes(props.bangumiId, 0, fullLimit)
-      }
-      
-      // 基于实际episodes数据计算统计信息（使用API返回的真实总数）
-      const episodes = episodesData.data
-      const actualMainEpisodes = episodes.filter(ep => ep.type === 0)
-      
-      const calculatedStats = {
-        total: episodesData.total, // 使用API返回的真实总数，而不是获取的数据长度
-        main_episodes: episodesData.total > 1000 
-          ? episodesData.total // 如果总数超过1000，使用API报告的总数
-          : actualMainEpisodes.length, // 否则使用实际获取的数据
+      // 计算统计信息
+      episodeStats.value = {
+        total: episodes.length,
+        main_episodes: episodes.filter(ep => ep.type === 0).length,
         special_episodes: episodes.filter(ep => ep.type === 1).length,
         opening_episodes: episodes.filter(ep => ep.type === 2).length,
         ending_episodes: episodes.filter(ep => ep.type === 3).length,
@@ -95,17 +135,15 @@
         other_episodes: episodes.filter(ep => ep.type === 6).length
       }
       
-      // 设置核心数据
-      episodeStats.value = calculatedStats
       bangumiEpisodes.value = episodes
+      loadingProgress.value = '正在获取资源可用性数据...'
       
-      // 尝试获取资源可用性数据（可选，失败时优雅降级）
+      // 获取资源可用性数据（可选）
       try {
         const availabilityData = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
         episodeAvailability.value = availabilityData
       } catch (availabilityErr) {
         console.warn('资源可用性获取失败，将显示为暂无资源:', availabilityErr)
-        // 设置为null，子组件会优雅处理（显示所有章节为"暂无资源"）
         episodeAvailability.value = null
       }
       
@@ -114,6 +152,8 @@
       error.value = '获取章节信息失败，请稍后重试'
     } finally {
       loading.value = false
+      loadingProgress.value = ''
+      batchProgress.value = null
     }
   }
   
@@ -138,5 +178,23 @@
     color: #dc3545;
   }
   
+  .batch-progress {
+    margin-top: 1rem;
+  }
+  
+  .progress-bar {
+    width: 200px;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    margin: 0.5rem auto;
+    overflow: hidden;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background-color: #3498db;
+    transition: width 0.3s ease;
+  }
 
   </style>

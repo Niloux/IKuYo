@@ -225,12 +225,8 @@ const loadEpisodeData = async () => {
 
 // 处理集数点击
 const handleEpisodeClick = (episode: EpisodeDetail) => {
-  if (episode.available) {
-    selectedEpisode.value = episode
-    modalVisible.value = true
-  } else {
-    alert(`第${episode.number}集暂无资源`)
-  }
+  selectedEpisode.value = episode
+  modalVisible.value = true
 }
 
 // 关闭模态框
@@ -295,9 +291,8 @@ const updateScrollButtons = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   if (props.bangumiId && props.totalEpisodes > 0) {
-    // 如果有预加载的资源可用性数据，直接使用
-    if (props.preloadedAvailability) {
-      console.log('⚡ 使用预加载的资源可用性数据，无需额外API调用')
+    // 如果有预加载的资源可用性数据，直接使用（包括null值，表示资源API失败）
+    if (props.preloadedAvailability !== undefined) {
       availabilityData.value = props.preloadedAvailability
       loading.value = false
       nextTick(() => {
@@ -306,10 +301,8 @@ onMounted(() => {
     }
     // 如果已有Bangumi章节数据，只加载资源可用性
     else if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
-      console.log('🎯 使用传入的Bangumi章节数据，只获取资源可用性')
       loadEpisodeAvailability()
     } else {
-      console.log('🔄 没有Bangumi数据，使用原有加载逻辑')
       loadEpisodeData()
     }
   } else {
@@ -327,8 +320,6 @@ const loadEpisodeAvailability = async () => {
     // 只获取资源可用性
     const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
     availabilityData.value = data
-    
-    console.log('✅ 资源可用性数据加载完成')
     
   } catch (err) {
     console.error('加载资源可用性失败:', err)
