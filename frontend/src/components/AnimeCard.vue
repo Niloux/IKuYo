@@ -87,7 +87,7 @@ const onImageError = (event: Event) => {
 .card-image {
   position: relative;
   width: 100%;
-  height: 200px;
+  aspect-ratio: 3/4;  /* 保持3:4的标准动漫封面比例 */
   overflow: hidden;
   background-color: #f8f9fa;
 }
@@ -96,6 +96,7 @@ const onImageError = (event: Event) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center top;  /* 从顶部中心开始显示，保留更多重要内容 */
   transition: transform 0.3s ease;
 }
 
@@ -116,7 +117,7 @@ const onImageError = (event: Event) => {
 }
 
 .card-content {
-  padding: 1rem;
+  padding: 0.875rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -164,10 +165,6 @@ const onImageError = (event: Event) => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .card-image {
-    height: 150px;
-  }
-  
   .card-content {
     padding: 0.75rem;
   }
