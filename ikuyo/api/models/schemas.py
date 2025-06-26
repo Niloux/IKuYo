@@ -4,7 +4,7 @@ API数据模型
 专注于资源获取场景的简洁设计
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -97,3 +97,4 @@ class HealthResponse(BaseModel):
     version: str = Field(..., description="API版本")
     timestamp: str = Field(..., description="检查时间")
     database_status: str = Field(..., description="数据库状态")
+    cache_stats: Optional[Dict[str, Any]] = Field(None, description="缓存统计信息")
