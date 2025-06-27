@@ -121,6 +121,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BangumiApiService, { type BangumiSubject } from '../services/api'
+import { ensureScrollToTop } from '../utils/scrollUtils'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 import AnimeResourcesList from '../components/AnimeResourcesList.vue'
 
@@ -213,8 +214,12 @@ const onImageError = (event: Event) => {
   img.style.display = 'none'
 }
 
-// 组件挂载时加载数据
+// 组件挂载时初始化页面（优化版）
 onMounted(() => {
+  // 详情页无论从哪里进入都应该从头开始浏览
+  ensureScrollToTop()
+  console.log('番剧详情页滚动到顶部')
+  
   if (animeId) {
     loadAnimeDetail()
   } else {
