@@ -3,7 +3,6 @@
     <!-- 搜索区域 -->
     <div class="search-section">
       <div class="search-container">
-        <h1 class="page-title">番剧资源库</h1>
         <div class="search-box">
           <input
             v-model="searchQuery"
@@ -11,15 +10,7 @@
             placeholder="搜索番剧名称..."
             class="search-input"
             @input="handleSearchInput"
-            @keyup.enter="handleSearch"
           />
-          <button 
-            @click="handleSearch" 
-            class="search-btn"
-            :disabled="!searchQuery.trim() || loading"
-          >
-            搜索
-          </button>
         </div>
       </div>
     </div>
@@ -34,7 +25,7 @@
       <!-- 错误状态 -->
       <div v-else-if="error" class="error">
         <p>{{ error }}</p>
-        <button @click="handleSearch" class="retry-btn">重试</button>
+        <button @click="retrySearch" class="retry-btn">重试</button>
       </div>
 
       <!-- 搜索结果 -->
@@ -59,7 +50,7 @@
         <!-- 分页组件 -->
         <div v-if="pagination.total_pages > 1" class="pagination">
           <button 
-            @click="goToPage(pagination.current_page - 1)"
+            @click="searchStore.goToPage(pagination.current_page - 1)"
             :disabled="!pagination.has_prev"
             class="pagination-btn"
           >
@@ -68,17 +59,17 @@
           
           <div class="page-numbers">
             <span 
-              v-for="page in getVisiblePages()"
+              v-for="page in searchStore.getVisiblePages()"
               :key="page"
               :class="['page-number', { active: page === pagination.current_page }]"
-              @click="goToPage(page)"
+              @click="searchStore.goToPage(page)"
             >
               {{ page }}
             </span>
           </div>
           
           <button 
-            @click="goToPage(pagination.current_page + 1)"
+            @click="searchStore.goToPage(pagination.current_page + 1)"
             :disabled="!pagination.has_next"
             class="pagination-btn"
           >
@@ -93,37 +84,32 @@
         <p class="empty-subtitle">尝试使用其他关键词搜索</p>
       </div>
 
-      <!-- 初始状态 -->
-      <div v-else class="initial-state">
-        <p>输入番剧名称开始搜索</p>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import AnimeCard from '../components/AnimeCard.vue'
-import BangumiApiService, { convertSubjectToCalendarItem, type BangumiCalendarItem } from '../services/api'
+import { useSearchStore } from '../stores/searchStore'
+import { useNavigationStore } from '../stores/navigationStore'
+import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const router = useRouter()
+const searchStore = useSearchStore()
+const navigationStore = useNavigationStore()
 
-// 响应式数据
-const searchQuery = ref('')
-const searchResults = ref<BangumiCalendarItem[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
-const hasSearched = ref(false)
-
-const pagination = reactive({
-  current_page: 1,
-  per_page: 12,
-  total: 0,
-  total_pages: 0,
-  has_next: false,
-  has_prev: false
-})
+// 从store获取响应式状态
+const {
+  searchQuery,
+  searchResults,
+  loading,
+  error,
+  hasSearched,
+  pagination
+} = storeToRefs(searchStore)
 
 // 防抖处理
 let searchTimeout: number | null = null
@@ -134,153 +120,100 @@ const handleSearchInput = () => {
   }
   searchTimeout = setTimeout(() => {
     if (searchQuery.value.trim()) {
-      performSearch()
-    }
-  }, 300) as unknown as number
-}
-
-// 执行搜索
-const performSearch = async (page: number = 1) => {
-  if (!searchQuery.value.trim()) return
-
-  try {
-    loading.value = true
-    error.value = null
-    hasSearched.value = true
-
-    // 搜索获取bangumi_id列表
-    const searchData = await BangumiApiService.searchLibrary(searchQuery.value, page, 12)
-    
-    // 更新分页信息
-    Object.assign(pagination, searchData.pagination)
-
-    if (searchData.bangumi_ids.length > 0) {
-      // 批量获取番剧详情
-      const subjects = await BangumiApiService.batchGetSubjects(searchData.bangumi_ids)
-      
-      // 转换为AnimeCard兼容格式
-      searchResults.value = subjects.map(subject => convertSubjectToCalendarItem(subject))
+      searchStore.performSearch()
     } else {
-      searchResults.value = []
+      // 如果搜索框为空，清空结果
+      searchStore.clearSearchState()
     }
-
-  } catch (err) {
-    console.error('搜索失败:', err)
-    error.value = '搜索失败，请检查网络连接'
-  } finally {
-    loading.value = false
-  }
+  }, 150) as unknown as number
 }
 
-// 执行搜索的包装函数（用于事件处理）
-const handleSearch = () => {
-  performSearch()
-}
-
-// 跳转到页面
-const goToPage = (page: number) => {
-  if (page >= 1 && page <= pagination.total_pages) {
-    performSearch(page)
-  }
-}
-
-// 获取可见的页码
-const getVisiblePages = () => {
-  const pages = []
-  const current = pagination.current_page
-  const total = pagination.total_pages
-  
-  const start = Math.max(1, current - 2)
-  const end = Math.min(total, current + 2)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
+// 重试搜索的包装函数
+const retrySearch = () => {
+  searchStore.performSearch()
 }
 
 // 跳转到资源库详情页
 const goToLibraryDetail = (bangumiId: number) => {
+  // 记录即将访问的详情页路径，用于返回时检测
+  navigationStore.recordDetailPageVisit(`/library/detail/${bangumiId}`, '/library')
   router.push(`/library/detail/${bangumiId}`)
 }
+
+// 初始化搜索页状态（优化版）
+const initializeSearchState = () => {
+  // 手动尝试恢复状态
+  const wasRestored = searchStore.restoreFromStorage()
+  
+  if (wasRestored) {
+    console.log('从详情页返回搜索页，状态已恢复')
+    // 如果有搜索内容，恢复焦点
+    setTimeout(() => {
+      const searchInput = document.querySelector('.search-input') as HTMLInputElement
+      if (searchInput) {
+        searchInput.focus()
+      }
+    }, 100)
+  } else {
+    console.log('重新进入搜索页或无有效状态，处于初始状态')
+    ensureScrollToTop() // 统一的滚动重置
+  }
+}
+
+// 组件挂载时初始化状态
+onMounted(() => {
+  initializeSearchState()
+})
 </script>
 
 <style scoped>
 .resource-library {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f2f2f7;
 }
 
 .search-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 3rem 0;
+  background: #f2f2f7;
+  padding: 2rem 0 1.5rem 0;
 }
 
 .search-container {
-  max-width: 600px;
+  max-width: 500px;
   margin: 0 auto;
-  text-align: center;
   padding: 0 1rem;
 }
 
-.page-title {
-  color: white;
-  font-size: 2.5rem;
-  font-weight: 600;
-  margin-bottom: 2rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
 .search-box {
-  display: flex;
-  gap: 0.5rem;
-  background: white;
-  border-radius: 50px;
-  padding: 0.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
 }
 
 .search-input {
-  flex: 1;
-  border: none;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   outline: none;
-  padding: 0.875rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 50px;
-  background: transparent;
+  padding: 12px 16px;
+  font-size: 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #007AFF;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
-}
-
-.search-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  padding: 0.875rem 2rem;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.search-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.search-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  color: #8E8E93;
+  font-size: 16px;
 }
 
 .results-section {
-  background: #f8fafc;
+  background: #f2f2f7;
   min-height: 70vh;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .results-header {
@@ -407,22 +340,21 @@ const goToLibraryDetail = (bangumiId: number) => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .page-title {
-    font-size: 2rem;
+  .search-section {
+    padding: 1.5rem 0 1rem 0;
+  }
+  
+  .search-container {
+    padding: 0 0.75rem;
+  }
+  
+  .search-input {
+    font-size: 16px; /* 防止iOS Safari缩放 */
   }
   
   .anime-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
-  }
-  
-  .search-box {
-    flex-direction: column;
-    border-radius: 1rem;
-  }
-  
-  .search-input, .search-btn {
-    border-radius: 0.5rem;
   }
 }
 </style> 
