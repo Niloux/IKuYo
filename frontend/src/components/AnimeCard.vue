@@ -4,7 +4,7 @@
     <div class="card-image">
       <img 
         v-if="props.shouldLoadImage"
-        :src="props.anime.images.large" 
+        :src="imageUrl" 
         :alt="props.anime.name_cn || props.anime.name"
         @error="onImageError"
         @load="$emit('imageLoad')"
@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { BangumiCalendarItem } from '../services/api'
 
 // Props定义
@@ -67,6 +68,17 @@ const formatAirDate = (dateStr: string): string => {
     return dateStr
   }
 }
+
+// 将HTTP URL转换为HTTPS（修复CORS问题）
+const convertToHttps = (url: string): string => {
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'https://')
+  }
+  return url
+}
+
+// 获取HTTPS图片URL
+const imageUrl = computed(() => convertToHttps(props.anime.images.large))
 
 // 图片加载失败处理
 const onImageError = (event: Event) => {
