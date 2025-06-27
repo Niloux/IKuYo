@@ -19,6 +19,9 @@
         <RouterLink to="/" class="nav-item" active-class="active">
           <span class="nav-text">首页</span>
         </RouterLink>
+        <RouterLink to="/library" class="nav-item" active-class="active">
+          <span class="nav-text">资源库</span>
+        </RouterLink>
         <RouterLink to="/about" class="nav-item" active-class="active">
           <span class="nav-text">关于</span>
         </RouterLink>
@@ -40,6 +43,9 @@
     <div class="mobile-menu" :class="{ 'open': isMobileMenuOpen }">
       <RouterLink to="/" class="mobile-nav-item" @click="closeMobileMenu">
         首页
+      </RouterLink>
+      <RouterLink to="/library" class="mobile-nav-item" @click="closeMobileMenu">
+        资源库
       </RouterLink>
       <RouterLink to="/about" class="mobile-nav-item" @click="closeMobileMenu">
         关于

@@ -160,6 +160,26 @@ apiClient.interceptors.response.use(
       subtitle_groups: SubtitleGroupData[]
     }
 
+    /**
+     * 数据转换工具：BangumiSubject 转换为 BangumiCalendarItem
+     */
+    export function convertSubjectToCalendarItem(subject: BangumiSubject):
+        BangumiCalendarItem {
+      return {
+        id: subject.id,
+        url: `https://bgm.tv/subject/${subject.id}`,
+        type: 2,  // 动画类型
+        name: subject.name,
+        name_cn: subject.name_cn,
+        summary: subject.summary,
+        air_date: subject.date,
+        air_weekday: subject.air_weekday,
+        rating: subject.rating,
+        rank: subject.rank,
+        images: subject.images
+      };
+    }
+
     // API服务类
     export class BangumiApiService {
       /**
@@ -218,6 +238,74 @@ apiClient.interceptors.response.use(
             `/animes/bangumi/${bangumiId}/episodes/${episode}/resources`);
         return response.data;
       }
+
+      /**
+       * 获取番剧的所有资源列表
+       */
+      static async getAnimeResources(bangumiId: number, options?: {
+        resolution?: string,
+        subtitle_type?: string,
+        limit?: number,
+        offset?: number
+      }): Promise<EpisodeResourcesData> {
+        const params = new URLSearchParams();
+
+        if (options?.resolution)
+          params.append('resolution', options.resolution);
+        if (options?.subtitle_type)
+          params.append('subtitle_type', options.subtitle_type);
+        if (options?.limit) params.append('limit', options.limit.toString());
+        if (options?.offset) params.append('offset', options.offset.toString());
+
+        const url = `/animes/bangumi/${bangumiId}/resources${
+            params.toString() ? '?' + params.toString() : ''}`;
+        const response: ApiResponse<EpisodeResourcesData> =
+            await apiClient.get(url);
+        return response.data;
+      }
+
+      /**
+       * 资源库搜索
+       */
+      static async searchLibrary(
+          query: string, page: number = 1, limit: number = 12): Promise <
+          {bangumi_ids: number[]
+      pagination: {current_page: number
+      per_page: number
+      total: number
+      total_pages: number
+      has_next: boolean
+          has_prev: boolean
+        }
+      }> {
+            const response: ApiResponse < {bangumi_ids: number[]
+          pagination: any
+        }> = await apiClient.get('/animes/library/search', {
+          params: { q: query, page, limit }
+        });
+          return response.data;
+          }
+
+          /**
+           * 批量获取番剧详情
+           */
+          static async batchGetSubjects(bangumiIds: number[]):
+              Promise<BangumiSubject[]> {
+            // 由于Bangumi API没有批量接口，需要并发调用
+            const promises = bangumiIds.map(id => this.getSubject(id));
+            try {
+              const results = await Promise.allSettled(promises);
+              return results
+                  .filter(
+                      (result):
+                          result is PromiseFulfilledResult<BangumiSubject> =>
+                              result.status === 'fulfilled')
+                  .map(result => result.value);
+            } catch (error) {
+              console.error('批量获取番剧详情失败:', error);
+              throw error;
+            }
+          }
     }
 
     // 导出axios实例供其他服务使用

@@ -349,6 +349,28 @@ class AnimeRepository:
         query = "SELECT * FROM animes WHERE title LIKE ? ORDER BY created_at DESC"
         return self.db.execute_query(query, (f"%{title}%",))
 
+    def search_animes_by_title_with_pagination(
+        self, title: str, limit: int = 12, offset: int = 0
+    ) -> Dict[str, Any]:
+        """根据标题搜索动画，支持分页"""
+        # 获取总数
+        count_query = "SELECT COUNT(*) as total FROM animes WHERE title LIKE ?"
+        total_result = self.db.execute_one(count_query, (f"%{title}%",))
+        total = total_result["total"] if total_result else 0
+
+        # 获取分页数据
+        query = "SELECT * FROM animes WHERE title LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        animes = self.db.execute_query(query, (f"%{title}%", limit, offset))
+
+        return {
+            "animes": animes,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_next": offset + limit < total,
+            "has_prev": offset > 0,
+        }
+
     def get_anime_resources(self, mikan_id: int) -> List[Dict[str, Any]]:
         """获取动画的所有资源"""
         query = """

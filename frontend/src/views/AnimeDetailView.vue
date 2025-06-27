@@ -104,7 +104,13 @@
 
       <!-- 智能集数展示 -->
       <EpisodeDisplay 
-        v-if="anime.total_episodes > 0 || anime.eps > 0"
+        v-if="!route.meta.showResources && (anime.total_episodes > 0 || anime.eps > 0)"
+        :bangumi-id="animeId"
+      />
+
+      <!-- 资源列表展示（资源库模式） -->
+      <AnimeResourcesList 
+        v-if="route.meta.showResources" 
         :bangumi-id="animeId"
       />
     </div>
@@ -116,6 +122,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BangumiApiService, { type BangumiSubject } from '../services/api'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
+import AnimeResourcesList from '../components/AnimeResourcesList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -403,8 +410,8 @@ onMounted(() => {
 }
 
 .tag-default {
-  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
-  color: white;
+  background-color: #f0f0f0;
+  color: #666;
 }
 
 .tag-item:hover {
@@ -482,6 +489,27 @@ onMounted(() => {
   text-align: right;
   font-size: 0.9rem;
   color: #7f8c8d;
+}
+
+.resources-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resources-section h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.resources-notice {
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
 }
 
 /* 响应式设计 */

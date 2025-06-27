@@ -25,6 +25,18 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/AboutView.vue'),
       meta: {title: '关于'}
+    },
+    {
+      path: '/library',
+      name: 'resource-library',
+      component: () => import('../views/ResourceLibraryView.vue'),
+      meta: {title: '资源库'}
+    },
+    {
+      path: '/library/detail/:id',
+      name: 'library-detail',
+      component: () => import('../views/AnimeDetailView.vue'),
+      meta: {title: '番剧资源', showResources: true}
     }
   ]
 })
