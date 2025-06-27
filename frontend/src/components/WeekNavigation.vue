@@ -1,5 +1,7 @@
 <template>
-  <div class="floating-nav" ref="floatingNavRef">
+  <div class="floating-nav" ref="floatingNavRef"
+       @mouseenter="isExpanded = true"
+       @mouseleave="isExpanded = false">
     <!-- 展开面板 -->
     <transition name="nav-panel">
       <div v-show="isExpanded" class="nav-panel">
@@ -23,8 +25,7 @@
     
     <!-- 浮动按钮 -->
     <button 
-      class="nav-toggle" 
-      @click="toggleNav" 
+      class="nav-toggle"
       :class="{ 'expanded': isExpanded }"
       :style="{ 
         background: getTodayGradient() 
@@ -125,11 +126,6 @@ const getTodayGradient = (): string => {
   const today = new Date().getDay()
   const todayId = today === 0 ? 7 : today
   return getWeekdayGradient(todayId)
-}
-
-// 切换展开状态
-const toggleNav = () => {
-  isExpanded.value = !isExpanded.value
 }
 
 // 处理卡片点击
