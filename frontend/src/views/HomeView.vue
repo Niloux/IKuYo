@@ -117,9 +117,7 @@ onMounted(() => {
 
 <style scoped>
 .home {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 0; /* 移除内边距，因为AppLayout已经处理了 */
 }
 
 .page-header {
@@ -130,13 +128,17 @@ onMounted(() => {
 .title {
   font-size: 2.5rem;
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--color-text-dark);
   margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: #7f8c8d;
+  color: var(--color-text-light);
 }
 
 .loading, .error {
@@ -145,22 +147,24 @@ onMounted(() => {
 }
 
 .error {
-  color: #e74c3c;
+  color: var(--color-error);
 }
 
 .retry-btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background-color: #3498db;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all var(--transition-normal);
+  font-weight: 500;
 }
 
 .retry-btn:hover {
-  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .calendar-container {
@@ -170,18 +174,24 @@ onMounted(() => {
 }
 
 .day-section {
-  background: white;
-  border-radius: 8px;
+  background: var(--color-bg-white);
+  border-radius: var(--radius-md);
   padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-normal);
+}
+
+.day-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .day-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-dark);
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -189,18 +199,18 @@ onMounted(() => {
 }
 
 .day-title.today {
-  color: #e74c3c;
-  border-bottom-color: #e74c3c;
+  color: var(--color-error);
+  border-bottom-color: var(--color-error);
 }
 
 .today-badge {
-  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, var(--color-error), #dc2626);
   color: white;
   padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 0.75rem;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .anime-grid {
@@ -211,10 +221,6 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .home {
-    padding: 1rem;
-  }
-  
   .title {
     font-size: 2rem;
   }
@@ -225,7 +231,7 @@ onMounted(() => {
   }
   
   .day-section {
-    padding: 1rem;
+    padding: 1.5rem;
   }
 }
 </style>

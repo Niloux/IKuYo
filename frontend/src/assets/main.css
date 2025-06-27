@@ -1,31 +1,35 @@
 @import './base.css';
 
-/* 全局样式重置和基础配置 */
+/* IKuYo 品牌样式系统 */
 :root {
-  /* 主色调 */
-  --color-primary: #3498db;
-  --color-primary-dark: #2980b9;
-  --color-primary-light: #5dade2;
+  /* IKuYo 品牌主色调 */
+  --color-primary: #667eea;
+  --color-primary-dark: #5a67d8;
+  --color-primary-light: #7c3aed;
+  --color-secondary: #764ba2;
+  --color-accent: #f093fb;
   
   /* 辅助色 */
-  --color-success: #27ae60;
-  --color-warning: #f39c12;
-  --color-error: #e74c3c;
-  --color-info: #17a2b8;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #06b6d4;
   
   /* 文字色 */
-  --color-text: #2c3e50;
-  --color-text-light: #7f8c8d;
-  --color-text-dark: #1a252f;
+  --color-text: #1f2937;
+  --color-text-light: #6b7280;
+  --color-text-dark: #111827;
+  --color-white: #ffffff;
   
   /* 背景色 */
-  --color-bg: #f8f9fa;
+  --color-bg: #f9fafb;
   --color-bg-white: #ffffff;
-  --color-bg-light: #ecf0f1;
+  --color-bg-light: #f3f4f6;
+  --color-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   
   /* 边框色 */
-  --color-border: #dee2e6;
-  --color-border-light: #e9ecef;
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
   
   /* 阴影 */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -71,13 +75,14 @@
 }
 
 body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: var(--color-text);
-  background-color: var(--color-bg);
+  background: var(--color-bg-gradient);
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 /* 链接样式 */
