@@ -1,11 +1,5 @@
 <template>
   <div class="home">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1 class="title">IKuYo - 追番助手</h1>
-      <p class="subtitle">每日放送</p>
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading">
       <p>正在加载番剧数据...</p>
@@ -17,24 +11,31 @@
       <button @click="loadCalendar" class="retry-btn">重试</button>
     </div>
 
-    <!-- 每日放送内容 -->
-    <div v-else class="calendar-container">
-      <div 
-        v-for="day in calendar" 
-        :key="day.weekday.id" 
-        class="day-section"
-      >
-        <h2 class="day-title" :class="{ 'today': isToday(day.weekday.id) }">
-          {{ day.weekday.cn }}
-          <span v-if="isToday(day.weekday.id)" class="today-badge">今天</span>
-        </h2>
-        <div class="anime-grid">
-          <AnimeCard
-            v-for="anime in day.items"
-            :key="anime.id"
-            :anime="anime"
-            @click="goToDetail(anime.id)"
-          />
+    <!-- 内容区域 -->
+    <div v-else>
+      <!-- 星期导航栏 -->
+      <WeekNavigation :calendar="calendar" />
+
+      <!-- 每日放送内容 -->
+      <div class="calendar-container">
+        <div 
+          v-for="day in calendar" 
+          :key="day.weekday.id" 
+          :id="`day-${day.weekday.id}`"
+          class="day-section"
+        >
+          <h2 class="day-title" :class="{ 'today': isToday(day.weekday.id) }">
+            {{ day.weekday.cn }}
+            <span v-if="isToday(day.weekday.id)" class="today-badge">今天</span>
+          </h2>
+          <div class="anime-grid">
+            <AnimeCard
+              v-for="anime in day.items"
+              :key="anime.id"
+              :anime="anime"
+              @click="goToDetail(anime.id)"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -45,6 +46,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AnimeCard from '../components/AnimeCard.vue'
+import WeekNavigation from '../components/WeekNavigation.vue'
 import BangumiApiService, { type BangumiWeekday } from '../services/api'
 
 const router = useRouter()
@@ -120,26 +122,7 @@ onMounted(() => {
   padding: 0; /* 移除内边距，因为AppLayout已经处理了 */
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
 
-.title {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: var(--color-text-dark);
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.subtitle {
-  font-size: 1.2rem;
-  color: var(--color-text-light);
-}
 
 .loading, .error {
   text-align: center;
@@ -221,10 +204,6 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .title {
-    font-size: 2rem;
-  }
-  
   .anime-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 0.75rem;
