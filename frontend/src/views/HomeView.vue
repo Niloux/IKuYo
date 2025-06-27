@@ -47,24 +47,33 @@
   </div>
 </template>
 
+<script lang="ts">
+export default {
+  name: 'HomeView'
+}
+</script>
+
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onActivated } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useHomeStore } from '../stores/homeStore'
 import AnimeCard from '../components/AnimeCard.vue'
 import WeekNavigation from '../components/WeekNavigation.vue'
 import ScrollToTopButton from '../components/ScrollToTopButton.vue'
 import BangumiApiService, { type BangumiWeekday } from '../services/api'
+import { ensureScrollToTop } from '../utils/scrollUtils'
+import { onBeforeRouteLeave } from 'vue-router'
 
+const route = useRoute()
 const router = useRouter()
 const homeStore = useHomeStore()
 
 // 从store获取响应式状态
-const { loading, error } = storeToRefs(homeStore)
+const { loading, error, cachedCalendar, hasCalendarData } = storeToRefs(homeStore)
 
-// 响应式数据
-const calendar = ref<BangumiWeekday[]>([])
+// 响应式数据 - 现在使用store中的缓存数据
+const calendar = cachedCalendar
 
 // 分批加载状态
 const firstBatchLoaded = ref(0)
@@ -100,19 +109,16 @@ const loadCalendar = async () => {
     homeStore.loading = true
     homeStore.error = null
     
-    console.log('开始加载每日放送数据...')
     const data = await BangumiApiService.getCalendar()
     
-    // 按照现实周期排序，今天的放在最前面
-    calendar.value = sortCalendarByWeek(data)
+    // 按照现实周期排序，今天的放在最前面  
+    const sortedData = sortCalendarByWeek(data)
+    homeStore.setCalendarData(sortedData)
     
     // 计算第一批加载的总数（一半）
     totalFirstBatch = Math.ceil(
       calendar.value.reduce((total, day) => total + day.items.length, 0) / 2
     )
-    
-    console.log('数据排序完成，今天是:', new Date().toLocaleDateString('zh-CN', { weekday: 'long' }))
-    console.log(`第一批需要加载 ${totalFirstBatch} 张图片`)
   } catch (err) {
     console.error('加载每日放送失败:', err)
     homeStore.error = '加载失败，请检查网络连接或API服务状态'
@@ -143,7 +149,6 @@ const isFirstBatch = (dayIndex: number, animeIndex: number): boolean => {
 const onImageLoad = () => {
   firstBatchLoaded.value++
   if (firstBatchLoaded.value >= totalFirstBatch) {
-    console.log('第一批加载完成，开始加载第二批')
     secondBatchEnabled.value = true
   }
 }
@@ -153,9 +158,41 @@ const goToDetail = (bangumiId: number) => {
   router.push(`/anime/${bangumiId}`)
 }
 
+// 路由守卫：离开页面时保存滚动位置
+onBeforeRouteLeave((to, from) => {
+  const currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop
+  homeStore.saveScrollPosition(currentScrollPosition)
+  
+  // 如果是去往详情页，设置sessionStorage标记
+  if (to.name === 'anime-detail' || to.name === 'library-detail') {
+    sessionStorage.setItem('fromDetail', 'true')
+  } else {
+    // 去往其他页面，清除标记
+    sessionStorage.removeItem('fromDetail')
+  }
+})
+
+// keep-alive组件恢复时的处理
+onActivated(() => {
+  const fromDetail = sessionStorage.getItem('fromDetail')
+  
+  if (fromDetail === 'true') {
+    // 从详情页返回，立即恢复滚动位置
+    sessionStorage.removeItem('fromDetail')
+    const savedPosition = homeStore.getScrollPosition()
+    window.scrollTo({ top: savedPosition, behavior: 'instant' })
+  } else {
+    // 从其他页面返回，滚动到顶部
+    ensureScrollToTop()
+  }
+})
+
 // 组件挂载时加载数据
 onMounted(() => {
-  loadCalendar()
+  // 首次挂载时加载数据，滚动位置管理由keep-alive + onActivated处理
+  if (!hasCalendarData.value) {
+    loadCalendar()
+  }
 })
 </script>
 

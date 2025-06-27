@@ -192,7 +192,6 @@ const onImageError = (event: Event) => {
 onMounted(() => {
   // 详情页无论从哪里进入都应该从头开始浏览
   ensureScrollToTop()
-  console.log('番剧详情页滚动到顶部')
   
   if (animeId) {
     loadAnimeDetail()

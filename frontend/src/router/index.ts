@@ -1,13 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  // 禁用默认的滚动行为，完全由我们手动管理
+  scrollBehavior() {
+    // 返回false来阻止任何自动滚动
+    return false
+  },
   routes: [
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: () => import('../views/HomeView.vue'),
       meta: {title: 'IKuYo - 追番助手'}
     },
     {
@@ -42,9 +46,14 @@ const router = createRouter({
 
 // 全局路由守卫 - 设置页面标题
 router.beforeEach((to, from, next) => {
+  // 设置页面标题
   if (to.meta?.title) {
     document.title = to.meta.title as string
   }
+  
+  // 导航来源追踪现在完全由组件内的onBeforeRouteLeave处理
+  // 不在这里设置，避免冲突
+  
   next()
 })
 

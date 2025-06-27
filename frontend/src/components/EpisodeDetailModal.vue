@@ -228,7 +228,7 @@ const loadEpisodeResources = async () => {
       props.episodeData.number
     )
     resourcesData.value = data
-    console.log('✅ 资源数据加载成功:', data)
+
 
   } catch (err: any) {
     console.error('❌ 加载资源数据失败:', err)
@@ -265,7 +265,7 @@ const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
       document.body.removeChild(link)
     }
     
-    console.log(`🔗 ${type === 'magnet' ? '磁力链接' : '种子文件'}下载触发:`, url)
+
   } catch (err) {
     console.error('下载失败:', err)
     alert('下载失败，请检查链接或重试')

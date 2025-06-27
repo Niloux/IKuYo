@@ -88,13 +88,20 @@
   </div>
 </template>
 
+<script lang="ts">
+export default {
+  name: 'ResourceLibraryView'
+}
+</script>
+
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onActivated } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import AnimeCard from '../components/AnimeCard.vue'
 import { useSearchStore } from '../stores/searchStore'
 
+const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
 
@@ -107,6 +114,9 @@ const {
   hasSearched,
   pagination
 } = storeToRefs(searchStore)
+
+// 测试keep-alive是否工作的计数器
+const mountCounter = ref(0)
 
 // 防抖处理
 let searchTimeout: number | null = null
@@ -135,9 +145,29 @@ const goToLibraryDetail = (bangumiId: number) => {
   router.push(`/library/detail/${bangumiId}`)
 }
 
+// keep-alive组件恢复时的处理
+onActivated(() => {
+  const fromDetail = sessionStorage.getItem('fromDetail')
+  if (fromDetail === 'true') {
+    // 从详情页返回，保持滚动位置和搜索状态
+    sessionStorage.removeItem('fromDetail') // 清除标记
+  }
+})
+
 // 组件挂载时清空搜索状态，确保每次都是干净的初始状态
 onMounted(() => {
-  searchStore.clearSearchState()
+  mountCounter.value++
+  
+  // 检查是否从详情页返回（第一次缓存时也需要检查）
+  const fromDetail = sessionStorage.getItem('fromDetail')
+  
+  if (fromDetail === 'true') {
+    // 从详情页返回，保持搜索状态，不清空
+    sessionStorage.removeItem('fromDetail') // 清除标记
+  } else {
+    // 首次进入或刷新，清空搜索状态
+    searchStore.clearSearchState()
+  }
 })
 </script>
 

@@ -237,12 +237,10 @@ const closeModal = () => {
 
 // 处理刷新资源
 const handleRefreshResources = async (episodeNumber: number) => {
-  console.log(`刷新第${episodeNumber}集资源`)
   // TODO: 实现刷新特定集数资源的逻辑
   try {
     // 重新加载该集数的资源信息
     await loadEpisodeAvailability()
-    console.log(`第${episodeNumber}集资源已刷新`)
   } catch (err) {
     console.error('刷新资源失败:', err)
   }

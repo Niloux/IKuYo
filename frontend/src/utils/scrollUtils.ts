@@ -10,7 +10,6 @@ export const ensureScrollToTop = (immediate: boolean = true) => {
   const scrollToTop = () => {
     if (window.scrollY > 0) {
       window.scrollTo({ top: 0, behavior: 'instant' })
-      console.log('页面已滚动到顶部')
     }
   }
   
@@ -32,7 +31,6 @@ export const restoreScrollPosition = (position: number) => {
   if (position > 0) {
     requestAnimationFrame(() => {
       window.scrollTo({ top: position, behavior: 'instant' })
-      console.log(`滚动位置已恢复到: ${position}`)
     })
   }
 }
@@ -52,5 +50,4 @@ export const smoothScrollToTop = () => {
     top: 0, 
     behavior: 'smooth' 
   })
-  console.log('平滑滚动到顶部')
 } 

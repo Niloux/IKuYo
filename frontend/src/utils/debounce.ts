@@ -53,7 +53,7 @@ export class BatchDebouncer {
   
   private executePendingOperations() {
     if (this.pendingOperations.length > 0) {
-      console.log(`执行 ${this.pendingOperations.length} 个批量操作`)
+  
       this.pendingOperations.forEach(op => op())
       this.pendingOperations = []
     }
