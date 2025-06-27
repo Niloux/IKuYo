@@ -15,6 +15,9 @@
     <div v-else>
       <!-- 星期导航栏 -->
       <WeekNavigation :calendar="calendar" />
+      
+      <!-- 置顶按钮 -->
+      <ScrollToTopButton />
 
       <!-- 每日放送内容 -->
       <div class="calendar-container">
@@ -51,6 +54,7 @@ import { useNavigationStore } from '../stores/navigationStore'
 import { ensureScrollToTop, restoreScrollPosition as restoreScroll, getCurrentScrollPosition } from '../utils/scrollUtils'
 import AnimeCard from '../components/AnimeCard.vue'
 import WeekNavigation from '../components/WeekNavigation.vue'
+import ScrollToTopButton from '../components/ScrollToTopButton.vue'
 import BangumiApiService, { type BangumiWeekday } from '../services/api'
 
 const router = useRouter()

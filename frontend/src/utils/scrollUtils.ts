@@ -42,4 +42,15 @@ export const restoreScrollPosition = (position: number) => {
  */
 export const getCurrentScrollPosition = (): number => {
   return window.scrollY
+}
+
+/**
+ * 平滑滚动到顶部（用于置顶按钮）
+ */
+export const smoothScrollToTop = () => {
+  window.scrollTo({ 
+    top: 0, 
+    behavior: 'smooth' 
+  })
+  console.log('平滑滚动到顶部')
 } 
