@@ -8,7 +8,7 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error">
       <p>{{ error }}</p>
-      <button @click="() => loadCalendar(true)" class="retry-btn">重试</button>
+      <button @click="loadCalendar" class="retry-btn">重试</button>
     </div>
 
     <!-- 内容区域 -->
@@ -46,12 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useHomeStore } from '../stores/homeStore'
-import { useNavigationStore } from '../stores/navigationStore'
-import { ensureScrollToTop, restoreScrollPosition as restoreScroll, getCurrentScrollPosition } from '../utils/scrollUtils'
 import AnimeCard from '../components/AnimeCard.vue'
 import WeekNavigation from '../components/WeekNavigation.vue'
 import ScrollToTopButton from '../components/ScrollToTopButton.vue'
@@ -59,48 +57,41 @@ import BangumiApiService, { type BangumiWeekday } from '../services/api'
 
 const router = useRouter()
 const homeStore = useHomeStore()
-const navigationStore = useNavigationStore()
 
 // 从store获取响应式状态
 const { loading, error } = storeToRefs(homeStore)
 
-// 本地状态
+// 响应式数据
 const calendar = ref<BangumiWeekday[]>([])
 
-// 按照现实周期排序每日放送
-const sortCalendarByWeek = (data: BangumiWeekday[]): BangumiWeekday[] => {
-  // 获取今天是星期几 (0=星期日, 1=星期一, ..., 6=星期六)
+// 获取距离今天的天数差
+const getDaysFromToday = (weekdayId: number): number => {
   const today = new Date().getDay()
-  
-  // 将星期日从0调整为7，这样更容易计算
   const todayId = today === 0 ? 7 : today
+  const adjustedWeekdayId = weekdayId === 0 ? 7 : weekdayId
   
-  // 按照今天开始的顺序排序
-  return data.sort((a, b) => {
-    // 计算距离今天的天数
-    const getDaysFromToday = (weekdayId: number) => {
-      const adjustedId = weekdayId === 0 ? 7 : weekdayId
-      const diff = adjustedId - todayId
-      return diff >= 0 ? diff : diff + 7
-    }
+  let diff = adjustedWeekdayId - todayId
+  if (diff < 0) {
+    diff += 7
+  }
+  return diff
+}
+
+// 按照现实周期排序日历数据
+const sortCalendarByWeek = (data: BangumiWeekday[]): BangumiWeekday[] => {
+  return [...data].sort((a, b) => {
+    if (isToday(a.weekday.id)) return -1
+    if (isToday(b.weekday.id)) return 1
     
     return getDaysFromToday(a.weekday.id) - getDaysFromToday(b.weekday.id)
   })
 }
 
 // 加载每日放送数据
-const loadCalendar = async (forceReload = false) => {
+const loadCalendar = async () => {
   try {
     homeStore.loading = true
     homeStore.error = null
-    
-    // 检查是否可以使用缓存
-    if (!forceReload && homeStore.isCacheValid()) {
-      console.log('使用缓存的首页日历数据')
-      calendar.value = sortCalendarByWeek(homeStore.getCachedCalendarData())
-      homeStore.loading = false
-      return
-    }
     
     console.log('开始加载每日放送数据...')
     const data = await BangumiApiService.getCalendar()
@@ -108,25 +99,12 @@ const loadCalendar = async (forceReload = false) => {
     // 按照现实周期排序，今天的放在最前面
     calendar.value = sortCalendarByWeek(data)
     
-    // 缓存数据到store
-    homeStore.cacheCalendarData(data)
-    
     console.log('数据排序完成，今天是:', new Date().toLocaleDateString('zh-CN', { weekday: 'long' }))
   } catch (err) {
     console.error('加载每日放送失败:', err)
     homeStore.error = '加载失败，请检查网络连接或API服务状态'
   } finally {
     homeStore.loading = false
-    
-    // 如果是强制重新加载（初始状态），确保滚动到顶部
-    if (forceReload) {
-      nextTick(() => {
-        if (window.scrollY > 0) {
-          window.scrollTo({ top: 0, behavior: 'instant' })
-          console.log('数据加载完成，确保滚动到顶部')
-        }
-      })
-    }
   }
 }
 
@@ -138,49 +116,14 @@ const isToday = (weekdayId: number): boolean => {
   return adjustedWeekdayId === todayId
 }
 
-// 保存滚动位置（优化版）
-const saveScrollPosition = () => {
-  const scrollY = getCurrentScrollPosition()
-  homeStore.saveScrollPosition(scrollY)
-}
-
 // 跳转到番剧详情页
 const goToDetail = (bangumiId: number) => {
-  saveScrollPosition()
-  // 记录即将访问的详情页路径，用于返回时检测
-  navigationStore.recordDetailPageVisit(`/anime/${bangumiId}`, '/')
   router.push(`/anime/${bangumiId}`)
 }
 
-// 初始化首页状态（优化版）
-const initializeHomeState = () => {
-  // 手动恢复存储状态
-  homeStore.restoreFromStorage()
-  
-  const isReturning = navigationStore.isReturningFromDetail('/')
-  
-  if (isReturning) {
-    console.log('从详情页返回首页，恢复状态')
-    loadCalendar(false) // 使用缓存数据
-    // 恢复滚动位置
-    const position = homeStore.restoreScrollPosition()
-    restoreScroll(position)
-  } else {
-    console.log('重新进入首页，清空状态')
-    homeStore.clearState()
-    ensureScrollToTop() // 统一的滚动重置
-    loadCalendar(true) // 强制重新加载
-  }
-}
-
-// 组件挂载时初始化状态
+// 组件挂载时加载数据
 onMounted(() => {
-  initializeHomeState()
-})
-
-// 组件卸载前保存滚动位置
-onBeforeUnmount(() => {
-  saveScrollPosition()
+  loadCalendar()
 })
 </script>
 
@@ -188,8 +131,6 @@ onBeforeUnmount(() => {
 .home {
   padding: 0; /* 移除内边距，因为AppLayout已经处理了 */
 }
-
-
 
 .loading, .error {
   text-align: center;

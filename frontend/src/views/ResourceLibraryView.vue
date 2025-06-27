@@ -94,12 +94,9 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import AnimeCard from '../components/AnimeCard.vue'
 import { useSearchStore } from '../stores/searchStore'
-import { useNavigationStore } from '../stores/navigationStore'
-import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const router = useRouter()
 const searchStore = useSearchStore()
-const navigationStore = useNavigationStore()
 
 // 从store获取响应式状态
 const {
@@ -135,34 +132,12 @@ const retrySearch = () => {
 
 // 跳转到资源库详情页
 const goToLibraryDetail = (bangumiId: number) => {
-  // 记录即将访问的详情页路径，用于返回时检测
-  navigationStore.recordDetailPageVisit(`/library/detail/${bangumiId}`, '/library')
   router.push(`/library/detail/${bangumiId}`)
 }
 
-// 初始化搜索页状态（优化版）
-const initializeSearchState = () => {
-  // 手动尝试恢复状态
-  const wasRestored = searchStore.restoreFromStorage()
-  
-  if (wasRestored) {
-    console.log('从详情页返回搜索页，状态已恢复')
-    // 如果有搜索内容，恢复焦点
-    setTimeout(() => {
-      const searchInput = document.querySelector('.search-input') as HTMLInputElement
-      if (searchInput) {
-        searchInput.focus()
-      }
-    }, 100)
-  } else {
-    console.log('重新进入搜索页或无有效状态，处于初始状态')
-    ensureScrollToTop() // 统一的滚动重置
-  }
-}
-
-// 组件挂载时初始化状态
+// 组件挂载时清空搜索状态，确保每次都是干净的初始状态
 onMounted(() => {
-  initializeSearchState()
+  searchStore.clearSearchState()
 })
 </script>
 
