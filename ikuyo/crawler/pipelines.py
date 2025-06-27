@@ -65,7 +65,10 @@ class SQLitePipeline:
         if not self.db_manager:
             return
 
-        # 使用写连接创建表
+        # 类型检查 - 确保write_manager存在
+        if not hasattr(self.db_manager, "write_manager"):
+            return
+
         with self.db_manager.write_manager.get_write_connection() as conn:
             cursor = conn.cursor()
 
@@ -399,3 +402,628 @@ class DuplicatesPipeline:
                 self.resource_hashes.add(magnet_hash)
 
         return item
+
+
+class BatchSQLitePipeline:
+    """批量存储Pipeline - 减少数据库写操作次数"""
+
+    def __init__(self):
+        self.db_manager = None
+        self.batch_size = 100  # 简单固定值，不搞复杂配置
+
+        # 分类缓存不同类型的items
+        self.batches = {
+            "animes": [],
+            "subtitle_groups": [],
+            "anime_subtitle_groups": [],
+            "resources": [],
+            "crawl_logs": [],
+        }
+
+    def open_spider(self, spider):
+        """初始化数据库管理器"""
+        try:
+            self.db_manager = DatabaseManager()
+            spider.logger.info("✅ 批量存储Pipeline已初始化")
+
+            # 创建表结构（复用现有逻辑）
+            self.create_tables()
+
+        except Exception as e:
+            spider.logger.error(f"批量Pipeline初始化失败: {e}")
+            raise e
+
+    def close_spider(self, spider):
+        """爬虫结束时刷新所有缓存"""
+        if self.db_manager:
+            try:
+                # 刷新所有缓存的数据
+                self._flush_all_batches(spider)
+                self.db_manager.close_all()
+                spider.logger.info("✅ 批量存储Pipeline已关闭")
+            except Exception as e:
+                spider.logger.error(f"关闭批量Pipeline失败: {e}")
+
+    def create_tables(self):
+        """创建表结构（复用SQLitePipeline的逻辑）"""
+        if not self.db_manager:
+            return
+
+        # 类型检查 - 确保write_manager存在
+        if not hasattr(self.db_manager, "write_manager"):
+            return
+
+        with self.db_manager.write_manager.get_write_connection() as conn:
+            cursor = conn.cursor()
+
+            # 启用外键约束
+            cursor.execute("PRAGMA foreign_keys = ON")
+
+            # 创建表结构（与SQLitePipeline相同）
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS animes (
+                    mikan_id INTEGER PRIMARY KEY,
+                    bangumi_id INTEGER,
+                    title TEXT NOT NULL,
+                    original_title TEXT,
+                    broadcast_day TEXT,
+                    broadcast_start INTEGER,
+                    official_website TEXT,
+                    bangumi_url TEXT,
+                    description TEXT,
+                    status TEXT DEFAULT 'unknown',
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS subtitle_groups (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    last_update INTEGER,
+                    created_at INTEGER NOT NULL
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS anime_subtitle_groups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mikan_id INTEGER NOT NULL,
+                    subtitle_group_id INTEGER NOT NULL,
+                    first_release_date INTEGER,
+                    last_update_date INTEGER,
+                    resource_count INTEGER DEFAULT 0,
+                    is_active INTEGER DEFAULT 1,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
+                    FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
+                    UNIQUE (mikan_id, subtitle_group_id)
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS resources (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mikan_id INTEGER NOT NULL,
+                    subtitle_group_id INTEGER NOT NULL,
+                    episode_number INTEGER,
+                    title TEXT NOT NULL,
+                    file_size TEXT,
+                    resolution TEXT,
+                    subtitle_type TEXT,
+                    magnet_url TEXT,
+                    torrent_url TEXT,
+                    play_url TEXT,
+                    magnet_hash TEXT,
+                    release_date INTEGER,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
+                    FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
+                    UNIQUE (mikan_id, subtitle_group_id, magnet_hash)
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS crawl_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    spider_name TEXT NOT NULL,
+                    start_time INTEGER,
+                    end_time INTEGER,
+                    status TEXT,
+                    items_count INTEGER DEFAULT 0,
+                    mikan_id INTEGER,
+                    error_message TEXT,
+                    created_at INTEGER NOT NULL
+                )
+            """)
+
+            # 创建索引（与SQLitePipeline相同）
+            self._create_indexes(cursor)
+            conn.commit()
+
+    def _create_indexes(self, cursor):
+        """创建索引（复用SQLitePipeline逻辑）"""
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_mikan_id
+            ON anime_subtitle_groups(mikan_id)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_subtitle_group_id
+            ON anime_subtitle_groups(subtitle_group_id)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_animes_bangumi_id
+            ON animes(bangumi_id)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_resources_mikan_id_created_at
+            ON resources(mikan_id, created_at)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_resources_release_date
+            ON resources(release_date)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_resources_episode_number
+            ON resources(mikan_id, episode_number)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_resources_resolution
+            ON resources(resolution)
+        """)
+
+    def process_item(self, item, spider):
+        """缓存item，达到阈值时批量写入"""
+        if not self.db_manager:
+            return item
+
+        try:
+            # 根据item类型缓存到对应的批次中
+            if isinstance(item, AnimeItem):
+                self.batches["animes"].append(item)
+                if len(self.batches["animes"]) >= self.batch_size:
+                    self._flush_animes(spider)
+
+            elif isinstance(item, SubtitleGroupItem):
+                self.batches["subtitle_groups"].append(item)
+                if len(self.batches["subtitle_groups"]) >= self.batch_size:
+                    self._flush_subtitle_groups(spider)
+
+            elif isinstance(item, AnimeSubtitleGroupItem):
+                self.batches["anime_subtitle_groups"].append(item)
+                if len(self.batches["anime_subtitle_groups"]) >= self.batch_size:
+                    # 先刷新依赖项，再刷新当前项
+                    self._flush_dependencies_first(spider)
+                    self._flush_anime_subtitle_groups(spider)
+
+            elif isinstance(item, ResourceItem):
+                self.batches["resources"].append(item)
+                if len(self.batches["resources"]) >= self.batch_size:
+                    # 先刷新依赖项，再刷新当前项
+                    self._flush_dependencies_first(spider)
+                    self._flush_resources(spider)
+
+            elif isinstance(item, CrawlLogItem):
+                self.batches["crawl_logs"].append(item)
+                if len(self.batches["crawl_logs"]) >= self.batch_size:
+                    self._flush_crawl_logs(spider)
+
+        except Exception as e:
+            spider.logger.error(f"批量处理item失败: {e}")
+            raise DropItem(f"Batch processing error: {e}")
+
+        return item
+
+    def _flush_dependencies_first(self, spider):
+        """优先刷新依赖项（animes和subtitle_groups）"""
+        if self.batches["animes"]:
+            self._flush_animes(spider)
+        if self.batches["subtitle_groups"]:
+            self._flush_subtitle_groups(spider)
+
+    def _flush_animes(self, spider):
+        """批量插入动画数据"""
+        if not self.batches["animes"]:
+            return
+
+        # 类型检查 - 确保db_manager和write_manager存在
+        if not self.db_manager or not hasattr(self.db_manager, "write_manager"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        try:
+            with self.db_manager.write_manager.get_write_connection() as conn:
+                cursor = conn.cursor()
+
+                data = []
+                for item in self.batches["animes"]:
+                    data.append((
+                        item.get("mikan_id"),
+                        item.get("bangumi_id"),
+                        item.get("title"),
+                        item.get("original_title"),
+                        item.get("broadcast_day"),
+                        item.get("broadcast_start"),
+                        item.get("official_website"),
+                        item.get("bangumi_url"),
+                        item.get("description"),
+                        item.get("status", "unknown"),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ))
+
+                cursor.executemany(
+                    """
+                    INSERT OR REPLACE INTO animes 
+                    (mikan_id, bangumi_id, title, original_title, broadcast_day, broadcast_start,
+                     official_website, bangumi_url, description, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    data,
+                )
+
+                conn.commit()
+                spider.logger.info(f"✅ 批量插入动画: {len(data)} 条")
+
+        except Exception as e:
+            spider.logger.error(f"批量插入动画失败: {e}")
+            # 降级为单条插入
+            self._fallback_insert_animes(spider)
+
+        finally:
+            self.batches["animes"].clear()
+
+    def _flush_subtitle_groups(self, spider):
+        """批量插入字幕组数据"""
+        if not self.batches["subtitle_groups"]:
+            return
+
+        # 类型检查 - 确保db_manager和write_manager存在
+        if not self.db_manager or not hasattr(self.db_manager, "write_manager"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        try:
+            with self.db_manager.write_manager.get_write_connection() as conn:
+                cursor = conn.cursor()
+
+                data = []
+                for item in self.batches["subtitle_groups"]:
+                    data.append((
+                        item.get("id"),
+                        item.get("name"),
+                        item.get("last_update"),
+                        item.get("created_at"),
+                    ))
+
+                cursor.executemany(
+                    """
+                    INSERT OR REPLACE INTO subtitle_groups 
+                    (id, name, last_update, created_at)
+                    VALUES (?, ?, ?, ?)
+                """,
+                    data,
+                )
+
+                conn.commit()
+                spider.logger.info(f"✅ 批量插入字幕组: {len(data)} 条")
+
+        except Exception as e:
+            spider.logger.error(f"批量插入字幕组失败: {e}")
+            self._fallback_insert_subtitle_groups(spider)
+
+        finally:
+            self.batches["subtitle_groups"].clear()
+
+    def _flush_anime_subtitle_groups(self, spider):
+        """批量插入动画-字幕组关联数据"""
+        if not self.batches["anime_subtitle_groups"]:
+            return
+
+        # 类型检查 - 确保db_manager和write_manager存在
+        if not self.db_manager or not hasattr(self.db_manager, "write_manager"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        try:
+            with self.db_manager.write_manager.get_write_connection() as conn:
+                cursor = conn.cursor()
+
+                data = []
+                for item in self.batches["anime_subtitle_groups"]:
+                    data.append((
+                        item.get("mikan_id"),
+                        item.get("subtitle_group_id"),
+                        item.get("first_release_date"),
+                        item.get("last_update_date"),
+                        item.get("resource_count", 0),
+                        item.get("is_active", 1),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ))
+
+                cursor.executemany(
+                    """
+                    INSERT OR REPLACE INTO anime_subtitle_groups 
+                    (mikan_id, subtitle_group_id, first_release_date, last_update_date,
+                     resource_count, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    data,
+                )
+
+                conn.commit()
+                spider.logger.info(f"✅ 批量插入动画-字幕组关联: {len(data)} 条")
+
+        except Exception as e:
+            spider.logger.error(f"批量插入关联数据失败: {e}")
+            # 降级前先确保依赖项存在
+            self._ensure_dependencies_exist(spider)
+            self._fallback_insert_anime_subtitle_groups(spider)
+
+        finally:
+            self.batches["anime_subtitle_groups"].clear()
+
+    def _flush_resources(self, spider):
+        """批量插入资源数据"""
+        if not self.batches["resources"]:
+            return
+
+        # 类型检查 - 确保db_manager和write_manager存在
+        if not self.db_manager or not hasattr(self.db_manager, "write_manager"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        try:
+            with self.db_manager.write_manager.get_write_connection() as conn:
+                cursor = conn.cursor()
+
+                data = []
+                for item in self.batches["resources"]:
+                    data.append((
+                        item.get("mikan_id"),
+                        item.get("subtitle_group_id"),
+                        item.get("episode_number"),
+                        item.get("title"),
+                        item.get("file_size"),
+                        item.get("resolution"),
+                        item.get("subtitle_type"),
+                        item.get("magnet_url"),
+                        item.get("torrent_url"),
+                        item.get("play_url"),
+                        item.get("magnet_hash"),
+                        item.get("release_date"),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ))
+
+                cursor.executemany(
+                    """
+                    INSERT OR REPLACE INTO resources 
+                    (mikan_id, subtitle_group_id, episode_number, title, file_size,
+                     resolution, subtitle_type, magnet_url, torrent_url, play_url,
+                     magnet_hash, release_date, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    data,
+                )
+
+                conn.commit()
+                spider.logger.info(f"✅ 批量插入资源: {len(data)} 条")
+
+        except Exception as e:
+            spider.logger.error(f"批量插入资源失败: {e}")
+            # 降级前先确保依赖项存在
+            self._ensure_dependencies_exist(spider)
+            self._fallback_insert_resources(spider)
+
+        finally:
+            self.batches["resources"].clear()
+
+    def _flush_crawl_logs(self, spider):
+        """批量插入爬取日志"""
+        if not self.batches["crawl_logs"]:
+            return
+
+        # 类型检查 - 确保db_manager和write_manager存在
+        if not self.db_manager or not hasattr(self.db_manager, "write_manager"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        try:
+            with self.db_manager.write_manager.get_write_connection() as conn:
+                cursor = conn.cursor()
+
+                data = []
+                for item in self.batches["crawl_logs"]:
+                    data.append((
+                        item.get("spider_name"),
+                        item.get("start_time"),
+                        item.get("end_time"),
+                        item.get("status"),
+                        item.get("items_count", 0),
+                        item.get("mikan_id"),
+                        item.get("error_message"),
+                        item.get("created_at"),
+                    ))
+
+                cursor.executemany(
+                    """
+                    INSERT INTO crawl_logs 
+                    (spider_name, start_time, end_time, status, items_count, mikan_id,
+                     error_message, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    data,
+                )
+
+                conn.commit()
+                spider.logger.info(f"✅ 批量插入日志: {len(data)} 条")
+
+        except Exception as e:
+            spider.logger.error(f"批量插入日志失败: {e}")
+
+        finally:
+            self.batches["crawl_logs"].clear()
+
+    def _flush_all_batches(self, spider):
+        """刷新所有缓存的批次"""
+        spider.logger.info("🔄 刷新所有缓存批次...")
+
+        self._flush_animes(spider)
+        self._flush_subtitle_groups(spider)
+        self._flush_anime_subtitle_groups(spider)
+        self._flush_resources(spider)
+        self._flush_crawl_logs(spider)
+
+        spider.logger.info("✅ 所有批次刷新完成")
+
+    def _fallback_insert_animes(self, spider):
+        """降级为单条插入动画（失败时使用）"""
+        spider.logger.warning("🔄 降级为单条插入动画...")
+
+        # 类型检查 - 确保db_manager和execute_update存在
+        if not self.db_manager or not hasattr(self.db_manager, "execute_update"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        for item in self.batches["animes"]:
+            try:
+                self.db_manager.execute_update(
+                    """
+                    INSERT OR REPLACE INTO animes 
+                    (mikan_id, bangumi_id, title, original_title, broadcast_day, broadcast_start,
+                     official_website, bangumi_url, description, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        item.get("mikan_id"),
+                        item.get("bangumi_id"),
+                        item.get("title"),
+                        item.get("original_title"),
+                        item.get("broadcast_day"),
+                        item.get("broadcast_start"),
+                        item.get("official_website"),
+                        item.get("bangumi_url"),
+                        item.get("description"),
+                        item.get("status", "unknown"),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ),
+                )
+            except Exception as e:
+                spider.logger.error(f"单条插入动画失败: {e}")
+
+    def _fallback_insert_subtitle_groups(self, spider):
+        """降级为单条插入字幕组（失败时使用）"""
+        spider.logger.warning("🔄 降级为单条插入字幕组...")
+
+        # 类型检查 - 确保db_manager和execute_update存在
+        if not self.db_manager or not hasattr(self.db_manager, "execute_update"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        for item in self.batches["subtitle_groups"]:
+            try:
+                self.db_manager.execute_update(
+                    """
+                    INSERT OR REPLACE INTO subtitle_groups 
+                    (id, name, last_update, created_at)
+                    VALUES (?, ?, ?, ?)
+                """,
+                    (
+                        item.get("id"),
+                        item.get("name"),
+                        item.get("last_update"),
+                        item.get("created_at"),
+                    ),
+                )
+            except Exception as e:
+                spider.logger.error(f"单条插入字幕组失败: {e}")
+
+    def _fallback_insert_anime_subtitle_groups(self, spider):
+        """降级为单条插入关联数据（失败时使用）"""
+        spider.logger.warning("🔄 降级为单条插入关联数据...")
+
+        # 类型检查 - 确保db_manager和execute_update存在
+        if not self.db_manager or not hasattr(self.db_manager, "execute_update"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        for item in self.batches["anime_subtitle_groups"]:
+            try:
+                self.db_manager.execute_update(
+                    """
+                    INSERT OR REPLACE INTO anime_subtitle_groups 
+                    (mikan_id, subtitle_group_id, first_release_date, last_update_date,
+                     resource_count, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        item.get("mikan_id"),
+                        item.get("subtitle_group_id"),
+                        item.get("first_release_date"),
+                        item.get("last_update_date"),
+                        item.get("resource_count", 0),
+                        item.get("is_active", 1),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ),
+                )
+            except Exception as e:
+                spider.logger.error(f"单条插入关联数据失败: {e}")
+
+    def _fallback_insert_resources(self, spider):
+        """降级为单条插入资源（失败时使用）"""
+        spider.logger.warning("🔄 降级为单条插入资源...")
+
+        # 类型检查 - 确保db_manager和execute_update存在
+        if not self.db_manager or not hasattr(self.db_manager, "execute_update"):
+            spider.logger.error("数据库管理器未正确初始化")
+            return
+
+        for item in self.batches["resources"]:
+            try:
+                self.db_manager.execute_update(
+                    """
+                    INSERT OR REPLACE INTO resources 
+                    (mikan_id, subtitle_group_id, episode_number, title, file_size,
+                     resolution, subtitle_type, magnet_url, torrent_url, play_url,
+                     magnet_hash, release_date, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        item.get("mikan_id"),
+                        item.get("subtitle_group_id"),
+                        item.get("episode_number"),
+                        item.get("title"),
+                        item.get("file_size"),
+                        item.get("resolution"),
+                        item.get("subtitle_type"),
+                        item.get("magnet_url"),
+                        item.get("torrent_url"),
+                        item.get("play_url"),
+                        item.get("magnet_hash"),
+                        item.get("release_date"),
+                        item.get("created_at"),
+                        item.get("updated_at"),
+                    ),
+                )
+            except Exception as e:
+                spider.logger.error(f"单条插入资源失败: {e}")
+
+    def _ensure_dependencies_exist(self, spider):
+        """确保依赖项存在，用于降级处理前"""
+        spider.logger.info("🔄 确保依赖项存在...")
+
+        # 先处理所有待处理的animes和subtitle_groups
+        if self.batches["animes"]:
+            spider.logger.info(f"先插入待处理的动画: {len(self.batches['animes'])} 条")
+            self._flush_animes(spider)
+
+        if self.batches["subtitle_groups"]:
+            spider.logger.info(f"先插入待处理的字幕组: {len(self.batches['subtitle_groups'])} 条")
+            self._flush_subtitle_groups(spider)

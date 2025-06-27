@@ -23,6 +23,11 @@ DOWNLOAD_DELAY = getattr(config.crawler, "download_delay", 1) if hasattr(config,
 CONCURRENT_REQUESTS = (
     getattr(config.crawler, "concurrent_requests", 16) if hasattr(config, "crawler") else 16
 )
+CONCURRENT_REQUESTS_PER_DOMAIN = (
+    getattr(config.crawler, "concurrent_requests_per_domain", 8)
+    if hasattr(config, "crawler")
+    else 8
+)
 
 # 重试设置
 RETRY_TIMES = getattr(config.crawler, "retry_times", 3) if hasattr(config, "crawler") else 3
@@ -65,7 +70,7 @@ COOKIES_ENABLED = False
 ITEM_PIPELINES = {
     "ikuyo.crawler.pipelines.ValidationPipeline": 100,
     "ikuyo.crawler.pipelines.DuplicatesPipeline": 200,
-    "ikuyo.crawler.pipelines.SQLitePipeline": 300,
+    "ikuyo.crawler.pipelines.BatchSQLitePipeline": 300,
 }
 
 # 启用和配置HTTP缓存 (默认禁用)
@@ -83,14 +88,14 @@ ITEM_PIPELINES = {
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
 # The initial download delay
-AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_START_DELAY = 0.5
 # The maximum download delay to be set in case of high latencies
-AUTOTHROTTLE_MAX_DELAY = 60
+AUTOTHROTTLE_MAX_DELAY = 10
 # The average number of requests Scrapy should be sending in parallel to
-# each remote server
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+# each remote server - 提高到16实现真正的高并发
+AUTOTHROTTLE_TARGET_CONCURRENCY = 16.0
 # Enable showing throttling stats for every response received:
-# AUTOTHROTTLE_DEBUG = False
+AUTOTHROTTLE_DEBUG = True  # 开启调试，观察限流效果
 
 # Set settings whose default value is deprecated to a future-proof value.
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
@@ -105,3 +110,6 @@ FEED_EXPORT_ENCODING = "utf-8"
 #         "overwrite": True,
 #     },
 # }
+
+# 批量处理配置
+BATCH_SIZE = 100  # 批量处理的大小

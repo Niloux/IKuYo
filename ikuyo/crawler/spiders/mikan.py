@@ -112,6 +112,9 @@ class MikanSpider(Spider):
         # 根据模式决定是否限制数量
         links_to_process = anime_links[: self.limit] if self.limit else anime_links
 
+        self.logger.info(f"📊 发现 {len(anime_links)} 个动画，将处理 {len(links_to_process)} 个")
+        self.logger.info(f"🚀 即将生成 {len(links_to_process)} 个并发请求进入详情页")
+
         for link in links_to_process:
             href = link.attrib.get("href")
             title = link.attrib.get("title", "")
@@ -120,7 +123,7 @@ class MikanSpider(Spider):
                 mikan_id = self._extract_mikan_id(href)
                 if mikan_id:
                     full_url = urljoin(self.BASE_URL, href)
-                    self.logger.info(f"发现动画: {title} (ID: {mikan_id})")
+                    self.logger.debug(f"📝 生成请求: {title} (ID: {mikan_id})")
 
                     yield Request(
                         url=full_url,
