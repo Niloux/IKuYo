@@ -44,7 +44,7 @@
   import { computed, onMounted, ref } from 'vue'
   import EpisodeCarousel from './EpisodeCarousel.vue'
   import EpisodeGrid from './EpisodeGrid.vue'
-  import BangumiApiService, { type BangumiEpisode, type BangumiEpisodesStats } from '@/services/api'
+  import BangumiApiService, { type BangumiEpisode } from '@/services/api'
   
   // Props定义
   interface Props {
@@ -53,11 +53,22 @@
   
   const props = defineProps<Props>()
   
+  // 本地统计信息接口定义
+  interface EpisodeStats {
+    total: number
+    main_episodes: number
+    special_episodes: number
+    opening_episodes: number
+    ending_episodes: number
+    pv_episodes: number
+    other_episodes: number
+  }
+  
   // 响应式数据
   const loading = ref(true)
   const error = ref<string | null>(null)
   const bangumiEpisodes = ref<BangumiEpisode[]>([])
-  const episodeStats = ref<BangumiEpisodesStats | null>(null)
+  const episodeStats = ref<EpisodeStats | null>(null)
   const episodeAvailability = ref<any>(null)
   
   // 批量获取进度状态

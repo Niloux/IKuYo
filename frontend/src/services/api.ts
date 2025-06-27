@@ -134,16 +134,6 @@ apiClient.interceptors.response.use(
       total: number
     }
 
-    export interface BangumiEpisodesStats {
-      total: number
-      main_episodes: number
-      special_episodes: number
-      opening_episodes: number
-      ending_episodes: number
-      pv_episodes: number
-      other_episodes: number
-    }
-
     // 资源相关类型定义
     export interface SubtitleGroupResource {
       id: number
@@ -217,16 +207,6 @@ apiClient.interceptors.response.use(
 
         // 后端返回的是包装过的响应，需要提取实际数据
         return {data: response.data, total: response.total};
-      }
-
-      /**
-       * 获取Bangumi章节统计信息
-       */
-      static async getBangumiEpisodesStats(subjectId: number):
-          Promise<BangumiEpisodesStats> {
-        const response: ApiResponse<BangumiEpisodesStats> = await apiClient.get(
-            `/bangumi/subjects/${subjectId}/episodes/stats`);
-        return response.data;
       }
 
       /**

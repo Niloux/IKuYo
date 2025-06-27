@@ -39,4 +39,24 @@ bangumi:
   timeout: 10
   user_agent: "IKuYo/2.0.0"
 
-# 可扩展更多参数，如year、season、api等 
+# 缓存配置
+cache:
+  # TTL配置（秒）- 基于数据特性优化
+  ttl:
+    calendar: 14400    # 每日放送：4小时（相对稳定）
+    subject: 7200      # 番剧详情：2小时（评分变化较频繁）
+    episodes: 3600     # 章节信息：1小时（新章节更新）
+    default: 1800      # 默认：30分钟
+  
+  # 内存缓存限制
+  memory_limits:
+    calendar: 10      # 每日放送缓存数量
+    subject: 1000     # 番剧详情缓存数量
+    episodes: 500     # 章节信息缓存数量
+    default: 100      # 默认缓存数量
+  
+  # 持久化策略
+  persist_types: ["calendar", "subject", "episodes"]  # 持久化每日放送、番剧详情、章节信息
+  
+  # 清理策略
+  cleanup_on_startup: true     # 启动时清理过期文件

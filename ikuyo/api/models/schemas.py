@@ -125,21 +125,3 @@ class BangumiEpisodesResponse(BaseResponse):
 
     data: List[BangumiEpisode] = Field(..., description="章节列表")
     total: int = Field(..., description="总章节数")
-
-
-class BangumiEpisodesStats(BaseModel):
-    """Bangumi章节统计信息模型"""
-
-    total: int = Field(..., description="总章节数")
-    main_episodes: int = Field(0, description="正片章节数")
-    special_episodes: int = Field(0, description="特典章节数")
-    opening_episodes: int = Field(0, description="OP章节数")
-    ending_episodes: int = Field(0, description="ED章节数")
-    pv_episodes: int = Field(0, description="PV章节数")
-    other_episodes: int = Field(0, description="其他章节数")
-
-
-class BangumiEpisodesStatsResponse(BaseResponse):
-    """Bangumi章节统计响应模型"""
-
-    data: BangumiEpisodesStats = Field(..., description="章节统计信息")

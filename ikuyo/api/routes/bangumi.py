@@ -10,15 +10,17 @@ from fastapi import APIRouter, HTTPException, Path, Query
 
 from ikuyo.api.models.schemas import (
     BangumiCalendarResponse,
+    BangumiEpisode,
     BangumiEpisodesResponse,
-    BangumiEpisodesStats,
-    BangumiEpisodesStatsResponse,
     BangumiSubjectResponse,
     ErrorResponse,
 )
-from ikuyo.core.bangumi_service import bangumi_service
+from ikuyo.core.bangumi_service import BangumiService
 
 router = APIRouter(prefix="/bangumi", tags=["Bangumi"])
+
+# 创建BangumiService实例
+bangumi_service = BangumiService()
 
 
 @router.get(
@@ -32,7 +34,7 @@ async def get_bangumi_calendar():
     为首页提供新番时间表
     """
     try:
-        calendar_data = bangumi_service.get_calendar()
+        calendar_data = await bangumi_service.get_calendar()
 
         if calendar_data is None:
             raise HTTPException(status_code=500, detail="获取每日放送数据失败")
@@ -60,7 +62,7 @@ async def get_bangumi_subject(
     为详情页提供元数据补充
     """
     try:
-        subject_data = bangumi_service.get_subject_info(bangumi_id)
+        subject_data = await bangumi_service.get_subject(bangumi_id)
 
         if subject_data is None:
             raise HTTPException(
@@ -90,10 +92,10 @@ async def get_bangumi_episodes(
 ):
     """
     获取番剧章节信息
-    为章节展示提供数据
+    支持分页和筛选，对长篇动画至关重要
     """
     try:
-        episodes_data = bangumi_service.get_episodes(
+        episodes_data = await bangumi_service.get_episodes(
             subject_id=subject_id, episode_type=episode_type, limit=limit, offset=offset
         )
 
@@ -106,41 +108,20 @@ async def get_bangumi_episodes(
         episodes_list = episodes_data.get("data", [])
         total = episodes_data.get("total", 0)
 
+        # 转换为BangumiEpisode模型
+        episode_models = []
+        for ep_data in episodes_list:
+            try:
+                episode_models.append(BangumiEpisode(**ep_data))
+            except Exception as e:
+                print(f"转换章节数据失败: {e}, 数据: {ep_data}")
+                continue
+
         return BangumiEpisodesResponse(
-            success=True, message="获取章节信息成功", data=episodes_list, total=total
+            success=True, message="获取章节信息成功", data=episode_models, total=total
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取章节信息失败: {str(e)}")
-
-
-@router.get(
-    "/subjects/{subject_id}/episodes/stats",
-    response_model=BangumiEpisodesStatsResponse,
-    responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
-)
-async def get_bangumi_episodes_stats(
-    subject_id: int = Path(..., description="番剧subject_id"),
-):
-    """
-    获取番剧章节统计信息
-    统计各类型章节数量
-    """
-    try:
-        stats_data = bangumi_service.get_episodes_stats(subject_id)
-
-        if stats_data is None:
-            raise HTTPException(
-                status_code=404, detail=f"未找到 subject_id={subject_id} 的章节统计信息"
-            )
-
-        return BangumiEpisodesStatsResponse(
-            success=True, message="获取章节统计成功", data=BangumiEpisodesStats(**stats_data)
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取章节统计失败: {str(e)}")

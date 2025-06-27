@@ -10,10 +10,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 
 from ikuyo.api.models.schemas import HealthResponse
-from ikuyo.core.bangumi_service import bangumi_service
+from ikuyo.core.bangumi_service import BangumiService
 from ikuyo.core.database import DatabaseManager
 
 router = APIRouter(prefix="/health", tags=["Health"])
+
+# 创建BangumiService实例
+bangumi_service = BangumiService()
 
 
 def get_database():
@@ -41,7 +44,7 @@ async def health_check(db: DatabaseManager = Depends(get_database)):
         db_status = "unhealthy"
 
     # 获取缓存状态
-    cache_stats = bangumi_service.get_cache_stats()
+    cache_stats = bangumi_service.get_cache_info()  # 使用BangumiService的get_cache_info方法
 
     return HealthResponse(
         status="healthy",
@@ -58,7 +61,7 @@ async def clear_cache(cache_key: Optional[str] = None):
     清理缓存接口
     可选择清理特定缓存或全部缓存
     """
-    bangumi_service.clear_cache(cache_key)
+    bangumi_service.clear_cache(cache_key)  # 使用BangumiService的clear_cache方法
 
     return {
         "message": f"缓存已清理: {cache_key}" if cache_key else "全部缓存已清理",
@@ -71,5 +74,5 @@ async def get_cache_stats():
     """
     获取缓存统计信息
     """
-    stats = bangumi_service.get_cache_stats()
+    stats = bangumi_service.get_cache_info()  # 使用BangumiService的get_cache_info方法
     return {"cache_stats": stats, "timestamp": datetime.now().isoformat()}
