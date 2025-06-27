@@ -95,11 +95,13 @@ export default {
 </script>
 
 <script setup lang="ts">
-import { ref, onMounted, onActivated } from 'vue'
+import { ref, onMounted, onActivated, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import AnimeCard from '../components/AnimeCard.vue'
 import { useSearchStore } from '../stores/searchStore'
+import { ensureScrollToTop, getCurrentScrollPosition, restoreScrollPosition } from '../utils/scrollUtils'
+import { onBeforeRouteLeave } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,6 +122,9 @@ const mountCounter = ref(0)
 
 // 防抖处理
 let searchTimeout: number | null = null
+
+// 保存滚动位置的key
+const SCROLL_KEY = 'library_scroll_position'
 
 const handleSearchInput = () => {
   if (searchTimeout) {
@@ -142,6 +147,9 @@ const retrySearch = () => {
 
 // 跳转到资源库详情页
 const goToLibraryDetail = (bangumiId: number) => {
+  // 保存滚动位置
+  const currentScroll = getCurrentScrollPosition()
+  sessionStorage.setItem(SCROLL_KEY, String(currentScroll))
   router.push(`/library/detail/${bangumiId}`)
 }
 
@@ -149,8 +157,18 @@ const goToLibraryDetail = (bangumiId: number) => {
 onActivated(() => {
   const fromDetail = sessionStorage.getItem('fromDetail')
   if (fromDetail === 'true') {
-    // 从详情页返回，保持滚动位置和搜索状态
-    sessionStorage.removeItem('fromDetail') // 清除标记
+    // 从详情页返回，恢复滚动位置
+    sessionStorage.removeItem('fromDetail')
+    const savedScroll = Number(sessionStorage.getItem(SCROLL_KEY) || 0)
+    nextTick(() => {
+      restoreScrollPosition(savedScroll)
+    })
+  } else {
+    // 其他情况清空状态并滚动到顶部
+    searchStore.clearSearchState()
+    nextTick(() => {
+      ensureScrollToTop()
+    })
   }
 })
 
@@ -167,6 +185,18 @@ onMounted(() => {
   } else {
     // 首次进入或刷新，清空搜索状态
     searchStore.clearSearchState()
+  }
+})
+
+onBeforeRouteLeave((to: any, from: any) => {
+  // 离开去详情页时保存滚动位置
+  if (to.name === 'library-detail') {
+    const currentScroll = getCurrentScrollPosition()
+    sessionStorage.setItem(SCROLL_KEY, String(currentScroll))
+    sessionStorage.setItem('fromDetail', 'true')
+  } else {
+    sessionStorage.removeItem('fromDetail')
+    sessionStorage.removeItem(SCROLL_KEY)
   }
 })
 </script>
