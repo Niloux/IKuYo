@@ -187,7 +187,7 @@ apiClient.interceptors.response.use(
        */
       static async getCalendar(): Promise<BangumiWeekday[]> {
         const response: ApiResponse<BangumiWeekday[]> =
-            await apiClient.get('/bangumi/calendar')
+            await apiClient.get('/animes/calendar')
         return response.data
       }
 
@@ -196,7 +196,7 @@ apiClient.interceptors.response.use(
        */
       static async getSubject(bangumiId: number): Promise<BangumiSubject> {
         const response: ApiResponse<BangumiSubject> =
-            await apiClient.get(`/bangumi/subjects/${bangumiId}`)
+            await apiClient.get(`/animes/${bangumiId}`)
         return response.data
       }
 
@@ -206,8 +206,7 @@ apiClient.interceptors.response.use(
       static async getEpisodeAvailability(bangumiId: number):
           Promise<EpisodeAvailabilityData> {
         const response: ApiResponse<EpisodeAvailabilityData> =
-            await apiClient.get(
-                `/animes/bangumi/${bangumiId}/episodes/availability`)
+            await apiClient.get(`/animes/${bangumiId}/episodes/availability`)
         return response.data
       }
 
@@ -222,8 +221,8 @@ apiClient.interceptors.response.use(
           params.episode_type = episodeType;
         }
 
-        const response: BangumiEpisodesResponse = await apiClient.get(
-            `/bangumi/subjects/${subjectId}/episodes`, {params});
+        const response: BangumiEpisodesResponse =
+            await apiClient.get(`/animes/${subjectId}/episodes`, {params});
 
         // 后端返回的是包装过的响应，需要提取实际数据
         return {data: response.data, total: response.total};
@@ -235,7 +234,7 @@ apiClient.interceptors.response.use(
       static async getEpisodeResources(bangumiId: number, episode: number):
           Promise<EpisodeResourcesData> {
         const response: ApiResponse<EpisodeResourcesData> = await apiClient.get(
-            `/animes/bangumi/${bangumiId}/episodes/${episode}/resources`);
+            `/animes/${bangumiId}/resources?episode=${episode}`);
         return response.data;
       }
 
@@ -257,7 +256,7 @@ apiClient.interceptors.response.use(
         if (options?.limit) params.append('limit', options.limit.toString());
         if (options?.offset) params.append('offset', options.offset.toString());
 
-        const url = `/animes/bangumi/${bangumiId}/resources${
+        const url = `/animes/${bangumiId}/resources${
             params.toString() ? '?' + params.toString() : ''}`;
         const response: ApiResponse<EpisodeResourcesData> =
             await apiClient.get(url);
@@ -280,7 +279,7 @@ apiClient.interceptors.response.use(
       }> {
             const response: ApiResponse < {bangumi_ids: number[]
           pagination: any
-        }> = await apiClient.get('/animes/library/search', {
+        }> = await apiClient.get('/animes/search', {
           params: { q: query, page, limit }
         });
           return response.data;

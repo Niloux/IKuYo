@@ -29,12 +29,6 @@ class ErrorResponse(BaseModel):
 # =============== 核心业务模型 ===============
 
 
-class AnimeProgressResponse(BaseResponse):
-    """番剧更新进度响应模型"""
-
-    data: dict = Field(..., description="更新进度数据")
-
-
 class SubtitleGroupResource(BaseModel):
     """字幕组资源模型"""
 

@@ -17,7 +17,7 @@ from ikuyo.api.models.schemas import (
 )
 from ikuyo.core.bangumi_service import BangumiService
 
-router = APIRouter(prefix="/bangumi", tags=["Bangumi"])
+router = APIRouter(prefix="/animes", tags=["Animes"])
 
 # 创建BangumiService实例
 bangumi_service = BangumiService()
@@ -50,7 +50,7 @@ async def get_bangumi_calendar():
 
 
 @router.get(
-    "/subjects/{bangumi_id}",
+    "/{bangumi_id}",
     response_model=BangumiSubjectResponse,
     responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
@@ -78,7 +78,7 @@ async def get_bangumi_subject(
 
 
 @router.get(
-    "/subjects/{subject_id}/episodes",
+    "/{subject_id}/episodes",
     response_model=BangumiEpisodesResponse,
     responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )

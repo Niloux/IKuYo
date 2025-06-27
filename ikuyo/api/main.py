@@ -49,9 +49,11 @@ async def root():
         "docs": "/docs",
         "redoc": "/redoc",
         "core_endpoints": [
-            "/api/v1/animes/bangumi/{bangumi_id}/progress",
-            "/api/v1/animes/bangumi/{bangumi_id}/episodes/{episode}/resources",
-            "/api/v1/animes/bangumi/{bangumi_id}/episodes/availability",
+            "/api/v1/animes/calendar",
+            "/api/v1/animes/{id}",
+            "/api/v1/animes/{id}/episodes",
+            "/api/v1/animes/{id}/resources",
+            "/api/v1/animes/search",
         ],
     }
 

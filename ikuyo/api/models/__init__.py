@@ -4,7 +4,6 @@ API数据模型包
 """
 
 from .schemas import (
-    AnimeProgressResponse,
     BaseResponse,
     EpisodeAvailabilityResponse,
     EpisodeResourcesResponse,
@@ -17,7 +16,6 @@ from .schemas import (
 __all__ = [
     "BaseResponse",
     "ErrorResponse",
-    "AnimeProgressResponse",
     "EpisodeResourcesResponse",
     "EpisodeAvailabilityResponse",
     "SubtitleGroupResource",
