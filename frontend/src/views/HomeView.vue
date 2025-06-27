@@ -22,7 +22,7 @@
       <!-- 每日放送内容 -->
       <div class="calendar-container">
         <div 
-          v-for="day in calendar" 
+          v-for="(day, dayIndex) in calendar" 
           :key="day.weekday.id" 
           :id="`day-${day.weekday.id}`"
           class="day-section"
@@ -33,10 +33,12 @@
           </h2>
           <div class="anime-grid">
             <AnimeCard
-              v-for="anime in day.items"
+              v-for="(anime, animeIndex) in day.items"
               :key="anime.id"
               :anime="anime"
+              :should-load-image="isFirstBatch(dayIndex, animeIndex) || secondBatchEnabled"
               @click="goToDetail(anime.id)"
+              @image-load="onImageLoad"
             />
           </div>
         </div>
@@ -63,6 +65,11 @@ const { loading, error } = storeToRefs(homeStore)
 
 // 响应式数据
 const calendar = ref<BangumiWeekday[]>([])
+
+// 分批加载状态
+const firstBatchLoaded = ref(0)
+const secondBatchEnabled = ref(false)
+let totalFirstBatch = 0
 
 // 获取距离今天的天数差
 const getDaysFromToday = (weekdayId: number): number => {
@@ -99,7 +106,13 @@ const loadCalendar = async () => {
     // 按照现实周期排序，今天的放在最前面
     calendar.value = sortCalendarByWeek(data)
     
+    // 计算第一批加载的总数（一半）
+    totalFirstBatch = Math.ceil(
+      calendar.value.reduce((total, day) => total + day.items.length, 0) / 2
+    )
+    
     console.log('数据排序完成，今天是:', new Date().toLocaleDateString('zh-CN', { weekday: 'long' }))
+    console.log(`第一批需要加载 ${totalFirstBatch} 张图片`)
   } catch (err) {
     console.error('加载每日放送失败:', err)
     homeStore.error = '加载失败，请检查网络连接或API服务状态'
@@ -114,6 +127,25 @@ const isToday = (weekdayId: number): boolean => {
   const todayId = today === 0 ? 7 : today
   const adjustedWeekdayId = weekdayId === 0 ? 7 : weekdayId
   return adjustedWeekdayId === todayId
+}
+
+// 判断是否应该在第一批加载
+const isFirstBatch = (dayIndex: number, animeIndex: number): boolean => {
+  let currentIndex = 0
+  for (let i = 0; i < dayIndex; i++) {
+    currentIndex += calendar.value[i].items.length
+  }
+  currentIndex += animeIndex
+  return currentIndex < totalFirstBatch
+}
+
+// 图片加载完成处理
+const onImageLoad = () => {
+  firstBatchLoaded.value++
+  if (firstBatchLoaded.value >= totalFirstBatch) {
+    console.log('第一批加载完成，开始加载第二批')
+    secondBatchEnabled.value = true
+  }
 }
 
 // 跳转到番剧详情页

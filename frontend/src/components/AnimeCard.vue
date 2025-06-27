@@ -3,12 +3,17 @@
     <!-- 番剧封面 -->
     <div class="card-image">
       <img 
-        :src="anime.images.large" 
-        :alt="anime.name_cn || anime.name"
+        v-if="props.shouldLoadImage"
+        :src="props.anime.images.large" 
+        :alt="props.anime.name_cn || props.anime.name"
         @error="onImageError"
+        @load="$emit('imageLoad')"
       />
-      <div class="rating-badge" v-if="anime.rating && anime.rating.score > 0">
-        {{ anime.rating.score.toFixed(1) }}
+      <div v-else class="image-placeholder">
+        <div class="loading-text">加载中...</div>
+      </div>
+      <div class="rating-badge" v-if="props.anime.rating && props.anime.rating.score > 0">
+        {{ props.anime.rating.score.toFixed(1) }}
       </div>
     </div>
 
@@ -34,13 +39,17 @@
 import type { BangumiCalendarItem } from '../services/api'
 
 // Props定义
-defineProps<{
+const props = withDefaults(defineProps<{
   anime: BangumiCalendarItem
-}>()
+  shouldLoadImage?: boolean
+}>(), {
+  shouldLoadImage: true
+})
 
 // Events定义
 defineEmits<{
   click: []
+  imageLoad: []
 }>()
 
 // 格式化播出日期
@@ -98,6 +107,20 @@ const onImageError = (event: Event) => {
   object-fit: cover;
   object-position: center top;  /* 从顶部中心开始显示，保留更多重要内容 */
   transition: transform 0.3s ease;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-text {
+  color: #6c757d;
+  font-size: 0.9rem;
 }
 
 .anime-card:hover .card-image img {
