@@ -1,5 +1,16 @@
 database:
   path: data/database/ikuyo.db
+  wal_mode: true
+  read_pool:
+    size: 5
+    timeout: 30
+    health_check_interval: 300
+  write_connection:
+    timeout: 60
+    pragma_settings:
+      - "PRAGMA journal_mode=WAL"
+      - "PRAGMA synchronous=NORMAL"
+      - "PRAGMA cache_size=10000"
 
 site:
   base_url: https://mikanani.me

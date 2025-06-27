@@ -2,13 +2,13 @@
 """
 数据处理管道
 负责将爬取的数据保存到数据库
+更新以支持读写分离架构
 """
 
-import sqlite3
 
 from scrapy.exceptions import DropItem
 
-from ..core.config import load_config
+from ..core.database import DatabaseManager
 from .items import AnimeItem, AnimeSubtitleGroupItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
 
 
@@ -33,184 +33,188 @@ class ValidationPipeline:
 
 
 class SQLitePipeline:
-    """SQLite数据库Pipeline"""
+    """SQLite数据库Pipeline - 使用读写分离架构"""
 
     def __init__(self):
-        self.conn = None
-        self.cursor = None
+        self.db_manager = None
 
     def open_spider(self, spider):
-        """打开数据库连接并启用外键约束"""
-        config = load_config()
-        db_path = getattr(config.database, "path", "data/database/ikuyo.db")
-        self.conn = sqlite3.connect(db_path)
-        self.cursor = self.conn.cursor()
+        """初始化数据库管理器"""
+        try:
+            self.db_manager = DatabaseManager()
+            spider.logger.info("✅ 数据库管理器已初始化（读写分离模式）")
 
-        # 启用外键约束并验证
-        self.cursor.execute("PRAGMA foreign_keys = ON")
-        fk_status = self.cursor.execute("PRAGMA foreign_keys").fetchone()[0]
-        if fk_status == 1:
-            spider.logger.info("✅ 外键约束已成功启用")
-        else:
-            spider.logger.warning("⚠️  外键约束启用失败")
-
-        if self.cursor:
+            # 创建表结构
             self.create_tables()
+
+        except Exception as e:
+            spider.logger.error(f"数据库初始化失败: {e}")
+            raise e
 
     def close_spider(self, spider):
         """关闭数据库连接"""
-        if self.conn:
-            if self.cursor:
-                self.conn.commit()
-            self.conn.close()
+        if self.db_manager:
+            try:
+                self.db_manager.close_all()
+                spider.logger.info("✅ 数据库连接已关闭")
+            except Exception as e:
+                spider.logger.error(f"关闭数据库连接失败: {e}")
 
     def create_tables(self):
         """创建优化后的数据库表结构"""
-        if not self.cursor:
+        if not self.db_manager:
             return
 
-        # 1. 创建动画表
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS animes (
-                mikan_id INTEGER PRIMARY KEY,
-                bangumi_id INTEGER,
-                title TEXT NOT NULL,
-                original_title TEXT,
-                broadcast_day TEXT,
-                broadcast_start INTEGER,
-                official_website TEXT,
-                bangumi_url TEXT,
-                description TEXT,
-                status TEXT DEFAULT 'unknown',
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
-            )
-        """)
+        # 使用写连接创建表
+        with self.db_manager.write_manager.get_write_connection() as conn:
+            cursor = conn.cursor()
 
-        # 2. 创建字幕组表
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS subtitle_groups (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                last_update INTEGER,
-                created_at INTEGER NOT NULL
-            )
-        """)
+            # 启用外键约束并验证
+            cursor.execute("PRAGMA foreign_keys = ON")
+            fk_status = cursor.execute("PRAGMA foreign_keys").fetchone()[0]
+            if fk_status == 1:
+                print("✅ 外键约束已成功启用")
+            else:
+                print("⚠️  外键约束启用失败")
 
-        # 3. 创建动画-字幕组关联表
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS anime_subtitle_groups (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                mikan_id INTEGER NOT NULL,
-                subtitle_group_id INTEGER NOT NULL,
-                first_release_date INTEGER,
-                last_update_date INTEGER,
-                resource_count INTEGER DEFAULT 0,
-                is_active INTEGER DEFAULT 1,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
-                FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
-                FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
-                UNIQUE (mikan_id, subtitle_group_id)
-            )
-        """)
+            # 1. 创建动画表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS animes (
+                    mikan_id INTEGER PRIMARY KEY,
+                    bangumi_id INTEGER,
+                    title TEXT NOT NULL,
+                    original_title TEXT,
+                    broadcast_day TEXT,
+                    broadcast_start INTEGER,
+                    official_website TEXT,
+                    bangumi_url TEXT,
+                    description TEXT,
+                    status TEXT DEFAULT 'unknown',
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                )
+            """)
 
-        # 4. 创建资源表
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS resources (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                mikan_id INTEGER NOT NULL,
-                subtitle_group_id INTEGER NOT NULL,
-                episode_number INTEGER,
-                title TEXT NOT NULL,
-                file_size TEXT,
-                resolution TEXT,
-                subtitle_type TEXT,
-                magnet_url TEXT,
-                torrent_url TEXT,
-                play_url TEXT,
-                magnet_hash TEXT,
-                release_date INTEGER,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
-                FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
-                FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
-                UNIQUE (mikan_id, subtitle_group_id, magnet_hash)
-            )
-        """)
+            # 2. 创建字幕组表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS subtitle_groups (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    last_update INTEGER,
+                    created_at INTEGER NOT NULL
+                )
+            """)
 
-        # 5. 创建爬取日志表
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS crawl_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                spider_name TEXT NOT NULL,
-                start_time INTEGER,
-                end_time INTEGER,
-                status TEXT,
-                items_count INTEGER DEFAULT 0,
-                mikan_id INTEGER,
-                error_message TEXT,
-                created_at INTEGER NOT NULL
-            )
-        """)
+            # 3. 创建动画-字幕组关联表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS anime_subtitle_groups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mikan_id INTEGER NOT NULL,
+                    subtitle_group_id INTEGER NOT NULL,
+                    first_release_date INTEGER,
+                    last_update_date INTEGER,
+                    resource_count INTEGER DEFAULT 0,
+                    is_active INTEGER DEFAULT 1,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
+                    FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
+                    UNIQUE (mikan_id, subtitle_group_id)
+                )
+            """)
 
-        # 6. 创建索引
-        self._create_indexes()
+            # 4. 创建资源表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS resources (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mikan_id INTEGER NOT NULL,
+                    subtitle_group_id INTEGER NOT NULL,
+                    episode_number INTEGER,
+                    title TEXT NOT NULL,
+                    file_size TEXT,
+                    resolution TEXT,
+                    subtitle_type TEXT,
+                    magnet_url TEXT,
+                    torrent_url TEXT,
+                    play_url TEXT,
+                    magnet_hash TEXT,
+                    release_date INTEGER,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (mikan_id) REFERENCES animes (mikan_id) ON DELETE CASCADE,
+                    FOREIGN KEY (subtitle_group_id) REFERENCES subtitle_groups (id) ON DELETE CASCADE,
+                    UNIQUE (mikan_id, subtitle_group_id, magnet_hash)
+                )
+            """)
 
-        if self.conn:
-            self.conn.commit()
+            # 5. 创建爬取日志表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS crawl_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    spider_name TEXT NOT NULL,
+                    start_time INTEGER,
+                    end_time INTEGER,
+                    status TEXT,
+                    items_count INTEGER DEFAULT 0,
+                    mikan_id INTEGER,
+                    error_message TEXT,
+                    created_at INTEGER NOT NULL
+                )
+            """)
 
-    def _create_indexes(self):
+            # 6. 创建索引
+            self._create_indexes(cursor)
+
+            conn.commit()
+
+    def _create_indexes(self, cursor):
         """创建优化索引"""
-        if not self.cursor:
-            return
-
-            # anime_subtitle_groups表索引
-        self.cursor.execute("""
+        # anime_subtitle_groups表索引
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_mikan_id
             ON anime_subtitle_groups(mikan_id)
         """)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_subtitle_group_id
             ON anime_subtitle_groups(subtitle_group_id)
         """)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_anime_subtitle_groups_last_update
             ON anime_subtitle_groups(last_update_date)
         """)
 
         # animes表索引 (重要：bangumi_id查询优化)
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_animes_bangumi_id
             ON animes(bangumi_id)
         """)
 
         # resources表索引
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_resources_mikan_id_created_at
             ON resources(mikan_id, created_at)
         """)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_resources_release_date
             ON resources(release_date)
         """)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_resources_episode_number
             ON resources(mikan_id, episode_number)
         """)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_resources_resolution
             ON resources(resolution)
         """)
 
     def process_item(self, item, spider):
-        """处理数据项"""
-        if not self.cursor:
+        """处理数据项 - 使用写连接"""
+        if not self.db_manager:
             return item
 
         try:
@@ -231,145 +235,130 @@ class SQLitePipeline:
         return item
 
     def save_anime(self, item):
-        """保存动画信息"""
-        if not self.cursor:
+        """保存动画信息 - 使用写连接"""
+        if not self.db_manager:
             return
 
-        self.cursor.execute(
-            """
-            INSERT OR REPLACE INTO animes
-            (mikan_id, bangumi_id, title, original_title, broadcast_day,
-             broadcast_start, official_website, bangumi_url, description,
-             status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                item.get("mikan_id"),
-                item.get("bangumi_id"),
-                item.get("title"),
-                item.get("original_title"),
-                item.get("broadcast_day"),
-                item.get("broadcast_start"),
-                item.get("official_website"),
-                item.get("bangumi_url"),
-                item.get("description"),
-                item.get("status"),
-                item.get("created_at"),
-                item.get("updated_at"),
-            ),
+        query = """
+        INSERT OR REPLACE INTO animes 
+        (mikan_id, bangumi_id, title, original_title, broadcast_day, broadcast_start,
+         official_website, bangumi_url, description, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            item.get("mikan_id"),
+            item.get("bangumi_id"),
+            item.get("title"),
+            item.get("original_title"),
+            item.get("broadcast_day"),
+            item.get("broadcast_start"),
+            item.get("official_website"),
+            item.get("bangumi_url"),
+            item.get("description"),
+            item.get("status", "unknown"),
+            item.get("created_at"),
+            item.get("updated_at"),
         )
+
+        self.db_manager.execute_update(query, params)
 
     def save_subtitle_group(self, item):
-        """保存字幕组信息"""
-        if not self.cursor:
+        """保存字幕组信息 - 使用写连接"""
+        if not self.db_manager:
             return
 
-        self.cursor.execute(
-            """
-            INSERT OR REPLACE INTO subtitle_groups
-            (id, name, last_update, created_at)
-            VALUES (?, ?, ?, ?)
-        """,
-            (
-                item.get("id"),
-                item.get("name"),
-                item.get("last_update"),
-                item.get("created_at"),
-            ),
+        query = """
+        INSERT OR REPLACE INTO subtitle_groups 
+        (id, name, last_update, created_at)
+        VALUES (?, ?, ?, ?)
+        """
+        params = (
+            item.get("id"),
+            item.get("name"),
+            item.get("last_update"),
+            item.get("created_at"),
         )
+
+        self.db_manager.execute_update(query, params)
 
     def save_anime_subtitle_group(self, item):
-        """保存动画-字幕组关联信息"""
-        if not self.cursor:
+        """保存动画-字幕组关联信息 - 使用写连接"""
+        if not self.db_manager:
             return
 
-        self.cursor.execute(
-            """
-            INSERT INTO anime_subtitle_groups
-            (mikan_id, subtitle_group_id, first_release_date, last_update_date,
-             resource_count, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(mikan_id, subtitle_group_id)
-            DO UPDATE SET
-                last_update_date = excluded.last_update_date,
-                resource_count = excluded.resource_count,
-                is_active = excluded.is_active,
-                updated_at = excluded.updated_at
-        """,
-            (
-                item.get("mikan_id"),
-                item.get("subtitle_group_id"),
-                item.get("first_release_date"),
-                item.get("last_update_date"),
-                item.get("resource_count"),
-                item.get("is_active", 1),
-                item.get("created_at"),
-                item.get("updated_at"),
-            ),
+        query = """
+        INSERT OR REPLACE INTO anime_subtitle_groups 
+        (mikan_id, subtitle_group_id, first_release_date, last_update_date,
+         resource_count, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            item.get("mikan_id"),
+            item.get("subtitle_group_id"),
+            item.get("first_release_date"),
+            item.get("last_update_date"),
+            item.get("resource_count", 0),
+            item.get("is_active", 1),
+            item.get("created_at"),
+            item.get("updated_at"),
         )
+
+        self.db_manager.execute_update(query, params)
 
     def save_resource(self, item):
-        """保存资源信息 - 使用UPSERT机制"""
-        if not self.cursor:
+        """保存资源信息 - 使用写连接"""
+        if not self.db_manager:
             return
 
-        self.cursor.execute(
-            """
-            INSERT INTO resources
-            (mikan_id, subtitle_group_id, episode_number, title, file_size,
-             resolution, subtitle_type, magnet_url, torrent_url, play_url,
-             magnet_hash, release_date, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(mikan_id, subtitle_group_id, magnet_hash)
-            DO UPDATE SET
-                title = excluded.title,
-                episode_number = excluded.episode_number,
-                resolution = excluded.resolution,
-                subtitle_type = excluded.subtitle_type,
-                file_size = excluded.file_size,
-                updated_at = excluded.updated_at
-        """,
-            (
-                item.get("mikan_id"),
-                item.get("subtitle_group_id"),
-                item.get("episode_number"),
-                item.get("title"),
-                item.get("file_size"),
-                item.get("resolution"),
-                item.get("subtitle_type"),
-                item.get("magnet_url"),
-                item.get("torrent_url"),
-                item.get("play_url"),
-                item.get("magnet_hash"),
-                item.get("release_date"),
-                item.get("created_at"),
-                item.get("updated_at"),
-            ),
+        query = """
+        INSERT OR REPLACE INTO resources 
+        (mikan_id, subtitle_group_id, episode_number, title, file_size,
+         resolution, subtitle_type, magnet_url, torrent_url, play_url,
+         magnet_hash, release_date, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            item.get("mikan_id"),
+            item.get("subtitle_group_id"),
+            item.get("episode_number"),
+            item.get("title"),
+            item.get("file_size"),
+            item.get("resolution"),
+            item.get("subtitle_type"),
+            item.get("magnet_url"),
+            item.get("torrent_url"),
+            item.get("play_url"),
+            item.get("magnet_hash"),
+            item.get("release_date"),
+            item.get("created_at"),
+            item.get("updated_at"),
         )
+
+        self.db_manager.execute_update(query, params)
 
     def save_crawl_log(self, item):
-        """保存爬取日志"""
-        if not self.cursor:
+        """保存爬取日志 - 使用写连接"""
+        if not self.db_manager:
             return
 
-        self.cursor.execute(
-            """
-            INSERT INTO crawl_logs
-            (spider_name, start_time, end_time, status, items_count,
-             mikan_id, error_message, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                item.get("spider_name"),
-                item.get("start_time"),
-                item.get("end_time"),
-                item.get("status"),
-                item.get("items_count"),
-                item.get("mikan_id"),
-                item.get("error_message"),
-                item.get("created_at"),
-            ),
+        query = """
+        INSERT INTO crawl_logs 
+        (spider_name, start_time, end_time, status, items_count, mikan_id,
+         error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        params = (
+            item.get("spider_name"),
+            item.get("start_time"),
+            item.get("end_time"),
+            item.get("status"),
+            item.get("items_count", 0),
+            item.get("mikan_id"),
+            item.get("error_message"),
+            item.get("created_at"),
         )
+
+        self.db_manager.execute_update(query, params)
 
 
 class DuplicatesPipeline:
