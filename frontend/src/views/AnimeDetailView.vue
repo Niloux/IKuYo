@@ -81,27 +81,6 @@
         <p>{{ anime.summary }}</p>
       </div>
 
-      <!-- 评分分布 -->
-      <div class="rating-distribution" v-if="anime.rating.count">
-        <h3>评分分布</h3>
-        <div class="rating-bars">
-          <div 
-            v-for="(count, score) in anime.rating.count" 
-            :key="score"
-            class="rating-bar"
-          >
-            <span class="score-label">{{ score }}分</span>
-            <div class="bar-container">
-              <div 
-                class="bar-fill" 
-                :style="{ width: getBarWidth(count, anime.rating.total) + '%' }"
-              ></div>
-            </div>
-            <span class="count-label">{{ count }}</span>
-          </div>
-        </div>
-      </div>
-
       <!-- 智能集数展示 -->
       <EpisodeDisplay 
         v-if="!route.meta.showResources && (anime.total_episodes > 0 || anime.eps > 0)"
@@ -172,11 +151,6 @@ const formatAirDate = (dateStr: string): string => {
   } catch {
     return dateStr
   }
-}
-
-// 计算评分条宽度
-const getBarWidth = (count: number, total: number): number => {
-  return total > 0 ? (count / total) * 100 : 0
 }
 
 // 获取前15个热门标签
@@ -441,59 +415,6 @@ onMounted(() => {
 .anime-summary p {
   line-height: 1.6;
   color: #34495e;
-}
-
-.rating-distribution {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.rating-distribution h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-.rating-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.rating-bar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.score-label {
-  width: 40px;
-  font-size: 0.9rem;
-  color: #7f8c8d;
-}
-
-.bar-container {
-  flex: 1;
-  height: 20px;
-  background-color: #ecf0f1;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  background-color: #3498db;
-  transition: width 0.3s ease;
-}
-
-.count-label {
-  width: 50px;
-  text-align: right;
-  font-size: 0.9rem;
-  color: #7f8c8d;
 }
 
 .resources-section {

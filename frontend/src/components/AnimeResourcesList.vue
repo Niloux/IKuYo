@@ -54,56 +54,69 @@
           :key="group.id" 
           class="subtitle-group"
         >
-          <div class="group-header">
-            <h4 class="group-name">{{ group.name }}</h4>
-            <span class="group-count">{{ group.resource_count }} 个资源</span>
-          </div>
-          
-          <div class="group-resources">
-            <div 
-              v-for="resource in group.resources" 
-              :key="resource.id" 
-              class="resource-item"
-            >
-              <div class="resource-info">
-                <div class="resource-title">{{ resource.title }}</div>
-                <div class="resource-meta">
-                  <span v-if="resource.resolution" class="meta-tag resolution">
-                    {{ resource.resolution }}
-                  </span>
-                  <span v-if="resource.subtitle_type" class="meta-tag subtitle">
-                    {{ resource.subtitle_type }}
-                  </span>
-                  <span v-if="resource.file_size" class="meta-tag size">
-                    {{ resource.file_size }}
-                  </span>
-                  <span v-if="resource.release_date" class="meta-tag date">
-                    {{ formatReleaseDate(resource.release_date) }}
-                  </span>
-                </div>
-              </div>
-              
-              <div class="resource-actions">
-                <a 
-                  v-if="resource.magnet_url" 
-                  :href="resource.magnet_url" 
-                  class="action-btn magnet-btn"
-                  title="磁力链接"
-                >
-                  🧲
-                </a>
-                <a 
-                  v-if="resource.torrent_url" 
-                  :href="resource.torrent_url" 
-                  class="action-btn torrent-btn"
-                  title="种子下载"
-                  download
-                >
-                  📄
-                </a>
-              </div>
+          <div 
+            class="group-header" 
+            :class="{ 'expanded': isGroupExpanded(group.id) }"
+            @click="toggleGroup(group.id)"
+          >
+            <div class="group-info">
+              <h4 class="group-name">{{ group.name }}</h4>
+              <span class="group-count">{{ group.resource_count }} 个资源</span>
+            </div>
+            <div class="expand-icon" :class="{ 'expanded': isGroupExpanded(group.id) }">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
             </div>
           </div>
+          
+          <transition name="expand-collapse">
+            <div v-show="isGroupExpanded(group.id)" class="group-resources">
+              <div 
+                v-for="resource in group.resources" 
+                :key="resource.id" 
+                class="resource-item"
+              >
+                <div class="resource-info">
+                  <div class="resource-title">{{ resource.title }}</div>
+                  <div class="resource-meta">
+                    <span v-if="resource.resolution" class="meta-tag resolution">
+                      {{ resource.resolution }}
+                    </span>
+                    <span v-if="resource.subtitle_type" class="meta-tag subtitle">
+                      {{ resource.subtitle_type }}
+                    </span>
+                    <span v-if="resource.file_size" class="meta-tag size">
+                      {{ resource.file_size }}
+                    </span>
+                    <span v-if="resource.release_date" class="meta-tag date">
+                      {{ formatReleaseDate(resource.release_date) }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="resource-actions">
+                  <a 
+                    v-if="resource.magnet_url" 
+                    :href="resource.magnet_url" 
+                    class="action-btn magnet-btn"
+                    title="磁力链接"
+                  >
+                    🧲
+                  </a>
+                  <a 
+                    v-if="resource.torrent_url" 
+                    :href="resource.torrent_url" 
+                    class="action-btn torrent-btn"
+                    title="种子下载"
+                    download
+                  >
+                    📄
+                  </a>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
 
@@ -164,6 +177,9 @@ const selectedSubtitleType = ref('')
 // 分页状态
 const currentLimit = ref(100)
 const currentOffset = ref(0)
+
+// 折叠状态管理
+const expandedGroups = ref<Set<number>>(new Set())
 
 // 计算属性
 const totalResources = computed(() => resourcesData.value?.total_resources || 0)
@@ -239,6 +255,22 @@ const loadNextPage = () => {
     currentOffset.value += currentLimit.value
     loadResources()
   }
+}
+
+// 切换字幕组展开/收起状态
+const toggleGroup = (groupId: number) => {
+  const newExpandedGroups = new Set(expandedGroups.value)
+  if (newExpandedGroups.has(groupId)) {
+    newExpandedGroups.delete(groupId)
+  } else {
+    newExpandedGroups.add(groupId)
+  }
+  expandedGroups.value = newExpandedGroups
+}
+
+// 检查字幕组是否展开
+const isGroupExpanded = (groupId: number): boolean => {
+  return expandedGroups.value.has(groupId)
 }
 
 // 组件挂载时加载数据
@@ -391,6 +423,25 @@ onMounted(() => {
   padding: 1rem 1.5rem;
   background-color: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.group-header:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.group-header.expanded {
+  background-color: #e3f2fd;
+  border-bottom-color: #2196f3;
+}
+
+.group-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .group-name {
@@ -408,8 +459,50 @@ onMounted(() => {
   border-radius: 12px;
 }
 
+.expand-icon {
+  width: 24px;
+  height: 24px;
+  color: #6c757d;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+  color: #2196f3;
+}
+
+.expand-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 .group-resources {
   padding: 0.5rem 0;
+  overflow: hidden;
+}
+
+/* 展开收起动画 */
+.expand-collapse-enter-active,
+.expand-collapse-leave-active {
+  transition: all 0.4s ease;
+  transform-origin: top;
+}
+
+.expand-collapse-enter-from,
+.expand-collapse-leave-to {
+  opacity: 0;
+  transform: scaleY(0);
+  max-height: 0;
+}
+
+.expand-collapse-enter-to,
+.expand-collapse-leave-from {
+  opacity: 1;
+  transform: scaleY(1);
+  max-height: 2000px;
 }
 
 .resource-item {
