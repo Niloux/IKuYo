@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-定时任务调度器
-基于APScheduler实现定时爬虫任务
+定时任务调度器（微服务解耦版）
+只负责定时将定时任务写入crawler_tasks表，由worker服务消费。
 """
 
 import logging
@@ -19,6 +19,7 @@ import asyncio
 class UnifiedScheduler:
     """
     统一任务调度器：所有定时任务通过数据库(scheduled_jobs表)驱动，统一调度和管理。
+    只负责定时写入crawler_tasks表，由worker服务消费。
     """
 
     def __init__(self):
@@ -53,7 +54,7 @@ class UnifiedScheduler:
                     continue
                 minute, hour, day, month, day_of_week = cron_parts
                 self.scheduler.add_job(
-                    func=self._run_scheduled_task,
+                    func=self._write_scheduled_task,
                     trigger=CronTrigger(
                         minute=minute, hour=hour, day=day, month=month, day_of_week=day_of_week
                     ),
@@ -101,12 +102,8 @@ class UnifiedScheduler:
         self.load_jobs_from_db()
         self.logger.info("定时任务已重新加载")
 
-    def _run_scheduled_task(self, job):
-        # APScheduler的job函数不能为async，所以这里用asyncio.create_task调度异步任务
-        asyncio.create_task(self._async_run_task(job))
-
-    async def _async_run_task(self, job):
-        self.logger.info(f"开始执行定时任务: {job.name}")
+    def _write_scheduled_task(self, job):
+        # 只写入任务表，状态设为pending，由worker消费
         with get_session() as session:
             task_repo = CrawlerTaskRepository(session)
             try:
@@ -114,18 +111,24 @@ class UnifiedScheduler:
                     task_type="crawler",
                     parameters=job.parameters,
                     repository=task_repo,
-                    spider_runner=None,  # 需注入实际spider_runner实例
+                    spider_runner=None,
                     task_type_db="scheduled",
                 )
-                await task.execute()
+                # 只需execute写入任务表
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(task.execute())
+                else:
+                    loop.run_until_complete(task.execute())
+                self.logger.info(f"定时任务已写入任务表: {job.name}")
             except Exception as e:
-                self.logger.error(f"定时任务执行异常: {e}")
+                self.logger.error(f"定时任务写入异常: {e}")
 
     def _job_listener(self, event) -> None:
         if event.exception:
-            self.logger.error(f"任务执行失败: {event.job_id} - {event.exception}")
+            self.logger.error(f"任务写入失败: {event.job_id} - {event.exception}")
         else:
-            self.logger.info(f"任务执行成功: {event.job_id}")
+            self.logger.info(f"任务写入成功: {event.job_id}")
 
     def get_jobs(self) -> List[Dict[str, Any]]:
         if not self.scheduler:

@@ -13,3 +13,4 @@ class CrawlerTask(SQLModel, table=True):
     started_at: Optional[datetime] = Field(default=None)
     completed_at: Optional[datetime] = Field(default=None)
     error_message: Optional[str] = Field(default=None)
+    progress: Optional[str] = Field(default=None)

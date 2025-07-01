@@ -11,14 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ikuyo.api.routes import bangumi, health, resources, crawler, scheduler
 from ikuyo.core.database import create_db_and_tables
-from ikuyo.core.crawler_runner import AsyncSpiderRunner
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
-    global spider_runner
-    spider_runner = AsyncSpiderRunner()
     yield
 
 
@@ -71,16 +68,3 @@ async def root():
             "/api/v1/animes/search",
         ],
     }
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "ikuyo.api.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        reload_dirs=["ikuyo"],
-        log_level="info",
-    )

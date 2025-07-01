@@ -139,6 +139,7 @@ class CrawlerTaskResponse(BaseModel):
     parameters: Any
     result_summary: Optional[Any] = None
     error_message: Optional[str] = None
+    progress: Optional[Any] = None
 
 
 class ScheduledJobCreate(BaseModel):
