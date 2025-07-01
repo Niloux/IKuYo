@@ -14,4 +14,3 @@ class ScheduledJob(SQLModel, table=True):
     enabled: bool = Field(default=True)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
- 

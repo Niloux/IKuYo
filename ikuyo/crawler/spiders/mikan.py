@@ -4,7 +4,6 @@ from urllib.parse import quote, urljoin
 
 from scrapy import Request, Spider
 
-from ikuyo.core.database import DatabaseManager
 from ikuyo.crawler.items import (
     AnimeItem,
     AnimeSubtitleGroupItem,
@@ -687,47 +686,8 @@ class MikanSpider(Spider):
         return None
 
     def _save_crawl_log_to_database(self):
-        """直接将爬取日志保存到数据库"""
-        try:
-            # 初始化数据库管理器
-            db_manager = DatabaseManager()
-
-            # 准备插入数据
-            query = """
-            INSERT INTO crawl_logs 
-            (spider_name, start_time, end_time, status, items_count, mikan_id,
-             error_message, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            params = (
-                self.crawl_log.get("spider_name"),
-                self.crawl_log.get("start_time"),
-                self.crawl_log.get("end_time"),
-                self.crawl_log.get("status"),
-                self.crawl_log.get("items_count", 0),
-                self.crawl_log.get("mikan_id"),
-                self.crawl_log.get("error_message"),
-                self.crawl_log.get("created_at"),
-            )
-
-            # 执行数据库写入
-            rows_affected = db_manager.execute_update(query, params)
-
-            if rows_affected > 0:
-                self.logger.info(f"✅ 爬取日志已保存到数据库，记录ID: {rows_affected}")
-            else:
-                self.logger.warning("⚠️  爬取日志保存失败：没有行被影响")
-
-        except Exception as e:
-            self.logger.error(f"❌ 保存爬取日志到数据库失败: {e}")
-            # 不抛出异常，确保爬虫能正常关闭
-        finally:
-            # 确保数据库连接被正确关闭
-            try:
-                if "db_manager" in locals():
-                    db_manager.close_all()
-            except Exception as e:
-                self.logger.error(f"关闭数据库连接失败: {e}")
+        """（已废弃）直接将爬取日志保存到数据库，现由上层统一处理"""
+        pass
 
     def closed(self, reason):
         """爬虫关闭时的处理"""
@@ -742,6 +702,4 @@ class MikanSpider(Spider):
             f"模式: {self.crawl_log['crawl_mode']}, "
             f"总资源数: {self.crawl_log['items_count']}"
         )
-
-        # 直接保存爬取日志到数据库
-        self._save_crawl_log_to_database()
+        # 不再直接写数据库，交由上层调度/任务层处理

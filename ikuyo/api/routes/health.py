@@ -41,7 +41,17 @@ async def health_check():
         db_stats = {}
 
     # 获取缓存状态
-    cache_stats = bangumi_service.get_cache_info()  # 使用BangumiService的get_cache_info方法
+    def to_dict_if_config(val):
+        if hasattr(val, "__dict__"):
+            return {k: to_dict_if_config(v) for k, v in val.__dict__.items()}
+        elif isinstance(val, dict):
+            return {k: to_dict_if_config(v) for k, v in val.items()}
+        elif isinstance(val, list):
+            return [to_dict_if_config(v) for v in val]
+        else:
+            return val
+
+    cache_stats = dict(to_dict_if_config(bangumi_service.get_cache_info()))
 
     return HealthResponse(
         status="healthy" if db_status == "healthy" else "unhealthy",

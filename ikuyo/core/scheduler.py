@@ -6,133 +6,130 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from ikuyo.core.repositories.scheduled_job_repository import ScheduledJobRepository
+from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
+from ikuyo.core.tasks.task_factory import TaskFactory
+from ikuyo.core.database import get_session
+import asyncio
 
-from .config import load_config
 
-
-class CrawlerScheduler:
-    """爬虫定时任务调度器"""
+class UnifiedScheduler:
+    """
+    统一任务调度器：所有定时任务通过数据库(scheduled_jobs表)驱动，统一调度和管理。
+    """
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.scheduler: Optional[BackgroundScheduler] = None
         self.is_running = False
 
-        config = load_config()
-        self.scheduler_config = getattr(config, "scheduler", {})
-
     def init_scheduler(self) -> bool:
-        """初始化调度器"""
         try:
-            # 获取调度器配置
-            timezone = self.scheduler_config.get("timezone", "Asia/Shanghai")
-            job_defaults = self.scheduler_config.get("scheduler_settings", {}).get(
-                "job_defaults", {}
-            )
-
-            # 创建后台调度器
-            self.scheduler = BackgroundScheduler(timezone=timezone, job_defaults=job_defaults)
-
-            # 添加事件监听器
-            if self.scheduler:
-                self.scheduler.add_listener(
-                    self._job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
-                )
-
+            self.scheduler = BackgroundScheduler()
+            self.scheduler.add_listener(self._job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
             self.logger.info("调度器初始化成功")
             return True
-
         except Exception as e:
             self.logger.error(f"调度器初始化失败: {e}")
             return False
 
-    def add_crawler_job(self) -> None:
-        """添加爬虫定时任务"""
+    def load_jobs_from_db(self):
         if not self.scheduler:
             self.logger.error("调度器未初始化")
             return
-
-        try:
-            jobs = self.scheduler_config.get("jobs", [])
-
-            for job_config in jobs:
-                if not job_config.get("enabled", True):
+        with get_session() as session:
+            job_repo = ScheduledJobRepository(session)
+            jobs = job_repo.list()
+            for job in jobs:
+                if not job.enabled:
                     continue
-
-                job_id = job_config["id"]
-                job_name = job_config["name"]
-                cron_expr = job_config["cron"]
-                description = job_config.get("description", "")
-
-                # 解析cron表达式
+                cron_expr = job.cron_expression
                 cron_parts = cron_expr.split()
                 if len(cron_parts) != 5:
                     self.logger.error(f"无效的cron表达式: {cron_expr}")
                     continue
-
                 minute, hour, day, month, day_of_week = cron_parts
-
-                # 添加定时任务
                 self.scheduler.add_job(
-                    func=self._run_crawler,
+                    func=self._run_scheduled_task,
                     trigger=CronTrigger(
                         minute=minute, hour=hour, day=day, month=month, day_of_week=day_of_week
                     ),
-                    id=job_id,
-                    name=job_name,
-                    description=description,
+                    id=job.job_id,
+                    name=job.name,
+                    args=[job],
                     replace_existing=True,
                 )
-
-                self.logger.info(f"添加定时任务: {job_name} (ID: {job_id}, Cron: {cron_expr})")
-
-        except Exception as e:
-            self.logger.error(f"添加定时任务失败: {e}")
+                self.logger.info(f"添加定时任务: {job.name} (ID: {job.job_id}, Cron: {cron_expr})")
 
     def start(self) -> bool:
-        """启动调度器"""
         if not self.scheduler:
             if not self.init_scheduler():
                 return False
-
+        if not self.scheduler:
+            self.logger.error("调度器未初始化，无法启动")
+            return False
         try:
-            # 添加爬虫任务
-            self.add_crawler_job()
-
-            # 启动调度器
-            if self.scheduler:
-                self.scheduler.start()
-                self.is_running = True
-
-            self.logger.info("定时任务调度器已启动")
+            self.load_jobs_from_db()
+            self.scheduler.start()
+            self.is_running = True
+            self.logger.info("统一任务调度器已启动")
             return True
-
         except Exception as e:
             self.logger.error(f"启动调度器失败: {e}")
             return False
 
     def stop(self) -> bool:
-        """停止调度器"""
         if self.scheduler and self.is_running:
             try:
                 self.scheduler.shutdown(wait=True)
                 self.is_running = False
-                self.logger.info("定时任务调度器已停止")
+                self.logger.info("统一任务调度器已停止")
                 return True
             except Exception as e:
                 self.logger.error(f"停止调度器失败: {e}")
                 return False
         return True
 
+    def reload_jobs(self):
+        if not self.scheduler:
+            self.logger.error("调度器未初始化")
+            return
+        self.scheduler.remove_all_jobs()
+        self.load_jobs_from_db()
+        self.logger.info("定时任务已重新加载")
+
+    def _run_scheduled_task(self, job):
+        # APScheduler的job函数不能为async，所以这里用asyncio.create_task调度异步任务
+        asyncio.create_task(self._async_run_task(job))
+
+    async def _async_run_task(self, job):
+        self.logger.info(f"开始执行定时任务: {job.name}")
+        with get_session() as session:
+            task_repo = CrawlerTaskRepository(session)
+            try:
+                task = TaskFactory.create_task(
+                    task_type="crawler",
+                    parameters=job.parameters,
+                    repository=task_repo,
+                    spider_runner=None,  # 需注入实际spider_runner实例
+                    task_type_db="scheduled",
+                )
+                await task.execute()
+            except Exception as e:
+                self.logger.error(f"定时任务执行异常: {e}")
+
+    def _job_listener(self, event) -> None:
+        if event.exception:
+            self.logger.error(f"任务执行失败: {event.job_id} - {event.exception}")
+        else:
+            self.logger.info(f"任务执行成功: {event.job_id}")
+
     def get_jobs(self) -> List[Dict[str, Any]]:
-        """获取所有任务"""
         if not self.scheduler:
             return []
-
         jobs = []
         for job in self.scheduler.get_jobs():
             jobs.append({
@@ -142,79 +139,3 @@ class CrawlerScheduler:
                 "trigger": str(job.trigger),
             })
         return jobs
-
-    def _run_crawler(self) -> None:
-        """执行爬虫任务（通过统一入口）"""
-        try:
-            self.logger.info("开始执行定时爬虫任务")
-            from ikuyo.core.config import load_config
-            from ikuyo.core.crawler_runner import run_crawler
-
-            config = load_config()
-            # 构造最小args对象，兼容run_crawler
-
-            class Args:
-                mode = "homepage"
-                log_level = "INFO"
-                year = None
-                season = None
-                start_url = None
-                limit = None
-                output = None
-
-            args = Args()
-            run_crawler(args, config)
-            self.logger.info("定时爬虫任务执行完成")
-        except Exception as e:
-            self.logger.error(f"执行爬虫任务失败: {e}")
-            raise
-
-    def _job_listener(self, event) -> None:
-        """任务事件监听器"""
-        if event.exception:
-            self.logger.error(f"任务执行失败: {event.job_id} - {event.exception}")
-        else:
-            self.logger.info(f"任务执行成功: {event.job_id}")
-
-
-def main() -> None:
-    """主函数"""
-    # 配置日志
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.StreamHandler(), logging.FileHandler("scheduler.log", encoding="utf-8")],
-    )
-
-    logger = logging.getLogger(__name__)
-
-    # 检查是否启用定时任务
-    config = load_config()
-    scheduler_config = getattr(config, "scheduler", {})
-    if not scheduler_config.get("enabled", False):
-        logger.info("定时任务未启用，退出")
-        return
-
-    # 创建并启动调度器
-    scheduler = CrawlerScheduler()
-
-    try:
-        if scheduler.start():
-            logger.info("定时任务调度器运行中...")
-
-            # 保持程序运行
-            import time
-
-            while scheduler.is_running:
-                time.sleep(1)
-
-    except KeyboardInterrupt:
-        logger.info("收到中断信号，正在停止调度器...")
-        scheduler.stop()
-    except Exception as e:
-        logger.error(f"调度器运行异常: {e}")
-        scheduler.stop()
-
-
-if __name__ == "__main__":
-    main()

@@ -12,4 +12,3 @@ class CrawlLog(SQLModel, table=True):
     mikan_id: Optional[int] = None
     error_message: Optional[str] = None
     created_at: Optional[int] = None
- 

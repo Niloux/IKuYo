@@ -15,4 +15,3 @@ class Anime(SQLModel, table=True):
     status: Optional[str] = Field(default="unknown")
     created_at: Optional[int] = None  # Unix时间戳
     updated_at: Optional[int] = None  # Unix时间戳
- 

@@ -12,4 +12,3 @@ class AnimeSubtitleGroup(SQLModel, table=True):
     is_active: Optional[int] = Field(default=1)
     created_at: Optional[int] = None
     updated_at: Optional[int] = None
- 

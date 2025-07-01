@@ -18,4 +18,3 @@ class Resource(SQLModel, table=True):
     release_date: Optional[int] = None
     created_at: Optional[int] = None
     updated_at: Optional[int] = None
- 

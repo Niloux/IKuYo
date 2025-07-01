@@ -5,6 +5,7 @@ API数据模型
 """
 
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -119,3 +120,51 @@ class BangumiEpisodesResponse(BaseResponse):
 
     data: List[BangumiEpisode] = Field(..., description="章节列表")
     total: int = Field(..., description="总章节数")
+
+
+class CrawlerTaskCreate(BaseModel):
+    mode: str
+    year: Optional[int] = None
+    season: Optional[str] = None
+    start_url: Optional[str] = None
+    limit: Optional[int] = None
+
+
+class CrawlerTaskResponse(BaseModel):
+    id: Optional[int] = None
+    status: str
+    created_at: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    parameters: Any
+    result_summary: Optional[Any] = None
+    error_message: Optional[str] = None
+
+
+class ScheduledJobCreate(BaseModel):
+    job_id: str
+    name: str
+    cron_expression: str
+    parameters: Any
+    enabled: bool = True
+    description: Optional[str] = None
+
+
+class ScheduledJobUpdate(BaseModel):
+    name: Optional[str] = None
+    cron_expression: Optional[str] = None
+    parameters: Optional[Any] = None
+    enabled: Optional[bool] = None
+    description: Optional[str] = None
+
+
+class ScheduledJobResponse(BaseModel):
+    id: Optional[int] = None
+    job_id: str
+    name: str
+    cron_expression: str
+    parameters: Any
+    enabled: bool
+    description: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

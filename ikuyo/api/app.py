@@ -9,13 +9,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ikuyo.api.routes import bangumi, health, resources
+from ikuyo.api.routes import bangumi, health, resources, crawler, scheduler
 from ikuyo.core.database import create_db_and_tables
+from ikuyo.core.crawler_runner import AsyncSpiderRunner
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    global spider_runner
+    spider_runner = AsyncSpiderRunner()
     yield
 
 
@@ -43,6 +46,8 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(resources.router, prefix="/api/v1")
 app.include_router(bangumi.router, prefix="/api/v1")
+app.include_router(crawler.router)
+app.include_router(scheduler.router)
 
 
 @app.get("/")
