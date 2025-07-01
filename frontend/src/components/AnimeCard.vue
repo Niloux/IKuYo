@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { BangumiCalendarItem } from '../services/api'
+import defaultCover from '../assets/ikuyo-avatar.png'
 
 // Props定义
 const props = withDefaults(defineProps<{
@@ -78,7 +79,13 @@ const convertToHttps = (url: string): string => {
 }
 
 // 获取HTTPS图片URL
-const imageUrl = computed(() => convertToHttps(props.anime.images.large))
+const imageUrl = computed(() => {
+  const imgObj = props.anime.images
+  if (imgObj && imgObj.large) {
+    return convertToHttps(imgObj.large)
+  }
+  return defaultCover
+})
 
 // 图片加载失败处理
 const onImageError = (event: Event) => {

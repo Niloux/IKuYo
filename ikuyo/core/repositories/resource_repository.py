@@ -1,4 +1,3 @@
-from ast import Dict
 from typing import Optional, List
 from sqlmodel import Session, select
 from ikuyo.core.models import Resource
