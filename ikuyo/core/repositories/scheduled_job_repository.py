@@ -50,7 +50,7 @@ class ScheduledJobRepository:
     ) -> List[ScheduledJob]:
         statement = (
             select(ScheduledJob)
-            .where(ScheduledJob.created_at != None)  # noqa
+            .where(ScheduledJob.created_at is not None)
             .where(ScheduledJob.created_at >= start)  # type: ignore
             .where(ScheduledJob.created_at <= end)  # type: ignore
             .offset(offset)

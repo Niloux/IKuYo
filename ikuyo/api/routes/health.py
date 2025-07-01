@@ -5,12 +5,14 @@
 """
 
 from datetime import datetime
+from sqlmodel import select
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from ikuyo.api.models.schemas import HealthResponse
 from ikuyo.core.bangumi_service import BangumiService
-from ikuyo.core.database import DatabaseManager
+from ikuyo.core.database import get_session
+from ikuyo.core.repositories import AnimeRepository
 
 router = APIRouter(prefix="/health", tags=["Health"])
 
@@ -18,36 +20,31 @@ router = APIRouter(prefix="/health", tags=["Health"])
 bangumi_service = BangumiService()
 
 
-def get_database():
-    """获取数据库连接"""
-    db_manager = DatabaseManager()
-    try:
-        yield db_manager
-    finally:
-        pass
-
-
 @router.get("/", response_model=HealthResponse)
-async def health_check(db: DatabaseManager = Depends(get_database)):
+async def health_check():
     """
     健康检查接口
     检查API、数据库和缓存状态
     """
     try:
-        # 测试数据库连接（使用读连接池）
-        db.execute_one("SELECT 1")
-        db_status = "healthy"
+        # 测试数据库连接（ORM方式）
+        with get_session() as session:
+            # 尝试ORM查询
+            session.exec(select(1)).first()
+            db_status = "healthy"
+            # 数据库统计信息（以Anime表为例，可扩展）
+            anime_repo = AnimeRepository(session)
+            anime_count = len(anime_repo.list(limit=1_000_000))
+            db_stats = {"anime_count": anime_count}
     except Exception:
         db_status = "unhealthy"
+        db_stats = {}
 
     # 获取缓存状态
     cache_stats = bangumi_service.get_cache_info()  # 使用BangumiService的get_cache_info方法
 
-    # 获取数据库统计信息
-    db_stats = db.get_database_stats()
-
     return HealthResponse(
-        status="healthy",
+        status="healthy" if db_status == "healthy" else "unhealthy",
         version="2.0.0",
         timestamp=datetime.now().isoformat(),
         database_status=db_status,

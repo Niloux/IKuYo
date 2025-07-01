@@ -53,7 +53,7 @@ class CrawlerTaskRepository:
     ) -> List[CrawlerTask]:
         statement = (
             select(CrawlerTask)
-            .where(CrawlerTask.created_at != None)  # noqa
+            .where(CrawlerTask.created_at is not None)
             .where(CrawlerTask.created_at >= start)  # type: ignore
             .where(CrawlerTask.created_at <= end)  # type: ignore
             .offset(offset)

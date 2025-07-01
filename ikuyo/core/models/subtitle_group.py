@@ -7,3 +7,4 @@ class SubtitleGroup(SQLModel, table=True):
     name: str
     last_update: Optional[int] = None
     created_at: Optional[int] = None
+ 
