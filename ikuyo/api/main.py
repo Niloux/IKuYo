@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """
 FastAPI主应用
-IKuYo动漫资源查询API - 简洁版本
+IKuYo动漫资源查询API
 专注于资源获取场景
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ikuyo.api.routes import bangumi, health, resources
+from ikuyo.core.database import create_db_and_tables
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -18,6 +27,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
 # 添加CORS中间件
