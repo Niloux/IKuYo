@@ -804,7 +804,6 @@ class MikanSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider.crawler = crawler  # Store the crawler object
 

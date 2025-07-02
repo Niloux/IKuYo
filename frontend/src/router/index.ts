@@ -40,6 +40,12 @@ const router = createRouter({
       name: 'library-detail',
       component: () => import('../views/AnimeDetailView.vue'),
       meta: {title: '番剧资源', showResources: true}
+    },
+    {
+      path: '/tasks',
+      name: 'task-management',
+      component: () => import('../views/TaskManagementView.vue'),
+      meta: {title: '任务管理'}
     }
   ]
 })
