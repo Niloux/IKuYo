@@ -102,7 +102,9 @@ class BangumiEpisode(BaseModel):
     """Bangumi章节信息模型"""
 
     id: int = Field(..., description="章节ID")
-    type: int = Field(..., description="章节类型(0:正片, 1:SP, 2:OP, 3:ED, 4:PV, 5:MAD, 6:其他)")
+    type: int = Field(
+        ..., description="章节类型(0:正片, 1:SP, 2:OP, 3:ED, 4:PV, 5:MAD, 6:其他)"
+    )
     name: str = Field(..., description="章节名称")
     name_cn: str = Field(..., description="章节中文名称")
     sort: float = Field(..., description="章节排序")

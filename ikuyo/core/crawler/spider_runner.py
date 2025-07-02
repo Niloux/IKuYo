@@ -66,7 +66,12 @@ class SpiderRunner:
             }
 
         except Exception as e:
-            return {"task_id": task_id, "status": "failed", "result": None, "error": str(e)}
+            return {
+                "task_id": task_id,
+                "status": "failed",
+                "result": None,
+                "error": str(e),
+            }
 
     def run(self) -> Dict[str, Any]:
         """执行爬虫任务"""
@@ -103,7 +108,7 @@ class SpiderRunner:
     def _setup_logging(self, log_level: str):
         """设置日志级别"""
         # 为当前进程设置日志级别
-        logging.getLogger().setLevel(getattr(logging, log_level.upper(), logging.INFO))
+        logging.getLogger().setLevel(logging.DEBUG)
 
     def _run_scrapy(self, config: SpiderConfig) -> str:
         """执行Scrapy爬虫"""
@@ -155,8 +160,10 @@ class SpiderRunner:
             self.logger.info(f"启动Scrapy爬虫，参数: {spider_kwargs}")
 
             # 启动爬虫
+            self.logger.info(f"Scrapy process.start() for task {self.task_id} is about to be called.")
             process.crawl(MikanSpider, **spider_kwargs)
             process.start()  # 这会阻塞直到爬虫完成
+            self.logger.info(f"Scrapy process.start() for task {self.task_id} has returned.")
 
             return f"爬虫任务 {self.task_id} 执行成功"
 

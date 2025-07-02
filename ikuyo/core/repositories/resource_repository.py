@@ -57,7 +57,9 @@ class ResourceRepository:
         statement = select(Resource)
         if conditions:
             statement = statement.where(and_(*conditions))
-        statement = statement.order_by(col(Resource.release_date).desc())  # 默认按release_date倒序
+        statement = statement.order_by(
+            col(Resource.release_date).desc()
+        )  # 默认按release_date倒序
         if limit:
             statement = statement.limit(limit)
         return list(self.session.exec(statement))
@@ -73,6 +75,4 @@ class ResourceRepository:
             .order_by(Resource.episode_number)  # type: ignore
         )
         result = self.session.exec(statement).all()
-        return [
-            {"episode_number": row[0], "resource_count": row[1]} for row in result
-        ]
+        return [{"episode_number": row[0], "resource_count": row[1]} for row in result]

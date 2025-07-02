@@ -40,7 +40,9 @@ class UnifiedScheduler:
         """初始化调度器"""
         try:
             self.scheduler = BackgroundScheduler()
-            self.scheduler.add_listener(self._job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+            self.scheduler.add_listener(
+                self._job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
+            )
             self.logger.info("调度器初始化成功")
             return True
         except Exception as e:
@@ -67,14 +69,20 @@ class UnifiedScheduler:
                 self.scheduler.add_job(
                     func=self._write_scheduled_task,
                     trigger=CronTrigger(
-                        minute=minute, hour=hour, day=day, month=month, day_of_week=day_of_week
+                        minute=minute,
+                        hour=hour,
+                        day=day,
+                        month=month,
+                        day_of_week=day_of_week,
                     ),
                     id=job.job_id,
                     name=job.name,
                     args=[job],
                     replace_existing=True,
                 )
-                self.logger.info(f"添加定时任务: {job.name} (ID: {job.job_id}, Cron: {cron_expr})")
+                self.logger.info(
+                    f"添加定时任务: {job.name} (ID: {job.job_id}, Cron: {cron_expr})"
+                )
 
     def start(self) -> bool:
         """启动调度器"""
@@ -148,10 +156,12 @@ class UnifiedScheduler:
             return []
         jobs = []
         for job in self.scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run_time": job.next_run_time,
-                "trigger": str(job.trigger),
-            })
+            jobs.append(
+                {
+                    "id": job.id,
+                    "name": job.name,
+                    "next_run_time": job.next_run_time,
+                    "trigger": str(job.trigger),
+                }
+            )
         return jobs

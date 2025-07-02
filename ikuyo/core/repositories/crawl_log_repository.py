@@ -36,12 +36,20 @@ class CrawlLogRepository:
         self, spider_name: str, limit: int = 100, offset: int = 0
     ) -> List[CrawlLog]:
         statement = (
-            select(CrawlLog).where(CrawlLog.spider_name == spider_name).offset(offset).limit(limit)
+            select(CrawlLog)
+            .where(CrawlLog.spider_name == spider_name)
+            .offset(offset)
+            .limit(limit)
         )
         return list(self.session.exec(statement))
 
-    def list_by_mikan_id(self, mikan_id: int, limit: int = 100, offset: int = 0) -> List[CrawlLog]:
+    def list_by_mikan_id(
+        self, mikan_id: int, limit: int = 100, offset: int = 0
+    ) -> List[CrawlLog]:
         statement = (
-            select(CrawlLog).where(CrawlLog.mikan_id == mikan_id).offset(offset).limit(limit)
+            select(CrawlLog)
+            .where(CrawlLog.mikan_id == mikan_id)
+            .offset(offset)
+            .limit(limit)
         )
         return list(self.session.exec(statement))

@@ -41,7 +41,10 @@ class ScheduledJobRepository:
         self, enabled: bool = True, limit: int = 100, offset: int = 0
     ) -> List[ScheduledJob]:
         statement = (
-            select(ScheduledJob).where(ScheduledJob.enabled == enabled).offset(offset).limit(limit)
+            select(ScheduledJob)
+            .where(ScheduledJob.enabled == enabled)
+            .offset(offset)
+            .limit(limit)
         )
         return list(self.session.exec(statement))
 

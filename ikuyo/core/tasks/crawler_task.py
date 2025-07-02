@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Optional
 import json
 import logging
 from ikuyo.core.tasks.base import Task
@@ -6,7 +6,6 @@ from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepositor
 from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
 from pydantic import BaseModel, ValidationError
 from datetime import datetime, timezone
-from ikuyo.core.database import get_session
 
 
 class CrawlerTaskParams(BaseModel):
@@ -83,7 +82,6 @@ class CrawlerTask(Task):
                 self.task_record.status = "pending"
                 self.repository.update(self.task_record)
 
-            self.on_status_change("pending")
             self.logger.info(f"任务 {self.task_id} 已写入数据库，等待worker处理")
 
         except Exception as e:
@@ -113,7 +111,6 @@ class CrawlerTask(Task):
             # 更新任务状态为running
             self.task_record.status = "running"
             self.repository.update(self.task_record)
-            self.on_status_change("running")
 
             # 准备任务参数
             parameters = {}
@@ -155,74 +152,5 @@ class CrawlerTask(Task):
             self.repository.update(self.task_record)
             raise
 
-    def on_progress(self, progress: Dict[str, Any]) -> None:
-        """处理进度更新"""
-        try:
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                self.task_record.update_progress(
-                    percentage=progress.get("percentage"),
-                    processed_items=progress.get("processed_items"),
-                    total_items=progress.get("total_items"),
-                    processing_speed=progress.get("processing_speed"),
-                    estimated_remaining=progress.get("estimated_remaining")
-                )
-                repo.update(self.task_record)
-        except Exception as e:
-            self.logger.error(f"更新进度时出错: {str(e)}")
-
-    def on_complete(self, result_summary: Optional[str] = None) -> None:
-        """处理任务完成"""
-        try:
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                self.task_record.status = "completed"
-                self.task_record.completed_at = datetime.now(timezone.utc)
-                if result_summary:
-                    self.task_record.result_summary = result_summary
-                repo.update(self.task_record)
-        except Exception as e:
-            self.logger.error(f"更新完成状态时出错: {str(e)}")
-
-    def on_error(self, error_message: str) -> None:
-        """处理任务错误"""
-        try:
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                self.task_record.status = "failed"
-                self.task_record.error_message = error_message
-                self.task_record.completed_at = datetime.now(timezone.utc)
-                repo.update(self.task_record)
-        except Exception as e:
-            self.logger.error(f"更新错误状态时出错: {str(e)}")
-
-    def on_start(self) -> None:
-        """处理任务开始"""
-        try:
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                self.task_record.status = "running"
-                self.task_record.started_at = datetime.now(timezone.utc)
-                repo.update(self.task_record)
-        except Exception as e:
-            self.logger.error(f"更新开始状态时出错: {str(e)}")
-
-    def on_cancel(self) -> None:
-        """处理任务取消"""
-        try:
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                self.task_record.status = "cancelled"
-                self.task_record.completed_at = datetime.now(timezone.utc)
-                repo.update(self.task_record)
-        except Exception as e:
-            self.logger.error(f"更新取消状态时出错: {str(e)}")
-
-    def on_status_change(self, status: str) -> None:
-        # 可扩展为事件通知、日志等
-        pass
-
     def _now(self):
-        import datetime
-
-        return datetime.datetime.now(datetime.timezone.utc)
+        return datetime.now(timezone.utc)

@@ -93,12 +93,16 @@ def _is_valid_episode_number(title: str, matched_str: str, episode_num: int) -> 
     hash_brackets = re.findall(r"\[([A-Fa-f0-9]+)\]", title)
     for hash_candidate in hash_brackets:
         # 如果方括号内容包含字母且长度>=6，很可能是哈希值
-        if len(hash_candidate) >= 6 and re.search(r"[A-Fa-f]", hash_candidate, re.IGNORECASE):
+        if len(hash_candidate) >= 6 and re.search(
+            r"[A-Fa-f]", hash_candidate, re.IGNORECASE
+        ):
             if matched_str in hash_candidate:
                 return False
 
     # 排除范围格式（如 [01-12]）
-    range_pattern = rf"\[\d+-{re.escape(matched_str)}\]|\[{re.escape(matched_str)}-\d+\]"
+    range_pattern = (
+        rf"\[\d+-{re.escape(matched_str)}\]|\[{re.escape(matched_str)}-\d+\]"
+    )
     if re.search(range_pattern, title):
         return False
 
@@ -135,7 +139,10 @@ def extract_resolution(title: str) -> Optional[str]:
         # 优先匹配明确的p格式
         (r"(\d{3,4}[pP])", lambda m: m.group(1).lower()),  # 1080p, 720p, 480p等
         # 从分辨率尺寸推断格式（支持大小写x，支持3-4位宽度）
-        (r"(\d{3,4})[xX](\d{3,4})", lambda m: _resolution_from_dimensions(m.group(1), m.group(2))),
+        (
+            r"(\d{3,4})[xX](\d{3,4})",
+            lambda m: _resolution_from_dimensions(m.group(1), m.group(2)),
+        ),
         # 匹配隔行扫描格式
         (r"(\d{3,4}[iI])", lambda m: m.group(1).lower()),  # 1080i, 720i等
         # 匹配K格式
@@ -441,7 +448,9 @@ def _infer_resolution_from_source_and_codec(title: str) -> Optional[str]:
     for source, resolution in source_resolution_map:
         if source in title_upper:
             # 如果有HEVC编码且是720p源，可能升级到1080p
-            if resolution == "720p" and ("HEVC" in title_upper or "H.265" in title_upper):
+            if resolution == "720p" and (
+                "HEVC" in title_upper or "H.265" in title_upper
+            ):
                 return "1080p"
             return resolution
 

@@ -12,20 +12,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from ikuyo.api.routes import bangumi, health, resources, crawler, scheduler
 from ikuyo.core.database import create_db_and_tables
 from ikuyo.core.scheduler import UnifiedScheduler
+from ikuyo.core.redis_client import get_redis_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+
+    # 初始化Redis连接池
+    get_redis_manager()
+
     # 初始化调度器
     global unified_scheduler
     unified_scheduler = UnifiedScheduler()
     if not unified_scheduler.start():
         raise RuntimeError("调度器启动失败")
+
     yield
+
     # 停止调度器
     if unified_scheduler:
         unified_scheduler.stop()
+
+    # 关闭Redis连接池
+    get_redis_manager().close_pool()
 
 
 # 创建FastAPI应用实例

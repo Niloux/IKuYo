@@ -19,9 +19,13 @@ NEWSPIDER_MODULE = "ikuyo.crawler.spiders"
 config = load_config()
 
 # 爬虫设置 - 使用默认值避免配置缺失错误
-DOWNLOAD_DELAY = getattr(config.crawler, "download_delay", 1) if hasattr(config, "crawler") else 1
+DOWNLOAD_DELAY = (
+    getattr(config.crawler, "download_delay", 1) if hasattr(config, "crawler") else 1
+)
 CONCURRENT_REQUESTS = (
-    getattr(config.crawler, "concurrent_requests", 16) if hasattr(config, "crawler") else 16
+    getattr(config.crawler, "concurrent_requests", 16)
+    if hasattr(config, "crawler")
+    else 16
 )
 CONCURRENT_REQUESTS_PER_DOMAIN = (
     getattr(config.crawler, "concurrent_requests_per_domain", 8)
@@ -30,7 +34,9 @@ CONCURRENT_REQUESTS_PER_DOMAIN = (
 )
 
 # 重试设置
-RETRY_TIMES = getattr(config.crawler, "retry_times", 3) if hasattr(config, "crawler") else 3
+RETRY_TIMES = (
+    getattr(config.crawler, "retry_times", 3) if hasattr(config, "crawler") else 3
+)
 
 # 遵守robots.txt规则
 ROBOTSTXT_OBEY = True
@@ -99,7 +105,6 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 16.0
 AUTOTHROTTLE_DEBUG = True  # 开启调试，观察限流效果
 
 # Set settings whose default value is deprecated to a future-proof value.
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 FEED_EXPORT_ENCODING = "utf-8"
 
 # 输出设置

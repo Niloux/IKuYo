@@ -69,7 +69,9 @@ async def get_bangumi_subject(
                 status_code=404, detail=f"未找到 bangumi_id={bangumi_id} 的番剧详情"
             )
 
-        return BangumiSubjectResponse(success=True, message="获取番剧详情成功", data=subject_data)
+        return BangumiSubjectResponse(
+            success=True, message="获取番剧详情成功", data=subject_data
+        )
 
     except HTTPException:
         raise

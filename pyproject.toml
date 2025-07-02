@@ -17,4 +17,5 @@ dependencies = [
     "sqlmodel>=0.0.16",
     "pre-commit>=4.2.0",
     "ruff>=0.12.1",
+    "redis>=6.2.0",
 ]

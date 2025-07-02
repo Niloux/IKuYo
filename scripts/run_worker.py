@@ -12,43 +12,28 @@ import argparse
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ikuyo.core.worker.main import WorkerManager
+from ikuyo.core.worker.progress_consumer import start_progress_consumer
 
 
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="IKuYo 工作器启动脚本")
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=3,
-        help="工作进程数量 (默认: 3)"
-    )
-    parser.add_argument(
-        "--poll-interval",
-        type=int,
-        default=2,
-        help="轮询间隔(秒) (默认: 2)"
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="详细日志输出"
-    )
+    parser.add_argument("--workers", type=int, default=3, help="工作进程数量 (默认: 3)")
+    parser.add_argument("--verbose", action="store_true", help="详细日志输出")
 
     args = parser.parse_args()
 
     print("🚀 IKuYo 多进程工作器")
     print("=" * 40)
     print(f"   工作进程数: {args.workers}")
-    print(f"   轮询间隔: {args.poll_interval}秒")
     print(f"   详细日志: {'开启' if args.verbose else '关闭'}")
     print()
 
+    # 启动进度消费者
+    start_progress_consumer()
+
     # 创建并启动工作器
-    worker_manager = WorkerManager(
-        max_workers=args.workers,
-        poll_interval=args.poll_interval
-    )
+    worker_manager = WorkerManager(max_workers=args.workers)
 
     try:
         worker_manager.run()

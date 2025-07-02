@@ -2,7 +2,9 @@ from sqlmodel import SQLModel, create_engine, Session
 
 # 全局SQLModel engine
 engine = create_engine(
-    "sqlite:///data/database/ikuyo.db", echo=False, connect_args={"check_same_thread": False}
+    "sqlite:///data/database/ikuyo.db",
+    echo=False,
+    connect_args={"check_same_thread": False},
 )
 
 

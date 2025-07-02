@@ -14,9 +14,21 @@ from ikuyo.core.repositories import (
     ResourceRepository,
     CrawlLogRepository,
 )
-from ikuyo.core.models import Anime, SubtitleGroup, AnimeSubtitleGroup, Resource, CrawlLog
-from .items import AnimeItem, AnimeSubtitleGroupItem, CrawlLogItem, ResourceItem, SubtitleGroupItem
-from ikuyo.core.crawler.progress_reporter import report_progress, report_status, report_result
+from ikuyo.core.models import (
+    Anime,
+    SubtitleGroup,
+    AnimeSubtitleGroup,
+    Resource,
+    CrawlLog,
+)
+from .items import (
+    AnimeItem,
+    AnimeSubtitleGroupItem,
+    CrawlLogItem,
+    ResourceItem,
+    SubtitleGroupItem,
+)
+
 import time
 
 
@@ -93,23 +105,67 @@ class SQLitePipeline:
 
     def save_anime(self, item):
         if self.anime_repo:
-            obj = Anime(**item)
-            self.anime_repo.create(obj)
+            try:
+                obj = Anime(
+                    mikan_id=int(item["mikan_id"]),
+                    bangumi_id=int(item["bangumi_id"]) if item.get("bangumi_id") else None,
+                    title=item["title"],
+                    original_title=item.get("original_title"),
+                    broadcast_day=item.get("broadcast_day"),
+                    broadcast_start=item.get("broadcast_start"),
+                    official_website=item.get("official_website"),
+                    bangumi_url=item.get("bangumi_url"),
+                    description=item.get("description"),
+                    status="active",
+                )
+                self.anime_repo.create(obj)
+            except Exception as e:
+                print(f"[save_anime] 类型转换或保存失败: {e}, item: {item}")
 
     def save_subtitle_group(self, item):
         if self.subtitle_group_repo:
-            obj = SubtitleGroup(**item)
-            self.subtitle_group_repo.create(obj)
+            try:
+                obj = SubtitleGroup(
+                    id=int(item["id"]),
+                    name=item["name"],
+                )
+                self.subtitle_group_repo.create(obj)
+            except Exception as e:
+                print(f"[save_subtitle_group] 类型转换或保存失败: {e}, item: {item}")
 
     def save_anime_subtitle_group(self, item):
         if self.anime_subtitle_group_repo:
-            obj = AnimeSubtitleGroup(**item)
-            self.anime_subtitle_group_repo.create(obj)
+            try:
+                obj = AnimeSubtitleGroup(
+                    mikan_id=int(item["mikan_id"]),
+                    subtitle_group_id=int(item["subtitle_group_id"]),
+                )
+                self.anime_subtitle_group_repo.create(obj)
+            except Exception as e:
+                print(f"[save_anime_subtitle_group] 类型转换或保存失败: {e}, item: {item}")
 
     def save_resource(self, item):
         if self.resource_repo:
-            obj = Resource(**item)
-            self.resource_repo.create(obj)
+            try:
+                obj = Resource(
+                    mikan_id=int(item["mikan_id"]),
+                    subtitle_group_id=int(item["subtitle_group_id"]),
+                    episode_number=int(item["episode_number"])
+                    if item.get("episode_number")
+                    else None,
+                    title=item["title"],
+                    file_size=item.get("file_size"),
+                    resolution=item.get("resolution"),
+                    subtitle_type=item.get("subtitle_type"),
+                    magnet_url=item.get("magnet_url"),
+                    torrent_url=item.get("torrent_url"),
+                    play_url=item.get("play_url"),
+                    magnet_hash=item.get("magnet_hash"),
+                    release_date=int(item["release_date"]) if item.get("release_date") else None,
+                )
+                self.resource_repo.create(obj)
+            except Exception as e:
+                print(f"[save_resource] 类型转换或保存失败: {e}, item: {item}")
 
     def save_crawl_log(self, item):
         if self.crawl_log_repo:
@@ -238,8 +294,8 @@ class BatchSQLitePipeline:
             anime_models = []
             for item in self.anime_batch:
                 anime = Anime(
-                    mikan_id=item["mikan_id"],
-                    bangumi_id=item.get("bangumi_id"),
+                    mikan_id=int(item["mikan_id"]),
+                    bangumi_id=int(item["bangumi_id"]) if item.get("bangumi_id") else None,
                     title=item["title"],
                     original_title=item.get("original_title"),
                     broadcast_day=item.get("broadcast_day"),
@@ -273,32 +329,27 @@ class BatchSQLitePipeline:
         """刷新字幕组批次"""
         if not self.subtitle_groups_batch or not self.subtitle_group_repo:
             return
-
         try:
-            # 转换为模型对象
             subtitle_group_models = []
             for item in self.subtitle_groups_batch:
-                subtitle_group = SubtitleGroup(
-                    id=item["id"],
-                    name=item["name"],
-                )
-                subtitle_group_models.append(subtitle_group)
-
-            # 批量更新或插入
+                try:
+                    subtitle_group = SubtitleGroup(
+                        id=int(item["id"]),
+                        name=item["name"],
+                    )
+                    subtitle_group_models.append(subtitle_group)
+                except Exception as e:
+                    spider.logger.error(f"[batch_subtitle_group] 类型转换失败: {e}, item: {item}")
             for group in subtitle_group_models:
                 existing = self.subtitle_group_repo.get_by_id(group.id)
                 if existing:
-                    # 更新现有记录
                     for key, value in group.model_dump().items():
                         if value is not None:
                             setattr(existing, key, value)
                     self.subtitle_group_repo.update(existing)
                 else:
-                    # 插入新记录
                     self.subtitle_group_repo.create(group)
-
             self.subtitle_groups_batch.clear()
-
         except Exception as e:
             spider.logger.error(f"批量插入字幕组失败: {str(e)}")
 
@@ -306,28 +357,26 @@ class BatchSQLitePipeline:
         """刷新动画-字幕组关联批次"""
         if not self.anime_subtitle_groups_batch or not self.anime_subtitle_group_repo:
             return
-
         try:
-            # 转换为模型对象
             relation_models = []
             for item in self.anime_subtitle_groups_batch:
-                relation = AnimeSubtitleGroup(
-                    mikan_id=item["mikan_id"],
-                    subtitle_group_id=item["subtitle_group_id"],
-                )
-                relation_models.append(relation)
-
-            # 批量更新或插入
+                try:
+                    relation = AnimeSubtitleGroup(
+                        mikan_id=int(item["mikan_id"]),
+                        subtitle_group_id=int(item["subtitle_group_id"]),
+                    )
+                    relation_models.append(relation)
+                except Exception as e:
+                    spider.logger.error(
+                        f"[batch_anime_subtitle_group] 类型转换失败: {e}, item: {item}"
+                    )
             for relation in relation_models:
                 existing = self.anime_subtitle_group_repo.get_by_mikan_and_group(
                     relation.mikan_id, relation.subtitle_group_id
                 )
                 if not existing:
-                    # 只插入不存在的关联
                     self.anime_subtitle_group_repo.create(relation)
-
             self.anime_subtitle_groups_batch.clear()
-
         except Exception as e:
             spider.logger.error(f"批量插入关联数据失败: {str(e)}")
 
@@ -335,42 +384,41 @@ class BatchSQLitePipeline:
         """刷新资源批次"""
         if not self.resources_batch or not self.resource_repo:
             return
-
         try:
-            # 转换为模型对象
             resource_models = []
             for item in self.resources_batch:
-                resource = Resource(
-                    mikan_id=item["mikan_id"],
-                    subtitle_group_id=item["subtitle_group_id"],
-                    episode_number=item.get("episode_number"),
-                    title=item["title"],
-                    file_size=item.get("file_size"),
-                    resolution=item.get("resolution"),
-                    subtitle_type=item.get("subtitle_type"),
-                    magnet_url=item.get("magnet_url"),
-                    torrent_url=item.get("torrent_url"),
-                    play_url=item.get("play_url"),
-                    magnet_hash=item.get("magnet_hash"),
-                    release_date=item.get("release_date"),
-                )
-                resource_models.append(resource)
-
-            # 批量更新或插入
+                try:
+                    resource = Resource(
+                        mikan_id=int(item["mikan_id"]),
+                        subtitle_group_id=int(item["subtitle_group_id"]),
+                        episode_number=int(item["episode_number"])
+                        if item.get("episode_number")
+                        else None,
+                        title=item["title"],
+                        file_size=item.get("file_size"),
+                        resolution=item.get("resolution"),
+                        subtitle_type=item.get("subtitle_type"),
+                        magnet_url=item.get("magnet_url"),
+                        torrent_url=item.get("torrent_url"),
+                        play_url=item.get("play_url"),
+                        magnet_hash=item.get("magnet_hash"),
+                        release_date=int(item["release_date"])
+                        if item.get("release_date")
+                        else None,
+                    )
+                    resource_models.append(resource)
+                except Exception as e:
+                    spider.logger.error(f"[batch_resource] 类型转换失败: {e}, item: {item}")
             for resource in resource_models:
                 existing = self.resource_repo.get_by_id(resource.id) if resource.id else None
                 if existing:
-                    # 更新现有记录
                     for key, value in resource.model_dump().items():
                         if value is not None:
                             setattr(existing, key, value)
                     self.resource_repo.update(existing)
                 else:
-                    # 插入新记录
                     self.resource_repo.create(resource)
-
             self.resources_batch.clear()
-
         except Exception as e:
             spider.logger.error(f"批量插入资源失败: {str(e)}")
 
@@ -394,9 +442,11 @@ class BatchSQLitePipeline:
             percentage = (self.processed_items / total_items) * 100
             processing_speed = self.processed_items / elapsed_time
             remaining_items = total_items - self.processed_items
-            estimated_remaining = remaining_items / processing_speed if processing_speed > 0 else None
+            estimated_remaining = (
+                remaining_items / processing_speed if processing_speed > 0 else None
+            )
 
-            report_progress({
+            spider.progress_reporter.report_progress({
                 "total_items": total_items,
                 "processed_items": self.processed_items,
                 "percentage": percentage,
@@ -410,53 +460,37 @@ class BatchSQLitePipeline:
 class ProgressReportPipeline:
     """进度报告管道"""
 
-    def __init__(self):
-        self.start_time = time.time()
-        self.last_report_time = self.start_time
-
     def process_item(self, item, spider):
         """处理每个项目并更新进度"""
-        if not hasattr(spider, "task_id") or spider.task_id is None:
+        if (
+            not hasattr(spider, "task_id")
+            or spider.task_id is None
+            or not spider.progress_reporter
+        ):
             return item
 
         # 只有处理 AnimeItem 时才更新进度
         if isinstance(item, AnimeItem):
-            current_time = time.time()
-            time_since_last_report = current_time - self.last_report_time
-
-            # 每秒最多更新一次进度
-            if time_since_last_report >= 1.0:
-                self.last_report_time = current_time
-                elapsed_time = current_time - self.start_time
-
-                spider.logger.info(f"Pipeline中的total_items值: {spider.total_items}")  # 添加日志
-                spider.logger.info(f"Pipeline中的processed_items值: {spider.processed_items}")  # 添加日志
-
-                # 基本的除零保护
-                if spider.total_items == 0 or elapsed_time == 0:
-                    spider.logger.warning("total_items或elapsed_time为0，跳过进度计算")  # 添加日志
-                    return item
-
-                # 计算进度
-                percentage = (spider.processed_items / spider.total_items) * 100
-                processing_speed = (spider.processed_items / elapsed_time) * 60  # 每分钟处理数量
-                remaining_items = spider.total_items - spider.processed_items
-                estimated_remaining = remaining_items / (spider.processed_items / elapsed_time)  # 剩余分钟数
-
-                # 报告进度
-                report_progress({
-                    "total_items": spider.total_items,
-                    "processed_items": spider.processed_items,
-                    "percentage": round(percentage, 2),
-                    "processing_speed": round(processing_speed, 2),
-                    "estimated_remaining": round(estimated_remaining / 60, 2),  # 转换为小时
-                })
+            # 报告进度
+            spider.progress_reporter.report_progress({
+                "total_items": spider.total_items,
+                "processed_items": spider.processed_items,
+                "percentage": round((spider.processed_items / spider.total_items) * 100, 2)
+                if spider.total_items > 0
+                else 0,
+                "processing_speed": None,  # 由 worker 端的消费者计算
+                "estimated_remaining": None,  # 由 worker 端的消费者计算
+            })
 
         return item
 
     def close_spider(self, spider):
         """爬虫关闭时的处理"""
-        if not hasattr(spider, "task_id") or spider.task_id is None:
+        if (
+            not hasattr(spider, "task_id")
+            or spider.task_id is None
+            or not spider.progress_reporter
+        ):
             return
 
         # 生成结果摘要
@@ -467,10 +501,10 @@ class ProgressReportPipeline:
             f"失败: {stats.get('failed', 0)}, "
             f"丢弃: {stats.get('dropped', 0)}"
         )
-        report_result(result_summary)
+        spider.progress_reporter.report_result(result_summary)
 
         # 报告最终状态
         if hasattr(spider, "error_message"):
-            report_status("failed", spider.error_message)
+            spider.progress_reporter.report_status("failed", spider.error_message)
         else:
-            report_status("completed")
+            spider.progress_reporter.report_status("completed")

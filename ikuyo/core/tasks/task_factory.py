@@ -16,7 +16,9 @@ class TaskFactory:
     ):
         if task_type == "crawler":
             if repository is None:
-                raise ValueError("TaskFactory.create_task: repository参数必须传递且非None")
+                raise ValueError(
+                    "TaskFactory.create_task: repository参数必须传递且非None"
+                )
             return CrawlerTask(repository, task_record, parameters, task_type_db)
         # 未来可扩展其他任务类型
         raise ValueError(f"未知的任务类型: {task_type}")

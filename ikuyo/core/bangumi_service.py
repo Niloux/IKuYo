@@ -103,7 +103,9 @@ class BangumiService:
         # 尝试从缓存获取
         cached_data = self.cache.get(cache_key, "episodes")
         if cached_data:
-            print(f"📦 从缓存获取章节信息: {subject_id} (limit={limit}, offset={offset})")
+            print(
+                f"📦 从缓存获取章节信息: {subject_id} (limit={limit}, offset={offset})"
+            )
             return cached_data
 
         # 从API获取新数据
@@ -133,7 +135,9 @@ class BangumiService:
                 self.cache.set(cache_key, episodes_data, "episodes")
                 episodes_count = len(episodes_data["data"])
                 total_count = episodes_data["total"]
-                print(f"✅ 章节信息已缓存: {subject_id} ({episodes_count}/{total_count} 个章节)")
+                print(
+                    f"✅ 章节信息已缓存: {subject_id} ({episodes_count}/{total_count} 个章节)"
+                )
 
                 return episodes_data
 

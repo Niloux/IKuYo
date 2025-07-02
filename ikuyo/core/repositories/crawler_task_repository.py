@@ -33,13 +33,20 @@ class CrawlerTaskRepository:
             self.session.delete(task)
             self.session.commit()
 
-    def list_by_status(self, status: str, limit: int = 100, offset: int = 0) -> List[CrawlerTask]:
+    def list_by_status(
+        self, status: str, limit: int = 100, offset: int = 0
+    ) -> List[CrawlerTask]:
         statement = (
-            select(CrawlerTask).where(CrawlerTask.status == status).offset(offset).limit(limit)
+            select(CrawlerTask)
+            .where(CrawlerTask.status == status)
+            .offset(offset)
+            .limit(limit)
         )
         return list(self.session.exec(statement))
 
-    def list_by_type(self, task_type: str, limit: int = 100, offset: int = 0) -> List[CrawlerTask]:
+    def list_by_type(
+        self, task_type: str, limit: int = 100, offset: int = 0
+    ) -> List[CrawlerTask]:
         statement = (
             select(CrawlerTask)
             .where(CrawlerTask.task_type == task_type)

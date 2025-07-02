@@ -4,7 +4,11 @@ import json
 from ikuyo.core.database import get_session
 from ikuyo.core.repositories.scheduled_job_repository import ScheduledJobRepository
 from ikuyo.core.models.scheduled_job import ScheduledJob
-from ikuyo.api.models.schemas import ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse
+from ikuyo.api.models.schemas import (
+    ScheduledJobCreate,
+    ScheduledJobUpdate,
+    ScheduledJobResponse,
+)
 from ikuyo.core.scheduler import unified_scheduler
 
 router = APIRouter(prefix="/api/v1/scheduler/jobs", tags=["scheduler-jobs"])
@@ -26,7 +30,9 @@ def list_jobs(repo: ScheduledJobRepository = Depends(get_repo)):
 
 
 @router.post("", response_model=ScheduledJobResponse)
-def create_job(job: ScheduledJobCreate, repo: ScheduledJobRepository = Depends(get_repo)):
+def create_job(
+    job: ScheduledJobCreate, repo: ScheduledJobRepository = Depends(get_repo)
+):
     # 序列化参数为JSON字符串
     job_data = job.model_dump()
     if job_data.get("parameters"):
@@ -48,7 +54,9 @@ def create_job(job: ScheduledJobCreate, repo: ScheduledJobRepository = Depends(g
 
 @router.put("/{job_id}", response_model=ScheduledJobResponse)
 def update_job(
-    job_id: str, job: ScheduledJobUpdate, repo: ScheduledJobRepository = Depends(get_repo)
+    job_id: str,
+    job: ScheduledJobUpdate,
+    repo: ScheduledJobRepository = Depends(get_repo),
 ):
     db_job = repo.get_by_job_id(job_id)
     if not db_job:

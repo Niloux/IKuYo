@@ -252,7 +252,9 @@ class CacheManager:
 
             file_count = 0
             try:
-                file_count = len([f for f in os.listdir(self.cache_dir) if f.endswith(".json")])
+                file_count = len(
+                    [f for f in os.listdir(self.cache_dir) if f.endswith(".json")]
+                )
             except Exception:
                 pass
 

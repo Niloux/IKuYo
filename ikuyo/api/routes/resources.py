@@ -16,7 +16,11 @@ from ikuyo.api.models.schemas import (
     SubtitleGroupResource,
 )
 from ikuyo.core.database import get_session
-from ikuyo.core.repositories import AnimeRepository, ResourceRepository, SubtitleGroupRepository
+from ikuyo.core.repositories import (
+    AnimeRepository,
+    ResourceRepository,
+    SubtitleGroupRepository,
+)
 
 router = APIRouter(prefix="/animes", tags=["Resources"])
 
@@ -106,10 +110,19 @@ def get_anime_resources(
                     "episode": episode,
                     "total_resources": 0,
                     "subtitle_groups": [],
-                    "filters": {"resolution": resolution, "subtitle_type": subtitle_type},
-                    "pagination": {"limit": limit, "offset": offset, "total": total_resources},
+                    "filters": {
+                        "resolution": resolution,
+                        "subtitle_type": subtitle_type,
+                    },
+                    "pagination": {
+                        "limit": limit,
+                        "offset": offset,
+                        "total": total_resources,
+                    },
                 }
-                return EpisodeResourcesResponse(success=True, message=error_msg, data=data)
+                return EpisodeResourcesResponse(
+                    success=True, message=error_msg, data=data
+                )
 
             # 按字幕组分类
             subtitle_groups: Dict[int, Dict] = {}
@@ -159,9 +172,15 @@ def get_anime_resources(
                 "total_resources": total_resources,
                 "subtitle_groups": list(subtitle_groups.values()),
                 "filters": {"resolution": resolution, "subtitle_type": subtitle_type},
-                "pagination": {"limit": limit, "offset": offset, "total": total_resources},
+                "pagination": {
+                    "limit": limit,
+                    "offset": offset,
+                    "total": total_resources,
+                },
             }
-            return EpisodeResourcesResponse(success=True, message="获取资源成功", data=data)
+            return EpisodeResourcesResponse(
+                success=True, message="获取资源成功", data=data
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -236,7 +255,9 @@ async def search_anime_library(
             search_result = anime_repo.search_by_title(q, limit, offset)
             # 提取bangumi_id列表
             bangumi_ids = [
-                anime.bangumi_id for anime in search_result if getattr(anime, "bangumi_id", None)
+                anime.bangumi_id
+                for anime in search_result
+                if getattr(anime, "bangumi_id", None)
             ]
             # 统计总数
             total = len(anime_repo.search_by_title(q, 1000000, 0))

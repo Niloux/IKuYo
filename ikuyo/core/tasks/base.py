@@ -21,7 +21,7 @@ class Task(ABC):
         """写入任务到数据库"""
         # 默认实现：验证参数并更新状态为pending
         self.validate()
-        if self.task_record and hasattr(self.task_record, 'status'):
+        if self.task_record and hasattr(self.task_record, "status"):
             self.task_record.status = "pending"
             self.repository.update(self.task_record)
 
@@ -35,7 +35,7 @@ class Task(ABC):
 
     def cancel(self) -> None:
         """取消任务"""
-        if self.task_record and hasattr(self.task_record, 'status'):
+        if self.task_record and hasattr(self.task_record, "status"):
             self.task_record.status = "cancelled"
             self.repository.update(self.task_record)
 

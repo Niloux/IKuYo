@@ -135,16 +135,22 @@ class ProcessPool:
 
     def get_idle_workers(self) -> int:
         """获取空闲工作进程数量"""
-        return sum(1 for info in self.processes.values() if info.status == ProcessStatus.IDLE)
+        return sum(
+            1 for info in self.processes.values() if info.status == ProcessStatus.IDLE
+        )
 
     def get_busy_workers(self) -> int:
         """获取忙碌工作进程数量"""
-        return sum(1 for info in self.processes.values() if info.status == ProcessStatus.BUSY)
+        return sum(
+            1 for info in self.processes.values() if info.status == ProcessStatus.BUSY
+        )
 
     def get_pool_status(self) -> Dict[str, Any]:
         """获取进程池状态"""
         try:
-            queue_size = self.task_queue.qsize() if hasattr(self.task_queue, "qsize") else 0
+            queue_size = (
+                self.task_queue.qsize() if hasattr(self.task_queue, "qsize") else 0
+            )
         except (OSError, NotImplementedError):
             # 某些平台可能不支持qsize()
             queue_size = 0
@@ -170,7 +176,12 @@ class ProcessPool:
         try:
             process = mp.Process(
                 target=self._worker_process,
-                args=(worker_id, self.task_queue, self.result_queue, self.control_queue),
+                args=(
+                    worker_id,
+                    self.task_queue,
+                    self.result_queue,
+                    self.control_queue,
+                ),
             )
             process.start()
 
@@ -193,7 +204,10 @@ class ProcessPool:
 
     @staticmethod
     def _worker_process(
-        worker_id: int, task_queue: mp.Queue, result_queue: mp.Queue, control_queue: mp.Queue
+        worker_id: int,
+        task_queue: mp.Queue,
+        result_queue: mp.Queue,
+        control_queue: mp.Queue,
     ):
         """工作进程主函数"""
         logger = logging.getLogger(f"worker-{worker_id}")

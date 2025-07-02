@@ -18,7 +18,9 @@ class AnimeRepository:
         return self.session.get(Anime, mikan_id)
 
     def get_by_bangumi_id(self, bangumi_id: int) -> Optional[Anime]:
-        return self.session.exec(select(Anime).where(Anime.bangumi_id == bangumi_id)).first()
+        return self.session.exec(
+            select(Anime).where(Anime.bangumi_id == bangumi_id)
+        ).first()
 
     def list(self, limit: int = 100, offset: int = 0) -> List[Anime]:
         statement = select(Anime).offset(offset).limit(limit)
@@ -36,7 +38,9 @@ class AnimeRepository:
             self.session.delete(anime)
             self.session.commit()
 
-    def search_by_title(self, title: str, limit: int = 12, offset: int = 0) -> List[Anime]:
+    def search_by_title(
+        self, title: str, limit: int = 12, offset: int = 0
+    ) -> List[Anime]:
         statement = (
             select(Anime)
             .where(func.lower(Anime.title).like(f"%{title.lower()}%"))

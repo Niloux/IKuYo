@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from typing import List, Union
 import asyncio
 
@@ -8,6 +15,9 @@ from ikuyo.core.tasks.task_factory import TaskFactory
 from ikuyo.core.tasks.crawler_task import CrawlerTask
 from ikuyo.api.models.schemas import TaskResponse, CrawlerTaskCreate
 from ikuyo.core.database import get_session
+
+import json
+from ikuyo.core.redis_client import get_redis_connection
 
 router = APIRouter(prefix="/crawler/tasks", tags=["crawler-tasks"])
 
@@ -50,7 +60,9 @@ def _get_task_or_404(task_id: int, repo: CrawlerTaskRepository) -> CrawlerTaskMo
     """获取任务或返回404错误"""
     task = repo.get_by_id(task_id)
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"任务 {task_id} 不存在")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"任务 {task_id} 不存在"
+        )
     return task
 
 
@@ -67,22 +79,50 @@ def _get_progress_data(task: CrawlerTaskModel) -> dict:
 
 
 @router.post("", response_model=TaskResponse)
-def create_task(task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = Depends(get_repo)):
-    """创建新任务"""
+def create_task(
+    task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = Depends(get_repo)
+):
+    """创建新任务并推送到Redis队列"""
     try:
-        # 使用TaskFactory创建任务
+        # 1. 使用TaskFactory创建任务对象
         task = TaskFactory.create_task(
             task_type="crawler",
             parameters=task_create.model_dump(),
             repository=repo,
             task_type_db="manual",
         )
-        # 写入数据库并进行参数验证
+
+        # 2. 写入数据库以获取 task_id
         task.write_to_db()
+        if not task.task_record or not task.task_record.id:
+            raise ValueError("任务记录或任务ID在写入数据库后未能生成")
+
+        task_id = task.task_record.id
+
+        # 3. 将任务ID推送到Redis队列
+        try:
+            redis_client = get_redis_connection()
+            queue_name = "ikuyo:crawl_tasks"
+            message = json.dumps({"task_id": task_id})
+            redis_client.lpush(queue_name, message)
+        except Exception as redis_error:
+            # 如果Redis推送失败，这是一个严重问题
+            # 将任务标记为失败，因为worker无法接收到它
+            task.task_record.status = "failed"
+            task.task_record.error_message = (
+                f"Failed to publish task to Redis: {redis_error}"
+            )
+            repo.update(task.task_record)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"任务已创建但无法推送到处理队列: {redis_error}",
+            )
+
         return _to_response(task)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"创建任务失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"创建任务失败: {str(e)}",
         )
 
 
@@ -94,7 +134,8 @@ def list_tasks(repo: CrawlerTaskRepository = Depends(get_repo)):
         return [_to_response(t) for t in tasks]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"获取任务列表失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取任务列表失败: {str(e)}",
         )
 
 
@@ -120,11 +161,12 @@ def cancel_task(task_id: int, repo: CrawlerTaskRepository = Depends(get_repo)):
             task_record=task,
         )
         # 调用任务对象的取消方法
-        task_obj.on_cancel()
+        task_obj.cancel()
         return _to_response(task)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"取消任务失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"取消任务失败: {str(e)}",
         )
 
 
@@ -151,10 +193,12 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
                     task = repo.get_by_id(task_id)
 
                     if not task:
-                        await websocket.send_json({
-                            "error": f"任务 {task_id} 不存在",
-                            "code": "task_not_found",
-                        })
+                        await websocket.send_json(
+                            {
+                                "error": f"任务 {task_id} 不存在",
+                                "code": "task_not_found",
+                            }
+                        )
                         break
 
                     # 检查进度是否有更新
@@ -166,19 +210,23 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
 
                     # 如果任务已完成或失败，发送最终状态并关闭连接
                     if task.status in ["completed", "failed", "cancelled"]:
-                        await websocket.send_json({
-                            **current_progress,
-                            "final_status": task.status,
-                            "result_summary": task.result_summary,
-                            "error_message": task.error_message,
-                        })
+                        await websocket.send_json(
+                            {
+                                **current_progress,
+                                "final_status": task.status,
+                                "result_summary": task.result_summary,
+                                "error_message": task.error_message,
+                            }
+                        )
                         break
 
             except Exception as e:
-                await websocket.send_json({
-                    "error": f"获取任务进度失败: {str(e)}",
-                    "code": "internal_error",
-                })
+                await websocket.send_json(
+                    {
+                        "error": f"获取任务进度失败: {str(e)}",
+                        "code": "internal_error",
+                    }
+                )
                 break
 
     except WebSocketDisconnect:

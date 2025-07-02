@@ -9,8 +9,8 @@ import signal
 import logging
 from typing import Optional
 from ikuyo.core.worker.process_pool import ProcessPool
-from ikuyo.core.worker.task_dispatcher import TaskDispatcher
-from ikuyo.core.tasks.task_executor import set_process_pool
+from ikuyo.core.worker.redis_consumer import RedisTaskConsumer
+from ikuyo.core.redis_client import get_redis_manager
 
 
 class WorkerManager:
@@ -19,11 +19,10 @@ class WorkerManager:
     统一管理进程池和任务分发器
     """
 
-    def __init__(self, max_workers: int = 3, poll_interval: int = 2):
+    def __init__(self, max_workers: int = 3):
         self.max_workers = max_workers
-        self.poll_interval = poll_interval
         self.process_pool: Optional[ProcessPool] = None
-        self.task_dispatcher: Optional[TaskDispatcher] = None
+        self.redis_consumer: Optional[RedisTaskConsumer] = None
         self.is_running = False
         self.logger = logging.getLogger(__name__)
 
@@ -43,21 +42,20 @@ class WorkerManager:
             # 设置日志
             self._setup_logging()
 
+            # 初始化 Redis 连接
+            # 确保在启动任何依赖Redis的组件之前调用
+            get_redis_manager()
+
             # 创建并启动进程池
             self.process_pool = ProcessPool(max_workers=self.max_workers)
             if not self.process_pool.start():
                 self.logger.error("进程池启动失败")
                 return False
 
-            # 注册进程池到TaskExecutor，使API可以使用进程池
-            set_process_pool(self.process_pool)
-
-            # 创建并启动任务分发器
-            self.task_dispatcher = TaskDispatcher(
-                process_pool=self.process_pool, poll_interval=self.poll_interval
-            )
-            if not self.task_dispatcher.start():
-                self.logger.error("任务分发器启动失败")
+            # 创建并启动任务消费者
+            self.redis_consumer = RedisTaskConsumer(process_pool=self.process_pool)
+            if not self.redis_consumer.start():
+                self.logger.error("任务消费者启动失败")
                 self.process_pool.stop()
                 return False
 
@@ -68,6 +66,9 @@ class WorkerManager:
 
         except Exception as e:
             self.logger.error(f"启动工作器失败: {e}")
+            import traceback
+
+            self.logger.error(f"启动异常详情: {traceback.format_exc()}")
             return False
 
     def stop(self) -> bool:
@@ -80,13 +81,16 @@ class WorkerManager:
             self.logger.info("正在停止工作器...")
             self.is_running = False
 
-            # 停止任务分发器
-            if self.task_dispatcher:
-                self.task_dispatcher.stop()
+            # 停止任务消费者
+            if self.redis_consumer:
+                self.redis_consumer.stop()
 
             # 停止进程池
             if self.process_pool:
                 self.process_pool.stop()
+
+            # 关闭 Redis 连接池
+            get_redis_manager().close_pool()
 
             self.logger.info("工作器已停止")
             return True
@@ -128,21 +132,17 @@ class WorkerManager:
         status = {
             "is_running": self.is_running,
             "max_workers": self.max_workers,
-            "poll_interval": self.poll_interval,
         }
 
         if self.process_pool:
             status["process_pool"] = self.process_pool.get_pool_status()
-
-        if self.task_dispatcher:
-            status["task_dispatcher"] = self.task_dispatcher.get_dispatcher_status()
 
         return status
 
     def _setup_logging(self):
         """设置日志配置"""
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.DEBUG,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             handlers=[
                 logging.StreamHandler(),
@@ -153,18 +153,19 @@ class WorkerManager:
     def _log_status(self):
         """记录状态信息"""
         try:
-            if not self.process_pool or not self.task_dispatcher:
+            if not self.process_pool or not self.redis_consumer:
                 return
 
             pool_status = self.process_pool.get_pool_status()
-            dispatcher_status = self.task_dispatcher.get_dispatcher_status()
 
-            self.logger.info(
+            # 基础状态信息
+            status_msg = (
                 f"状态检查 - 总进程: {pool_status['total_workers']}, "
                 f"空闲: {pool_status['idle_workers']}, "
                 f"忙碌: {pool_status['busy_workers']}, "
-                f"分发器运行: {dispatcher_status['is_running']}"
+                f"消费者运行: {self.redis_consumer.is_running}"
             )
+            self.logger.info(status_msg)
         except Exception as e:
             self.logger.error(f"状态检查失败: {e}")
 
@@ -175,12 +176,14 @@ class WorkerManager:
         self.stop()
         # 强制退出进程
         import sys
+
         sys.exit(0)
 
 
 def main():
     """主函数，兼容原worker.py的启动方式"""
-    worker_manager = WorkerManager(max_workers=3, poll_interval=2)
+    # poll_interval is no longer needed
+    worker_manager = WorkerManager(max_workers=3)
     worker_manager.run()
 
 
