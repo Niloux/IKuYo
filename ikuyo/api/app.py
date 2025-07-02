@@ -52,8 +52,8 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(resources.router, prefix="/api/v1")
 app.include_router(bangumi.router, prefix="/api/v1")
-app.include_router(crawler.router)
-app.include_router(scheduler.router)
+app.include_router(crawler.router, prefix="/api/v1")
+app.include_router(scheduler.router, prefix="/api/v1")
 
 
 @app.get("/")

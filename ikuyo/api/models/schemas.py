@@ -130,16 +130,21 @@ class CrawlerTaskCreate(BaseModel):
     limit: Optional[int] = None
 
 
-class CrawlerTaskResponse(BaseModel):
-    id: Optional[int] = None
+class TaskResponse(BaseModel):
+    id: int
+    task_type: str
     status: str
+    parameters: Optional[str] = None
+    result_summary: Optional[str] = None
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    parameters: Any
-    result_summary: Optional[Any] = None
     error_message: Optional[str] = None
-    progress: Optional[Any] = None
+    percentage: Optional[float] = None
+    processed_items: Optional[int] = None
+    total_items: Optional[int] = None
+    processing_speed: Optional[float] = None
+    estimated_remaining: Optional[float] = None
 
 
 class ScheduledJobCreate(BaseModel):

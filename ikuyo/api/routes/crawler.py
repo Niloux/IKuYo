@@ -1,139 +1,187 @@
-from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 from typing import List, Union
-from ikuyo.core.database import get_session
-from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
-from ikuyo.core.tasks.task_factory import TaskFactory
-from ikuyo.api.models.schemas import CrawlerTaskCreate, CrawlerTaskResponse
 import asyncio
-import json
+
+from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
 from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
+from ikuyo.core.tasks.task_factory import TaskFactory
 from ikuyo.core.tasks.crawler_task import CrawlerTask
+from ikuyo.api.models.schemas import TaskResponse, CrawlerTaskCreate
+from ikuyo.core.database import get_session
 
-router = APIRouter(prefix="/api/v1/crawler/tasks", tags=["crawler-tasks"])
-
-# 依赖注入：获取数据库Session
+router = APIRouter(prefix="/crawler/tasks", tags=["crawler-tasks"])
 
 
 def get_repo():
-    session = get_session()
-    try:
+    """依赖注入：获取数据库Session和Repository"""
+    with get_session() as session:
         repo = CrawlerTaskRepository(session)
         yield repo
-    finally:
-        session.close()
 
 
-def _to_response(t: Union[CrawlerTask, CrawlerTaskModel]) -> CrawlerTaskResponse:
+def _to_response(t: Union[CrawlerTask, CrawlerTaskModel]) -> TaskResponse:
     """将任务对象转换为响应对象"""
     if isinstance(t, CrawlerTask):
         t = t.task_record
     if t is None:
-        raise HTTPException(status_code=500, detail="任务创建失败")
-    try:
-        progress = json.loads(t.progress) if t.progress else None
-    except Exception:
-        progress = t.progress
-    return CrawlerTaskResponse(
-        id=t.id,
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="任务创建失败"
+        )
+
+    return TaskResponse(
+        id=t.id or 0,
+        task_type=t.task_type,
         status=t.status,
+        parameters=t.parameters,
+        result_summary=t.result_summary,
         created_at=t.created_at,
         started_at=t.started_at,
         completed_at=t.completed_at,
-        parameters=t.parameters,
-        result_summary=t.result_summary,
         error_message=t.error_message,
-        progress=progress,
+        percentage=t.percentage,
+        processed_items=t.processed_items,
+        total_items=t.total_items,
+        processing_speed=t.processing_speed,
+        estimated_remaining=t.estimated_remaining,
     )
 
 
-@router.post("", response_model=CrawlerTaskResponse)
-def create_task(
-    params: CrawlerTaskCreate,
-    repo: CrawlerTaskRepository = Depends(get_repo),
-):
-    """创建爬虫任务"""
+def _get_task_or_404(task_id: int, repo: CrawlerTaskRepository) -> CrawlerTaskModel:
+    """获取任务或返回404错误"""
+    task = repo.get_by_id(task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"任务 {task_id} 不存在")
+    return task
+
+
+def _get_progress_data(task: CrawlerTaskModel) -> dict:
+    """获取任务进度数据"""
+    return {
+        "task_id": task.id or 0,
+        "percentage": task.percentage,
+        "processed_items": task.processed_items,
+        "total_items": task.total_items,
+        "processing_speed": task.processing_speed,
+        "estimated_remaining": task.estimated_remaining,
+    }
+
+
+@router.post("", response_model=TaskResponse)
+def create_task(task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = Depends(get_repo)):
+    """创建新任务"""
     try:
+        # 使用TaskFactory创建任务
         task = TaskFactory.create_task(
             task_type="crawler",
-            parameters=params.model_dump(),
+            parameters=task_create.model_dump(),
             repository=repo,
             task_type_db="manual",
         )
-        # 写入数据库
+        # 写入数据库并进行参数验证
         task.write_to_db()
         return _to_response(task)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"创建任务失败: {str(e)}"
+        )
 
 
-@router.get("", response_model=List[CrawlerTaskResponse])
+@router.get("", response_model=List[TaskResponse])
 def list_tasks(repo: CrawlerTaskRepository = Depends(get_repo)):
-    tasks = repo.list(limit=100)
-    return [_to_response(t) for t in tasks]
+    """获取任务列表"""
+    try:
+        tasks = repo.list(limit=100)
+        return [_to_response(t) for t in tasks]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"获取任务列表失败: {str(e)}"
+        )
 
 
-@router.get("/{task_id}", response_model=CrawlerTaskResponse)
+@router.get("/{task_id}", response_model=TaskResponse)
 def get_task(task_id: int, repo: CrawlerTaskRepository = Depends(get_repo)):
-    t = repo.get_by_id(task_id)
-    if not t:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return _to_response(t)
+    """获取任务详情"""
+    task = _get_task_or_404(task_id, repo)
+    return _to_response(task)
 
 
-@router.delete("/{task_id}", response_model=CrawlerTaskResponse)
+@router.delete("/{task_id}", response_model=TaskResponse)
 def cancel_task(task_id: int, repo: CrawlerTaskRepository = Depends(get_repo)):
-    t = repo.get_by_id(task_id)
-    if not t:
-        raise HTTPException(status_code=404, detail="Task not found")
-    # 调用任务对象的cancel方法
-    task = TaskFactory.create_task(
-        task_type="crawler",
-        parameters=t.parameters,
-        repository=repo,
-        task_type_db=t.task_type,
-        task_record=t,
-    )
-    # 更新任务状态为cancelled
-    t.status = "cancelled"
-    t.completed_at = task._now()
-    repo.update(t)
-    return _to_response(t)
+    """取消任务"""
+    task = _get_task_or_404(task_id, repo)
+
+    try:
+        # 使用TaskFactory创建任务对象
+        task_obj = TaskFactory.create_task(
+            task_type="crawler",
+            parameters=task.parameters,
+            repository=repo,
+            task_type_db=task.task_type,
+            task_record=task,
+        )
+        # 调用任务对象的取消方法
+        task_obj.on_cancel()
+        return _to_response(task)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"取消任务失败: {str(e)}"
+        )
 
 
 @router.get("/{task_id}/progress")
 def get_task_progress(task_id: int, repo: CrawlerTaskRepository = Depends(get_repo)):
-    t = repo.get_by_id(task_id)
-    if not t:
-        raise HTTPException(status_code=404, detail="Task not found")
-    # 返回progress字段内容
-    progress = t.progress
-    return {"task_id": t.id, "progress": progress}
+    """获取任务进度"""
+    task = _get_task_or_404(task_id, repo)
+    return _get_progress_data(task)
 
 
-# WebSocket接口：实时推送任务进度
-@router.websocket("/ws/crawler/tasks/{task_id}")
+@router.websocket("/{task_id}/ws")
 async def websocket_task_progress(websocket: WebSocket, task_id: int):
+    """WebSocket接口获取任务进度"""
     await websocket.accept()
+    last_progress = None
+
     try:
-        last_progress = None
         while True:
-            # 轮询数据库进度字段
-            await asyncio.sleep(1)
-            with get_session() as session:
-                repo = CrawlerTaskRepository(session)
-                t = repo.get_by_id(task_id)
-                if not t:
-                    await websocket.send_json({"error": "Task not found"})
-                    break
-                progress = t.progress
-                if progress != last_progress:
-                    try:
-                        msg = json.loads(progress) if progress else {}
-                    except Exception:
-                        msg = {"progress": progress}
-                    await websocket.send_json(msg)
-                    last_progress = progress
-                if t.status in ("completed", "failed", "cancelled"):
-                    break
+            await asyncio.sleep(1)  # 每秒检查一次进度
+
+            try:
+                with get_session() as session:
+                    repo = CrawlerTaskRepository(session)
+                    task = repo.get_by_id(task_id)
+
+                    if not task:
+                        await websocket.send_json({
+                            "error": f"任务 {task_id} 不存在",
+                            "code": "task_not_found",
+                        })
+                        break
+
+                    # 检查进度是否有更新
+                    current_progress = _get_progress_data(task)
+
+                    if current_progress != last_progress:
+                        await websocket.send_json(current_progress)
+                        last_progress = current_progress
+
+                    # 如果任务已完成或失败，发送最终状态并关闭连接
+                    if task.status in ["completed", "failed", "cancelled"]:
+                        await websocket.send_json({
+                            **current_progress,
+                            "final_status": task.status,
+                            "result_summary": task.result_summary,
+                            "error_message": task.error_message,
+                        })
+                        break
+
+            except Exception as e:
+                await websocket.send_json({
+                    "error": f"获取任务进度失败: {str(e)}",
+                    "code": "internal_error",
+                })
+                break
+
     except WebSocketDisconnect:
         pass
+    finally:
+        await websocket.close()
