@@ -6,6 +6,8 @@ from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepositor
 from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
 from pydantic import BaseModel, ValidationError
 from datetime import datetime, timezone
+import os
+import signal
 
 
 class CrawlerTaskParams(BaseModel):
@@ -148,6 +150,35 @@ class CrawlerTask(Task):
             self.task_record.error_message = str(e)
             self.task_record.completed_at = self._now()
             self.repository.update(self.task_record)
+            raise
+
+    def cancel(self) -> None:
+        """取消爬虫任务"""
+        try:
+            if self.task_record.status in ["completed", "failed", "cancelled"]:
+                self.logger.info(f"任务 {self.task_id} 已处于终结状态，无需取消。")
+                return
+
+            self.task_record.status = "cancelled"
+            self.task_record.completed_at = self._now()
+            self.task_record.error_message = "任务被用户取消"
+            self.repository.update(self.task_record)
+            self.logger.info(f"任务 {self.task_id} 状态已更新为 'cancelled'。")
+
+            # 尝试发送信号给运行爬虫的进程
+            if self.task_record.worker_pid:
+                try:
+                    os.kill(self.task_record.worker_pid, signal.SIGTERM)
+                    self.logger.info(f"已向 worker 进程 {self.task_record.worker_pid} 发送 SIGTERM 信号。")
+                except ProcessLookupError:
+                    self.logger.warning(f"worker 进程 {self.task_record.worker_pid} 不存在，可能已退出。")
+                except Exception as e:
+                    self.logger.error(f"发送信号给 worker 进程 {self.task_record.worker_pid} 失败: {e}")
+            else:
+                self.logger.warning(f"任务 {self.task_id} 没有关联的 worker PID，无法发送取消信号。")
+
+        except Exception as e:
+            self.logger.error(f"取消任务 {self.task_id} 失败: {e}")
             raise
 
     def _now(self):

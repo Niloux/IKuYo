@@ -234,6 +234,22 @@ class ProcessPool:
                 task_id = task_data.get("task_id")
                 logger.info(f"工作进程 {worker_id} 开始执行任务 {task_id}")
 
+                # 更新任务的 worker_pid
+                try:
+                    from ikuyo.core.database import get_session
+                    from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
+                    with get_session() as session:
+                        repo = CrawlerTaskRepository(session)
+                        task_record = repo.get_by_id(task_id)
+                        if task_record:
+                            task_record.worker_pid = os.getpid()
+                            repo.update(task_record)
+                            logger.info(f"任务 {task_id} 的 worker_pid 已更新为 {os.getpid()}")
+                        else:
+                            logger.warning(f"任务 {task_id} 在 worker 进程中未找到，无法更新 worker_pid。")
+                except Exception as e:
+                    logger.error(f"更新任务 {task_id} 的 worker_pid 失败: {e}")
+
                 # 调用SpiderRunner执行具体爬虫
                 try:
                     from ikuyo.core.crawler.spider_runner import SpiderRunner

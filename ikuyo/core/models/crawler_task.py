@@ -15,6 +15,7 @@ class CrawlerTask(SQLModel, table=True):
     started_at: Optional[datetime] = Field(default=None)
     completed_at: Optional[datetime] = Field(default=None)
     error_message: Optional[str] = Field(default=None)
+    worker_pid: Optional[int] = Field(default=None) # 用于存储执行该任务的 worker 进程 PID
 
     # 进度相关字段
     percentage: Optional[float] = Field(default=None)  # 总体完成百分比 (0-100)

@@ -72,3 +72,9 @@ cache:
 
   # 清理策略
   cleanup_on_startup: true     # 启动时清理过期文件
+
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null

@@ -460,8 +460,6 @@ class BatchSQLitePipeline:
 class ProgressReportPipeline:
     """进度报告管道"""
 
-
-
     def close_spider(self, spider):
         """爬虫关闭时的处理"""
         if (

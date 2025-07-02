@@ -5,6 +5,7 @@
 """
 
 import logging
+import traceback
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 import signal
@@ -107,8 +108,8 @@ class SpiderRunner:
 
     def _setup_logging(self, log_level: str):
         """设置日志级别"""
-        # 为当前进程设置日志级别
-        logging.getLogger().setLevel(logging.DEBUG)
+        # 确保 SpiderRunner 自身的日志级别被设置
+        self.logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
     def _run_scrapy(self, config: SpiderConfig) -> str:
         """执行Scrapy爬虫"""
@@ -160,7 +161,9 @@ class SpiderRunner:
             self.logger.info(f"启动Scrapy爬虫，参数: {spider_kwargs}")
 
             # 启动爬虫
-            self.logger.info(f"Scrapy process.start() for task {self.task_id} is about to be called.")
+            self.logger.info(
+                f"Scrapy process.start() for task {self.task_id} is about to be called."
+            )
             process.crawl(MikanSpider, **spider_kwargs)
             process.start()  # 这会阻塞直到爬虫完成
             self.logger.info(f"Scrapy process.start() for task {self.task_id} has returned.")
@@ -169,6 +172,7 @@ class SpiderRunner:
 
         except Exception as e:
             self.logger.error(f"Scrapy执行异常: {e}")
+            self.logger.error(traceback.format_exc())  # 记录完整的堆栈跟踪
             raise
 
     def _log_to_file(self, message: str):

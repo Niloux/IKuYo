@@ -78,8 +78,14 @@ def get_redis_manager() -> RedisManager:
     """
     global _redis_manager
     if _redis_manager is None:
-        # 硬编码配置，后续可以从 config.yaml 读取
-        _redis_manager = RedisManager(host="localhost", port=6379, db=0, password=None)
+        from ikuyo.core.config import load_config
+        app_config = load_config()
+        redis_config = getattr(app_config, "redis", {})
+        host = redis_config.get("host", "localhost")
+        port = redis_config.get("port", 6379)
+        db = redis_config.get("db", 0)
+        password = redis_config.get("password")
+        _redis_manager = RedisManager(host=host, port=port, db=db, password=password)
     return _redis_manager
 
 

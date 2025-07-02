@@ -1,4 +1,5 @@
-import datetime
+import time
+from datetime import datetime, timezone
 import re
 from urllib.parse import quote, urljoin
 
@@ -51,13 +52,10 @@ class MikanSpider(Spider):
         self.total_items = 0
         self.processed_items = 0
         self.progress_reporter = None
-
-        # progress_reporter 将在 from_crawler 中初始化
+        self.start_time = time.time()  # 记录爬虫启动时间
 
         # 设置基础URL
-        self.BASE_URL = self.config.get("mikan", {}).get(
-            "base_url", "https://mikanani.me"
-        )
+        self.BASE_URL = self.config.get("mikan", {}).get("base_url", "https://mikanani.me")
 
         # 初始化统计信息
         self.crawler_stats = {
@@ -67,9 +65,7 @@ class MikanSpider(Spider):
         }
 
         self.allowed_domains = getattr(config.site, "allowed_domains", ["mikanani.me"])
-        self.start_urls = getattr(
-            config.site, "start_urls", ["https://mikanani.me/Home"]
-        )
+        self.start_urls = getattr(config.site, "start_urls", ["https://mikanani.me/Home"])
 
         # 初始化爬取日志（使用时间戳）
         current_timestamp = get_current_timestamp()
@@ -111,12 +107,8 @@ class MikanSpider(Spider):
 
             if self.mode == "homepage":
                 # 先计算总数
-                anime_links = response.css(
-                    'div.m-week-square a[href*="/Home/Bangumi/"]'
-                )
-                links_to_process = (
-                    anime_links[: self.limit] if self.limit else anime_links
-                )
+                anime_links = response.css('div.m-week-square a[href*="/Home/Bangumi/"]')
+                links_to_process = anime_links[: self.limit] if self.limit else anime_links
                 self.total_items = len(links_to_process)
                 self.logger.info(
                     f"📊 发现 {len(anime_links)} 个动画，将处理 {self.total_items} 个"
@@ -124,17 +116,7 @@ class MikanSpider(Spider):
                 self.logger.info(f"当前total_items值: {self.total_items}")  # 添加日志
 
                 # 报告初始进度
-                if self.progress_reporter:
-                    self.progress_reporter.report_status("running")
-                    self.progress_reporter.report_progress(
-                        {
-                            "total_items": self.total_items,
-                            "processed_items": 0,
-                            "percentage": 0,
-                            "processing_speed": 0,
-                            "estimated_remaining": None,
-                        }
-                    )
+                self._report_initial_progress()
 
                 # 然后再处理页面
                 yield from self.parse_homepage(response)
@@ -144,8 +126,6 @@ class MikanSpider(Spider):
                 yield from self.parse_by_season(response, self.year, self.season)
             elif self.mode == "full":
                 yield from self.parse_full_range(response)
-            elif self.mode == "incremental":
-                yield from self.parse_incremental(response)
             else:
                 self.logger.error(f"未知的爬取模式: {self.mode}")
                 yield from self.parse_homepage(response)  # 降级到首页模式
@@ -164,9 +144,7 @@ class MikanSpider(Spider):
         anime_links = response.css('div.m-week-square a[href*="/Home/Bangumi/"]')
         links_to_process = anime_links[: self.limit] if self.limit else anime_links
         self.logger.info(f"🚀 即将生成 {self.total_items} 个并发请求进入详情页")
-        self.logger.info(
-            f"parse_homepage中的total_items值: {self.total_items}"
-        )  # 添加日志
+        self.logger.info(f"parse_homepage中的total_items值: {self.total_items}")  # 添加日志
 
         for link in links_to_process:
             href = link.attrib.get("href")
@@ -197,7 +175,9 @@ class MikanSpider(Spider):
         self.logger.info(f"按季度爬取: {year}年{season}季")
 
         # 构造API端点
-        api_url = f"{self.BASE_URL}/Home/BangumiCoverFlowByDayOfWeek?year={year}&seasonStr={season}"
+        api_url = (
+            f"{self.BASE_URL}/Home/BangumiCoverFlowByDayOfWeek?year={year}&seasonStr={season}"
+        )
         self.logger.info(f"调用API端点: {api_url}")
 
         yield Request(
@@ -212,35 +192,19 @@ class MikanSpider(Spider):
 
         try:
             # 检查响应是否为HTML
-            if "text/html" in response.headers.get("Content-Type", b"").decode(
-                "utf-8", "ignore"
-            ):
+            if "text/html" in response.headers.get("Content-Type", b"").decode("utf-8", "ignore"):
                 self.logger.info("API返回HTML，提取动画链接")
-                anime_links = response.css(
-                    'div.an-info-group > a[href*="/Home/Bangumi/"]'
-                )
+                anime_links = response.css('div.an-info-group > a[href*="/Home/Bangumi/"]')
                 total_links = len(anime_links)
                 self.logger.info(f"从HTML提取到 {total_links} 个动画")
 
                 # 根据limit限制处理数量
-                links_to_process = (
-                    anime_links[: self.limit] if self.limit else anime_links
-                )
+                links_to_process = anime_links[: self.limit] if self.limit else anime_links
                 self.total_items = len(links_to_process)
                 self.logger.info(f"应用limit限制，只处理前 {self.total_items} 个动画")
 
                 # 报告初始进度
-                if self.progress_reporter:
-                    self.progress_reporter.report_status("running")
-                    self.progress_reporter.report_progress(
-                        {
-                            "total_items": self.total_items,
-                            "processed_items": 0,
-                            "percentage": 0,
-                            "processing_speed": 0,
-                            "estimated_remaining": None,
-                        }
-                    )
+                self._report_initial_progress()
 
                 # 处理每个动画链接
                 for link in links_to_process:
@@ -269,28 +233,16 @@ class MikanSpider(Spider):
     def parse_full_range(self, response):
         """全量爬取"""
         self.logger.info("开始全量爬取")
+        import datetime
+
         current_year = datetime.datetime.now().year
-        year_range = getattr(
-            self.config, "year_range", {"start": 2013, "end": current_year}
-        )
+        year_range = getattr(self.config, "year_range", {"start": 2013, "end": current_year})
         start_year = year_range["start"]
         end_year = year_range["end"]
         self.logger.info(f"爬取年份范围: {start_year} - {end_year}")
         for year in range(start_year, end_year + 1):
             self.logger.info(f"爬取 {year} 年")
             yield from self.parse_by_year(response, year)
-
-    def parse_incremental(self, response):
-        """增量爬取"""
-        self.logger.info("开始增量爬取")
-        last_crawl_time = getattr(self.config, "last_crawl_time", None)
-        if last_crawl_time:
-            self.logger.info(f"上次爬取时间: {last_crawl_time}")
-            self.logger.info("增量模式暂时使用首页模式")
-            yield from self.parse_homepage(response)
-        else:
-            self.logger.info("首次爬取，使用首页模式")
-            yield from self.parse_homepage(response)
 
     def _call_api_or_fallback(self, year, season):
         """调用API接口或降级处理"""
@@ -457,14 +409,12 @@ class MikanSpider(Spider):
             # 提取字幕组信息
             subtitle_groups = self._extract_subtitle_groups(response)
             for group in subtitle_groups:
-                yield SubtitleGroupItem(
-                    {
-                        "id": group["group_id"],
-                        "name": group["group_name"],
-                        "last_update": current_timestamp,
-                        "created_at": current_timestamp,
-                    }
-                )
+                yield SubtitleGroupItem({
+                    "id": group["group_id"],
+                    "name": group["group_name"],
+                    "last_update": current_timestamp,
+                    "created_at": current_timestamp,
+                })
 
             # 提取资源信息（使用增强解析）
             resources = self._extract_resources(response, mikan_id, subtitle_groups)
@@ -474,28 +424,22 @@ class MikanSpider(Spider):
 
             for resource in resources:
                 # 创建ResourceItem（使用增强字段）
-                yield ResourceItem(
-                    {
-                        "mikan_id": resource["mikan_id"],
-                        "subtitle_group_id": resource["group_id"],
-                        "episode_number": resource[
-                            "episode_number"
-                        ],  # 新增：解析的集数
-                        "title": resource["title"],
-                        "file_size": resource["size"],
-                        "resolution": resource["resolution"],  # 新增：解析的分辨率
-                        "subtitle_type": resource[
-                            "subtitle_type"
-                        ],  # 新增：解析的字幕类型
-                        "release_date": resource["release_timestamp"],  # 使用时间戳
-                        "magnet_url": resource["magnet_link"],
-                        "magnet_hash": resource["magnet_hash"],
-                        "torrent_url": resource["torrent_url"],
-                        "play_url": resource["play_url"],
-                        "created_at": resource["created_at"],
-                        "updated_at": current_timestamp,
-                    }
-                )
+                yield ResourceItem({
+                    "mikan_id": resource["mikan_id"],
+                    "subtitle_group_id": resource["group_id"],
+                    "episode_number": resource["episode_number"],  # 新增：解析的集数
+                    "title": resource["title"],
+                    "file_size": resource["size"],
+                    "resolution": resource["resolution"],  # 新增：解析的分辨率
+                    "subtitle_type": resource["subtitle_type"],  # 新增：解析的字幕类型
+                    "release_date": resource["release_timestamp"],  # 使用时间戳
+                    "magnet_url": resource["magnet_link"],
+                    "magnet_hash": resource["magnet_hash"],
+                    "torrent_url": resource["torrent_url"],
+                    "play_url": resource["play_url"],
+                    "created_at": resource["created_at"],
+                    "updated_at": current_timestamp,
+                })
 
                 # 收集动画-字幕组关联信息
                 group_id = resource["group_id"]
@@ -513,9 +457,9 @@ class MikanSpider(Spider):
                         or resource["release_timestamp"]
                         < anime_subtitle_groups[group_id]["first_release_date"]
                     ):
-                        anime_subtitle_groups[group_id]["first_release_date"] = (
-                            resource["release_timestamp"]
-                        )
+                        anime_subtitle_groups[group_id]["first_release_date"] = resource[
+                            "release_timestamp"
+                        ]
 
                     if (
                         anime_subtitle_groups[group_id]["last_update_date"] is None
@@ -530,18 +474,16 @@ class MikanSpider(Spider):
 
             # 创建动画-字幕组关联Items
             for group_id, group_info in anime_subtitle_groups.items():
-                yield AnimeSubtitleGroupItem(
-                    {
-                        "mikan_id": mikan_id,
-                        "subtitle_group_id": group_id,
-                        "first_release_date": group_info["first_release_date"],
-                        "last_update_date": group_info["last_update_date"],
-                        "resource_count": group_info["resource_count"],
-                        "is_active": 1,
-                        "created_at": current_timestamp,
-                        "updated_at": current_timestamp,
-                    }
-                )
+                yield AnimeSubtitleGroupItem({
+                    "mikan_id": mikan_id,
+                    "subtitle_group_id": group_id,
+                    "first_release_date": group_info["first_release_date"],
+                    "last_update_date": group_info["last_update_date"],
+                    "resource_count": group_info["resource_count"],
+                    "is_active": 1,
+                    "created_at": current_timestamp,
+                    "updated_at": current_timestamp,
+                })
 
             # 更新爬取日志
             self.crawl_log["items_count"] += len(resources)
@@ -637,9 +579,7 @@ class MikanSpider(Spider):
 
     def _find_official_links_in_sections(self, response):
         """在包含官方网站的段落中查找链接"""
-        official_sections = response.xpath(
-            '//p[contains(text(), "官方网站")]//a/@href'
-        ).getall()
+        official_sections = response.xpath('//p[contains(text(), "官方网站")]//a/@href').getall()
         return official_sections[0] if official_sections else None
 
     def _find_external_links(self, response):
@@ -702,12 +642,10 @@ class MikanSpider(Spider):
             group_name = element.css("a::text").get()
 
             if group_id and group_name:
-                subtitle_groups.append(
-                    {
-                        "group_id": group_id,
-                        "group_name": group_name.strip(),
-                    }
-                )
+                subtitle_groups.append({
+                    "group_id": group_id,
+                    "group_name": group_name.strip(),
+                })
 
         self.logger.info(f"提取到 {len(subtitle_groups)} 个字幕组")
         return subtitle_groups
@@ -790,9 +728,7 @@ class MikanSpider(Spider):
                 resolution = extract_resolution(title)
                 raw_subtitle_type = extract_subtitle_type(title)
                 subtitle_type = (
-                    normalize_subtitle_type(raw_subtitle_type)
-                    if raw_subtitle_type
-                    else None
+                    normalize_subtitle_type(raw_subtitle_type) if raw_subtitle_type else None
                 )
 
                 # 转换日期为时间戳
@@ -848,18 +784,43 @@ class MikanSpider(Spider):
         # 保存爬取日志
         yield self.crawl_log
 
+    def _now(self):
+        return datetime.now(timezone.utc)
+
+    def _report_initial_progress(self):
+        """报告爬虫的初始进度，在 total_items 确定后调用。"""
+        if self.progress_reporter:
+            processing_speed = 0  # 初始时为0
+            estimated_remaining = None  # 初始时无法估计
+
+            self.progress_reporter.report_status("running")
+            self.progress_reporter.report_progress({
+                "total_items": self.total_items,
+                "processed_items": 0,
+                "percentage": 0,
+                "processing_speed": processing_speed,
+                "estimated_remaining": estimated_remaining,
+            })
+
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        print(f"DEBUG: MikanSpider.from_crawler called with kwargs: {kwargs}") # Added for debugging
+        print(
+            f"DEBUG: MikanSpider.from_crawler called with kwargs: {kwargs}"
+        )  # Added for debugging
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider.crawler = crawler  # Store the crawler object
 
         # 初始化进度报告器
         if spider.task_id is not None:
             from ikuyo.core.crawler.progress_reporter import ProgressReporter
+
             spider.progress_reporter = ProgressReporter(spider.task_id)
-            spider.logger.info(f"MikanSpider from_crawler: progress_reporter initialized for task {spider.task_id}")
+            spider.logger.info(
+                f"MikanSpider from_crawler: progress_reporter initialized for task {spider.task_id}"
+            )
         else:
-            spider.logger.warning("MikanSpider from_crawler: task_id is None, progress_reporter not initialized.")
+            spider.logger.warning(
+                "MikanSpider from_crawler: task_id is None, progress_reporter not initialized."
+            )
 
         return spider
