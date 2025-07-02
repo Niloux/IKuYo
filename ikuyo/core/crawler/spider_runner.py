@@ -7,6 +7,7 @@
 import logging
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
+import signal
 
 
 @dataclass
@@ -119,6 +120,10 @@ class SpiderRunner:
             # 设置Scrapy配置
             settings = get_project_settings()
             settings.set("LOG_LEVEL", config.log_level)
+            # 设置每个爬虫的并发请求数
+            settings.set("CONCURRENT_REQUESTS_PER_SPIDER", 8)
+            # 设置下载延迟
+            settings.set("DOWNLOAD_DELAY", 0.5)
 
             if config.output:
                 settings.set("FEED_FORMAT", "json")
@@ -126,6 +131,14 @@ class SpiderRunner:
 
             # 创建爬虫进程
             process = CrawlerProcess(settings)
+
+            # 设置信号处理器
+            def handle_signal(signum, frame):
+                self.logger.info(f"爬虫进程收到信号 {signum}，正在停止...")
+                process.stop()
+
+            signal.signal(signal.SIGTERM, handle_signal)
+            signal.signal(signal.SIGINT, handle_signal)
 
             # 准备爬虫参数
             spider_kwargs = {"config": project_config, "mode": config.mode}

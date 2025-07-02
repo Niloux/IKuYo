@@ -11,6 +11,8 @@ import logging
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+import signal
+import os
 
 
 class ProcessStatus(Enum):
@@ -67,9 +69,46 @@ class ProcessPool:
             # 等待进程结束
             for process_info in self.processes.values():
                 if process_info.process.is_alive():
-                    process_info.process.join(timeout=5)
+                    # 先等待进程自然结束
+                    process_info.process.join(timeout=3)
                     if process_info.process.is_alive():
-                        process_info.process.terminate()
+                        # 如果进程还在运行，发送SIGTERM信号
+                        try:
+                            pid = process_info.process.pid
+                            if pid is not None:  # 类型检查
+                                os.kill(pid, signal.SIGTERM)
+                                process_info.process.join(timeout=2)
+                        except Exception:
+                            pass
+                        # 如果进程还在运行，强制终止
+                        if process_info.process.is_alive():
+                            process_info.process.terminate()
+                            process_info.process.join(timeout=1)
+                            # 如果还是无法终止，使用SIGKILL
+                            if process_info.process.is_alive():
+                                try:
+                                    pid = process_info.process.pid
+                                    if pid is not None:  # 类型检查
+                                        os.kill(pid, signal.SIGKILL)
+                                except Exception:
+                                    pass
+
+            # 清理队列
+            while not self.task_queue.empty():
+                try:
+                    self.task_queue.get_nowait()
+                except Exception:
+                    pass
+            while not self.result_queue.empty():
+                try:
+                    self.result_queue.get_nowait()
+                except Exception:
+                    pass
+            while not self.control_queue.empty():
+                try:
+                    self.control_queue.get_nowait()
+                except Exception:
+                    pass
 
             self.processes.clear()
             self.logger.info("进程池已停止")

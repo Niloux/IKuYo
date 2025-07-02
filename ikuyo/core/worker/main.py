@@ -171,7 +171,11 @@ class WorkerManager:
     def _signal_handler(self, signum, frame):
         """信号处理器"""
         self.logger.info(f"收到信号 {signum}，正在停止工作器...")
-        self.is_running = False
+        # 立即停止工作器
+        self.stop()
+        # 强制退出进程
+        import sys
+        sys.exit(0)
 
 
 def main():
