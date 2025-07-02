@@ -49,6 +49,8 @@
   // Props定义
   interface Props {
     bangumiId: number
+    preloadedEpisodes?: BangumiEpisode[]
+    preloadedAvailability?: any
   }
 
   const props = defineProps<Props>()
@@ -127,6 +129,26 @@
   // 主数据获取函数
   const fetchBangumiEpisodes = async () => {
     try {
+      // 如果有预加载数据，直接使用
+      if (props.preloadedEpisodes && props.preloadedAvailability) {
+        bangumiEpisodes.value = props.preloadedEpisodes
+        episodeAvailability.value = props.preloadedAvailability
+
+        // 计算统计信息
+        episodeStats.value = {
+          total: props.preloadedEpisodes.length,
+          main_episodes: props.preloadedEpisodes.filter(ep => ep.type === 0).length,
+          special_episodes: props.preloadedEpisodes.filter(ep => ep.type === 1).length,
+          opening_episodes: props.preloadedEpisodes.filter(ep => ep.type === 2).length,
+          ending_episodes: props.preloadedEpisodes.filter(ep => ep.type === 3).length,
+          pv_episodes: props.preloadedEpisodes.filter(ep => ep.type === 4).length,
+          other_episodes: props.preloadedEpisodes.filter(ep => ep.type === 6).length
+        }
+
+        loading.value = false
+        return
+      }
+
       loading.value = true
       error.value = null
       loadingProgress.value = '正在获取章节信息...'

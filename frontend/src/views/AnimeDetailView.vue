@@ -85,6 +85,8 @@
       <EpisodeDisplay
         v-if="!route.meta.showResources && (anime.total_episodes > 0 || anime.eps > 0)"
         :bangumi-id="animeId"
+        :preloaded-episodes="episodes"
+        :preloaded-availability="episodeAvailability"
       />
 
       <!-- 资源列表展示（资源库模式） -->
@@ -111,6 +113,8 @@ const router = useRouter()
 const anime = ref<BangumiSubject | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+const episodes = ref<any[]>([])
+const episodeAvailability = ref<any>(null)
 
 // 获取番剧ID
 const animeId = parseInt(route.params.id as string)
@@ -121,12 +125,41 @@ const loadAnimeDetail = async () => {
     loading.value = true
     error.value = null
 
-    const subjectData = await BangumiApiService.getSubject(animeId)
-    anime.value = subjectData
+    // 使用Promise.allSettled替代Promise.all，允许部分请求失败
+    const results = await Promise.allSettled([
+      BangumiApiService.getSubject(animeId),
+      BangumiApiService.getBangumiEpisodes(animeId, 0, 1000, 0),
+      BangumiApiService.getEpisodeAvailability(animeId)
+    ])
+
+    // 处理番剧详情数据
+    if (results[0].status === 'fulfilled') {
+      anime.value = results[0].value
+    } else {
+      console.error('加载番剧详情失败:', results[0].reason)
+      error.value = '加载番剧详情失败，请稍后重试'
+      return
+    }
+
+    // 处理集数数据
+    if (results[1].status === 'fulfilled') {
+      episodes.value = results[1].value.data
+    } else {
+      console.warn('加载集数数据失败:', results[1].reason)
+      episodes.value = []
+    }
+
+    // 处理资源可用性数据
+    if (results[2].status === 'fulfilled') {
+      episodeAvailability.value = results[2].value
+    } else {
+      console.warn('加载资源可用性数据失败:', results[2].reason)
+      episodeAvailability.value = null
+    }
 
   } catch (err) {
-    console.error('加载番剧详情失败:', err)
-    error.value = '加载失败，请检查网络连接或API服务状态'
+    console.error('加载数据失败:', err)
+    error.value = '加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
