@@ -77,8 +77,7 @@ async def get_anime_resources(
             resource_repo = ResourceRepository(session)
             subtitle_group_repo = SubtitleGroupRepository(session)
 
-            anime = anime_repo.list(limit=1, offset=0)
-            anime = next((a for a in anime if a.bangumi_id == bangumi_id), None)
+            anime = anime_repo.get_by_bangumi_id(bangumi_id)
             if not anime:
                 raise HTTPException(
                     status_code=404, detail=f"未找到 bangumi_id={bangumi_id} 的番剧"
@@ -187,9 +186,7 @@ async def get_episodes_availability(
             resource_repo = ResourceRepository(session)
 
             # 查找bangumi_id对应的anime
-            anime = next(
-                (a for a in anime_repo.list(limit=10000) if a.bangumi_id == bangumi_id), None
-            )
+            anime = anime_repo.get_by_bangumi_id(bangumi_id)
             if not anime:
                 raise HTTPException(
                     status_code=404, detail=f"未找到 bangumi_id={bangumi_id} 的番剧"
