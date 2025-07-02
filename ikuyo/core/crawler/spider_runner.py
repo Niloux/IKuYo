@@ -120,10 +120,6 @@ class SpiderRunner:
             # 设置Scrapy配置
             settings = get_project_settings()
             settings.set("LOG_LEVEL", config.log_level)
-            # 设置每个爬虫的并发请求数
-            settings.set("CONCURRENT_REQUESTS_PER_SPIDER", 8)
-            # 设置下载延迟
-            settings.set("DOWNLOAD_DELAY", 0.5)
 
             if config.output:
                 settings.set("FEED_FORMAT", "json")
@@ -141,7 +137,11 @@ class SpiderRunner:
             signal.signal(signal.SIGINT, handle_signal)
 
             # 准备爬虫参数
-            spider_kwargs = {"config": project_config, "mode": config.mode}
+            spider_kwargs = {
+                "config": project_config,
+                "mode": config.mode,
+                "task_id": self.task_id,  # 传递task_id给爬虫
+            }
 
             if config.year:
                 spider_kwargs["year"] = config.year

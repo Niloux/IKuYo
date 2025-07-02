@@ -68,6 +68,7 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
+    "ikuyo.crawler.pipelines.ProgressReportPipeline": 50,  # 最先执行，以便准确记录所有项目
     "ikuyo.crawler.pipelines.ValidationPipeline": 100,
     "ikuyo.crawler.pipelines.DuplicatesPipeline": 200,
     "ikuyo.crawler.pipelines.BatchSQLitePipeline": 300,
