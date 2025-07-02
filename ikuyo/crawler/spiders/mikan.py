@@ -804,9 +804,7 @@ class MikanSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        print(
-            f"DEBUG: MikanSpider.from_crawler called with kwargs: {kwargs}"
-        )  # Added for debugging
+
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider.crawler = crawler  # Store the crawler object
 

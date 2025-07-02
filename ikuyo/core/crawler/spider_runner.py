@@ -8,7 +8,6 @@ import logging
 import traceback
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-import signal
 
 
 @dataclass
@@ -114,61 +113,66 @@ class SpiderRunner:
     def _run_scrapy(self, config: SpiderConfig) -> str:
         """执行Scrapy爬虫"""
         try:
-            # 导入Scrapy相关模块
-            from scrapy.crawler import CrawlerProcess
-            from scrapy.utils.project import get_project_settings
-            from ikuyo.crawler.spiders.mikan import MikanSpider
-            from ikuyo.core.config import load_config
+            import subprocess
+            import json
+            import sys
+            import os
 
-            # 获取项目配置
-            project_config = load_config()
-
-            # 设置Scrapy配置
-            settings = get_project_settings()
-            settings.set("LOG_LEVEL", config.log_level)
-
-            if config.output:
-                settings.set("FEED_FORMAT", "json")
-                settings.set("FEED_URI", config.output)
-
-            # 创建爬虫进程
-            process = CrawlerProcess(settings)
-
-            # 设置信号处理器
-            def handle_signal(signum, frame):
-                self.logger.info(f"爬虫进程收到信号 {signum}，正在停止...")
-                process.stop()
-
-            signal.signal(signal.SIGTERM, handle_signal)
-            signal.signal(signal.SIGINT, handle_signal)
-
-            # 准备爬虫参数
-            spider_kwargs = {
-                "config": project_config,
-                "mode": config.mode,
-                "task_id": self.task_id,  # 传递task_id给爬虫
-            }
-
-            if config.year:
-                spider_kwargs["year"] = config.year
-            if config.season:
-                spider_kwargs["season"] = config.season
-            if config.start_url:
-                spider_kwargs["start_url"] = config.start_url
-            if config.limit is not None:
-                spider_kwargs["limit"] = config.limit
-
-            self.logger.info(f"启动Scrapy爬虫，参数: {spider_kwargs}")
-
-            # 启动爬虫
-            self.logger.info(
-                f"Scrapy process.start() for task {self.task_id} is about to be called."
+            # Construct the path to the single spider runner script
+            script_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..", "..", "..", "scripts", "run_single_spider.py"
             )
-            process.crawl(MikanSpider, **spider_kwargs)
-            process.start()  # 这会阻塞直到爬虫完成
-            self.logger.info(f"Scrapy process.start() for task {self.task_id} has returned.")
+            script_path = os.path.abspath(script_path)
 
-            return f"爬虫任务 {self.task_id} 执行成功"
+            # Prepare parameters for the subprocess
+            # self.config already contains the parameters passed to SpiderRunner
+            parameters_json = json.dumps(self.config)
+
+            command = [
+                sys.executable,  # Use the current Python interpreter
+                script_path,
+                str(self.task_id),
+                parameters_json,
+            ]
+
+            self.logger.info(f"Executing Scrapy spider in new process: {' '.join(command)}")
+
+            # Execute the script in a new subprocess
+            # capture_output=True to get stdout/stderr
+            # text=True to decode stdout/stderr as text
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False  # Do not raise CalledProcessError for non-zero exit codes
+            )
+
+            if result.returncode != 0:
+                self.logger.error(f"Subprocess for task {self.task_id} failed with exit code {result.returncode}")
+                self.logger.error(f"Subprocess stdout: {result.stdout}")
+                self.logger.error(f"Subprocess stderr: {result.stderr}")
+                # Attempt to parse error from stdout if available
+                try:
+                    subprocess_output = json.loads(result.stdout)
+                    error_message = subprocess_output.get("error", "Unknown error from subprocess")
+                    traceback_info = subprocess_output.get("traceback", "")
+                except json.JSONDecodeError:
+                    error_message = f"Subprocess failed. Stderr: {result.stderr or 'No stderr'}"
+                    traceback_info = ""
+
+                raise Exception(f"Scrapy spider subprocess failed: {error_message}\n{traceback_info}")
+
+            try:
+                subprocess_output = json.loads(result.stdout)
+                if not subprocess_output.get("success"):
+                    error_message = subprocess_output.get("error", "Scrapy spider reported failure")
+                    traceback_info = subprocess_output.get("traceback", "")
+                    raise Exception(f"Scrapy spider reported failure: {error_message}\n{traceback_info}")
+                return subprocess_output.get("message", f"爬虫任务 {self.task_id} 执行成功")
+            except json.JSONDecodeError:
+                self.logger.error(f"Failed to parse JSON output from subprocess: {result.stdout}")
+                raise Exception(f"Invalid output from Scrapy spider subprocess. Raw output: {result.stdout}")
 
         except Exception as e:
             self.logger.error(f"Scrapy执行异常: {e}")

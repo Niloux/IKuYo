@@ -7,12 +7,15 @@
 import sys
 import os
 import argparse
+import multiprocessing
+
+multiprocessing.set_start_method('spawn', force=True)
 
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ikuyo.core.worker.main import WorkerManager
-from ikuyo.core.worker.progress_consumer import start_progress_consumer
+from ikuyo.core.worker.main import WorkerManager  # noqa: E402
+from ikuyo.core.worker.progress_consumer import start_progress_consumer  # noqa: E402
 
 
 def main():
