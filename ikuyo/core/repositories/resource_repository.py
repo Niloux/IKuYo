@@ -1,7 +1,7 @@
 from typing import Optional, List
-from sqlmodel import Session, select
+from sqlmodel import Session, select, col
 from ikuyo.core.models import Resource
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, func
 
 
 class ResourceRepository:
@@ -18,7 +18,12 @@ class ResourceRepository:
         return self.session.get(Resource, resource_id)
 
     def list(self, limit: int = 100, offset: int = 0) -> List[Resource]:
-        statement = select(Resource).offset(offset).limit(limit)
+        statement = (
+            select(Resource)
+            .order_by(col(Resource.release_date).desc())  # 默认按release_date倒序
+            .offset(offset)
+            .limit(limit)
+        )
         return list(self.session.exec(statement))
 
     def update(self, resource: Resource) -> Resource:
@@ -52,7 +57,7 @@ class ResourceRepository:
         statement = select(Resource)
         if conditions:
             statement = statement.where(and_(*conditions))
-        statement = statement.order_by(desc(getattr(Resource, 'release_date')))
+        statement = statement.order_by(col(Resource.release_date).desc())  # 默认按release_date倒序
         if limit:
             statement = statement.limit(limit)
         return list(self.session.exec(statement))

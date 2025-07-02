@@ -21,7 +21,7 @@ bangumi_service = BangumiService()
 
 
 @router.get("/", response_model=HealthResponse)
-async def health_check():
+def health_check():
     """
     健康检查接口
     检查API、数据库和缓存状态

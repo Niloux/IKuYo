@@ -59,7 +59,7 @@ def get_resolution_priority(resolution: str) -> int:
     response_model=EpisodeResourcesResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def get_anime_resources(
+def get_anime_resources(
     bangumi_id: int = Path(..., description="Bangumi ID"),
     episode: Optional[int] = Query(None, description="指定集数，不提供则返回所有集数"),
     resolution: Optional[str] = Query(None, description="分辨率筛选"),
@@ -173,7 +173,7 @@ async def get_anime_resources(
     response_model=EpisodeAvailabilityResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def get_episodes_availability(
+def get_episodes_availability(
     bangumi_id: int = Path(..., description="Bangumi ID"),
 ):
     """

@@ -57,7 +57,7 @@ app.include_router(scheduler.router)
 
 
 @app.get("/")
-async def root():
+def root():
     """
     API根路径
     返回基本信息
