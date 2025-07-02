@@ -27,11 +27,11 @@ def run_crawler(args, config):
         if getattr(args, "limit", None) is not None:
             spider_kwargs["limit"] = args.limit
         with open("./worker_debug.log", "a") as f:
-            f.write(f"[DEBUG] Before process.crawl and process.start()\n")
+            f.write("[DEBUG] Before process.crawl and process.start()\n")
         process.crawl(MikanSpider, **spider_kwargs)
         process.start()
         with open("./worker_debug.log", "a") as f:
-            f.write(f"[DEBUG] After process.start()\n")
+            f.write("[DEBUG] After process.start()\n")
     except Exception as e:
         with open("./worker_debug.log", "a") as f:
             f.write(f"[ERROR] run_crawler exception: {e}\n")

@@ -1,6 +1,6 @@
 <template>
   <transition name="scroll-to-top" appear>
-    <button 
+    <button
       v-show="isVisible"
       class="scroll-to-top-btn"
       :class="{ 'scrolling': isScrolling }"
@@ -8,11 +8,11 @@
       :aria-label="'返回顶部'"
       :disabled="isScrolling"
     >
-      <svg 
-        class="arrow-icon" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
+      <svg
+        class="arrow-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
         stroke-width="2"
       >
         <path d="m18 15-6-6-6 6"/>
@@ -41,10 +41,10 @@ const handleScroll = () => {
 // 点击滚动到顶部
 const scrollToTop = () => {
   if (isScrolling.value) return // 防止重复点击
-  
+
   isScrolling.value = true
   smoothScrollToTop()
-  
+
   // 滚动完成后重置状态
   setTimeout(() => {
     isScrolling.value = false
@@ -76,7 +76,7 @@ onUnmounted(() => {
   border: none;
   outline: none;
   cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(16, 185, 129, 0.3),
     0 2px 8px rgba(16, 185, 129, 0.2);
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -95,8 +95,8 @@ onUnmounted(() => {
   right: 1px;
   bottom: 1px;
   border-radius: 50%;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.15) 0%,
     rgba(255, 255, 255, 0.05) 50%,
     rgba(0, 0, 0, 0.05) 100%);
   pointer-events: none;
@@ -104,7 +104,7 @@ onUnmounted(() => {
 
 .scroll-to-top-btn:hover {
   transform: translateY(-4px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 12px 48px rgba(16, 185, 129, 0.4),
     0 4px 16px rgba(16, 185, 129, 0.3);
 }
@@ -157,7 +157,7 @@ onUnmounted(() => {
     width: 44px;
     height: 44px;
   }
-  
+
   .arrow-icon {
     width: 20px;
     height: 20px;
@@ -170,10 +170,10 @@ onUnmounted(() => {
     width: 40px;
     height: 40px;
   }
-  
+
   .arrow-icon {
     width: 18px;
     height: 18px;
   }
 }
-</style> 
+</style>

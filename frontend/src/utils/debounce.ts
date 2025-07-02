@@ -9,12 +9,12 @@ export function debounce<T extends (...args: any[]) => any>(
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: number | null = null
-  
+
   return (...args: Parameters<T>) => {
     if (timeoutId !== null) {
       clearTimeout(timeoutId)
     }
-    
+
     timeoutId = setTimeout(() => {
       func(...args)
       timeoutId = null
@@ -29,9 +29,9 @@ export function debounce<T extends (...args: any[]) => any>(
 export class BatchDebouncer {
   private timeoutId: number | null = null
   private pendingOperations: (() => void)[] = []
-  
+
   constructor(private delay: number = 300) {}
-  
+
   /**
    * 添加待执行的操作
    * @param operation 操作函数
@@ -40,26 +40,26 @@ export class BatchDebouncer {
     this.pendingOperations.push(operation)
     this.scheduleExecution()
   }
-  
+
   private scheduleExecution() {
     if (this.timeoutId !== null) {
       clearTimeout(this.timeoutId)
     }
-    
+
     this.timeoutId = setTimeout(() => {
       this.executePendingOperations()
     }, this.delay) as unknown as number
   }
-  
+
   private executePendingOperations() {
     if (this.pendingOperations.length > 0) {
-  
+
       this.pendingOperations.forEach(op => op())
       this.pendingOperations = []
     }
     this.timeoutId = null
   }
-  
+
   /**
    * 立即执行所有待定操作
    */
@@ -70,4 +70,4 @@ export class BatchDebouncer {
     }
     this.executePendingOperations()
   }
-} 
+}

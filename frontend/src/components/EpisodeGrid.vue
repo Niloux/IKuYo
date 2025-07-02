@@ -1,7 +1,7 @@
 <template>
   <div class="episode-grid-container">
     <h3 class="section-title">章节信息</h3>
-    
+
     <!-- 集数统计信息 -->
     <div v-if="!loading && !error && episodeStats" class="episode-stats">
       <span class="stats-text">
@@ -29,7 +29,7 @@
         v-for="episode in currentPageEpisodes"
         :key="episode.number"
         :class="[
-          'episode-item', 
+          'episode-item',
           episode.available ? 'available' : 'unavailable'
         ]"
         @click="handleEpisodeClick(episode)"
@@ -44,29 +44,29 @@
       <div class="pagination-info">
         <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
       </div>
-      
+
       <div class="pagination-controls">
-        <button 
-          @click="goToPrevPage" 
+        <button
+          @click="goToPrevPage"
           :disabled="currentPage === 1"
           class="pagination-btn prev-btn"
         >
           上一页
         </button>
-        
+
         <div class="page-numbers">
           <!-- 首页 -->
-          <button 
+          <button
             v-if="currentPage > 3"
             @click="goToPage(1)"
             class="pagination-btn page-btn"
           >
             1
           </button>
-          
+
           <!-- 省略号 -->
           <span v-if="currentPage > 4" class="pagination-ellipsis">...</span>
-          
+
           <!-- 当前页附近的页码 -->
           <button
             v-for="page in getVisiblePages()"
@@ -79,12 +79,12 @@
           >
             {{ page }}
           </button>
-          
+
           <!-- 省略号 -->
           <span v-if="currentPage < totalPages - 3" class="pagination-ellipsis">...</span>
-          
+
           <!-- 尾页 -->
-          <button 
+          <button
             v-if="currentPage < totalPages - 2"
             @click="goToPage(totalPages)"
             class="pagination-btn page-btn"
@@ -92,22 +92,22 @@
             {{ totalPages }}
           </button>
         </div>
-        
-        <button 
-          @click="goToNextPage" 
+
+        <button
+          @click="goToNextPage"
           :disabled="currentPage === totalPages"
           class="pagination-btn next-btn"
         >
           下一页
         </button>
       </div>
-      
+
       <!-- 快速跳转 -->
       <div class="pagination-jump">
         <span>跳转到</span>
-        <input 
-          type="number" 
-          :min="1" 
+        <input
+          type="number"
+          :min="1"
           :max="totalPages"
           v-model.number="jumpPage"
           @keyup.enter="handleJumpToPage"
@@ -164,7 +164,7 @@ const selectedEpisodeData = ref<any>(null)
 // 计算属性 - 集数列表
 const episodes = computed(() => {
   const episodeList = []
-  
+
   // 创建Bangumi数据的映射表
   const bangumiMap = new Map()
   if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
@@ -175,13 +175,13 @@ const episodes = computed(() => {
         bangumiMap.set(episodeNumber, bangumiEp)
       })
   }
-  
+
   // 基于totalEpisodes生成完整列表，并尽可能使用真实Bangumi数据
   for (let i = 1; i <= props.totalEpisodes; i++) {
     const episodeKey = i.toString()
     const episodeData = availabilityData.value?.episodes[episodeKey]
     const bangumiEp = bangumiMap.get(i)
-    
+
     episodeList.push({
       number: i,
       available: episodeData?.available || false,
@@ -190,7 +190,7 @@ const episodes = computed(() => {
       bangumiData: bangumiEp || null
     })
   }
-  
+
   return episodeList
 })
 
@@ -206,20 +206,20 @@ const currentPageEpisodes = computed(() => {
   if (!needsPagination.value) {
     return episodes.value
   }
-  
+
   const startIndex = (currentPage.value - 1) * episodesPerPage
   const endIndex = Math.min(startIndex + episodesPerPage, actualTotalEpisodes.value)
-  
+
   return episodes.value.slice(startIndex, endIndex)
 })
 
 // 计算属性 - 当前页范围信息
 const currentPageRange = computed(() => {
   if (!needsPagination.value) return null
-  
+
   const startEpisode = (currentPage.value - 1) * episodesPerPage + 1
   const endEpisode = Math.min(currentPage.value * episodesPerPage, actualTotalEpisodes.value)
-  
+
   return { start: startEpisode, end: endEpisode }
 })
 
@@ -227,7 +227,7 @@ const currentPageRange = computed(() => {
 const episodeStats = computed(() => {
   const availableCount = episodes.value.filter(ep => ep.available).length
   const currentPageAvailableCount = currentPageEpisodes.value.filter(ep => ep.available).length
-  
+
   return {
     totalCount: actualTotalEpisodes.value,
     availableCount,
@@ -238,7 +238,7 @@ const episodeStats = computed(() => {
 // 计算属性 - 每行列数
 const columnsPerRow = computed(() => {
   const totalEps = props.totalEpisodes
-  
+
   // 根据集数总数确定每行显示的列数
   if (totalEps <= 10) return totalEps
   if (totalEps <= 17) return Math.min(17, totalEps)
@@ -249,7 +249,7 @@ const columnsPerRow = computed(() => {
 const gridStyle = computed(() => {
   const columns = columnsPerRow.value
   const currentPageEpsCount = currentPageEpisodes.value.length
-  
+
   // 如果当前页集数少于17，使用固定尺寸；否则使用17列布局
   if (currentPageEpsCount < 17 && !needsPagination.value) {
     return {
@@ -270,7 +270,7 @@ const loadEpisodeAvailability = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
     availabilityData.value = data
   } catch (err) {
@@ -305,11 +305,11 @@ const getVisiblePages = () => {
   const pages = []
   const start = Math.max(1, currentPage.value - 2)
   const end = Math.min(totalPages.value, currentPage.value + 2)
-  
+
   for (let i = start; i <= end; i++) {
     pages.push(i)
   }
-  
+
   return pages
 }
 
@@ -336,7 +336,7 @@ const handleEpisodeClick = (episode: { number: number, available: boolean, resou
     resourceCount: episode.resourceCount,
     bangumiData: episode.bangumiData
   }
-  
+
   // 显示模态框
   showEpisodeModal.value = true
 }
@@ -548,7 +548,7 @@ onMounted(() => {
   .episode-grid-container {
     padding: 1.5rem;
   }
-  
+
   .episode-item {
     min-height: 28px;
     font-size: 0.75rem;
@@ -578,7 +578,7 @@ onMounted(() => {
   .episode-grid-container {
     padding: 1rem;
   }
-  
+
   .episode-item {
     min-height: 24px;
     font-size: 0.7rem;
@@ -602,4 +602,4 @@ onMounted(() => {
     font-size: 0.75rem;
   }
 }
-</style> 
+</style>

@@ -15,15 +15,15 @@
     <div v-else>
       <!-- 星期导航栏 -->
       <WeekNavigation :calendar="calendar" />
-      
+
       <!-- 置顶按钮 -->
       <ScrollToTopButton />
 
       <!-- 每日放送内容 -->
       <div class="calendar-container">
-        <div 
-          v-for="(day, dayIndex) in calendar" 
-          :key="day.weekday.id" 
+        <div
+          v-for="(day, dayIndex) in calendar"
+          :key="day.weekday.id"
           :id="`day-${day.weekday.id}`"
           class="day-section"
         >
@@ -85,7 +85,7 @@ const getDaysFromToday = (weekdayId: number): number => {
   const today = new Date().getDay()
   const todayId = today === 0 ? 7 : today
   const adjustedWeekdayId = weekdayId === 0 ? 7 : weekdayId
-  
+
   let diff = adjustedWeekdayId - todayId
   if (diff < 0) {
     diff += 7
@@ -98,7 +98,7 @@ const sortCalendarByWeek = (data: BangumiWeekday[]): BangumiWeekday[] => {
   return [...data].sort((a, b) => {
     if (isToday(a.weekday.id)) return -1
     if (isToday(b.weekday.id)) return 1
-    
+
     return getDaysFromToday(a.weekday.id) - getDaysFromToday(b.weekday.id)
   })
 }
@@ -108,13 +108,13 @@ const loadCalendar = async () => {
   try {
     homeStore.loading = true
     homeStore.error = null
-    
+
     const data = await BangumiApiService.getCalendar()
-    
-    // 按照现实周期排序，今天的放在最前面  
+
+    // 按照现实周期排序，今天的放在最前面
     const sortedData = sortCalendarByWeek(data)
     homeStore.setCalendarData(sortedData)
-    
+
     // 计算第一批加载的总数（一半）
     totalFirstBatch = Math.ceil(
       calendar.value.reduce((total, day) => total + day.items.length, 0) / 2
@@ -162,7 +162,7 @@ const goToDetail = (bangumiId: number) => {
 onBeforeRouteLeave((to, from) => {
   const currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop
   homeStore.saveScrollPosition(currentScrollPosition)
-  
+
   // 如果是去往详情页，设置sessionStorage标记
   if (to.name === 'anime-detail' || to.name === 'library-detail') {
     sessionStorage.setItem('fromDetail', 'true')
@@ -175,7 +175,7 @@ onBeforeRouteLeave((to, from) => {
 // keep-alive组件恢复时的处理
 onActivated(() => {
   const fromDetail = sessionStorage.getItem('fromDetail')
-  
+
   if (fromDetail === 'true') {
     // 从详情页返回，立即恢复滚动位置
     sessionStorage.removeItem('fromDetail')
@@ -285,7 +285,7 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 0.75rem;
   }
-  
+
   .day-section {
     padding: 1.5rem;
   }

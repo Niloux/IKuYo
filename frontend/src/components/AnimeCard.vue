@@ -2,9 +2,9 @@
   <div class="anime-card" @click="$emit('click')">
     <!-- 番剧封面 -->
     <div class="card-image">
-      <img 
+      <img
         v-if="props.shouldLoadImage"
-        :src="imageUrl" 
+        :src="imageUrl"
         :alt="props.anime.name_cn || props.anime.name"
         @error="onImageError"
         @load="$emit('imageLoad')"
@@ -57,7 +57,7 @@ defineEmits<{
 // 格式化播出日期
 const formatAirDate = (dateStr: string): string => {
   if (!dateStr) return '未知'
-  
+
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString('zh-CN', {
@@ -210,9 +210,9 @@ const onImageError = (event: Event) => {
   .card-content {
     padding: 0.75rem;
   }
-  
+
   .anime-title {
     font-size: 1rem;
   }
 }
-</style> 
+</style>

@@ -50,10 +50,10 @@ router.beforeEach((to, from, next) => {
   if (to.meta?.title) {
     document.title = to.meta.title as string
   }
-  
+
   // 导航来源追踪现在完全由组件内的onBeforeRouteLeave处理
   // 不在这里设置，避免冲突
-  
+
   next()
 })
 

@@ -5,16 +5,16 @@
     <!-- 展开面板 -->
     <transition name="nav-panel">
       <div v-show="isExpanded" class="nav-panel">
-                  <div 
-            v-for="day in sortedDays" 
+                  <div
+            v-for="day in sortedDays"
             :key="day.weekday.id"
             class="nav-card"
-            :class="{ 
+            :class="{
               'today': isToday(day.weekday.id),
               'active': activeWeekdayId === day.weekday.id
             }"
-            :style="{ 
-              background: getWeekdayGradient(day.weekday.id) 
+            :style="{
+              background: getWeekdayGradient(day.weekday.id)
             }"
             @click="handleCardClick(day.weekday.id)"
           >
@@ -22,13 +22,13 @@
           </div>
       </div>
     </transition>
-    
+
     <!-- 浮动按钮 -->
-    <button 
+    <button
       class="nav-toggle"
       :class="{ 'expanded': isExpanded }"
-      :style="{ 
-        background: getTodayGradient() 
+      :style="{
+        background: getTodayGradient()
       }"
     >
       <div class="toggle-content">
@@ -81,7 +81,7 @@ const isToday = (weekdayId: number): boolean => {
 const getWeekdayAbbr = (englishName: string): string => {
   const abbrMap: Record<string, string> = {
     'Monday': 'Mon',
-    'Tuesday': 'Tue', 
+    'Tuesday': 'Tue',
     'Wednesday': 'Wed',
     'Thursday': 'Thu',
     'Friday': 'Fri',
@@ -100,13 +100,13 @@ const getWeekdayGradient = (weekdayId: number): string => {
     3: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',     // Wednesday 紫色
     4: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',     // Thursday 紫粉色
     5: 'linear-gradient(135deg, #d946ef 0%, #f97316 100%)',     // Friday 粉橙色
-    
+
     // 周末：暖色调过渡到绿色
     6: 'linear-gradient(135deg, #f97316 0%, #10b981 100%)',     // Saturday 橙绿色
     7: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',     // Sunday 绿色
     0: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'      // Sunday (backup for 0)
   }
-  
+
   return gradientMap[weekdayId] || 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)'
 }
 
@@ -141,7 +141,7 @@ const scrollToSection = (weekdayId: number) => {
     const headerHeight = 70 // AppHeader高度
     const offset = 30 // 额外缓冲
     const elementPosition = targetElement.offsetTop - headerHeight - offset
-    
+
     window.scrollTo({
       top: elementPosition,
       behavior: 'smooth'
@@ -226,7 +226,7 @@ onUnmounted(() => {
   backdrop-filter: blur(20px) saturate(180%);
   border-radius: 30px;
   padding: 16px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 2px 6px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
@@ -241,7 +241,7 @@ onUnmounted(() => {
   text-align: center;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 
+  box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.08);
   margin-bottom: 8px;
@@ -264,9 +264,9 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.2) 0%, 
-    rgba(255, 255, 255, 0.1) 50%, 
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
     rgba(255, 255, 255, 0.05) 100%);
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -275,7 +275,7 @@ onUnmounted(() => {
 
 .nav-card:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -286,7 +286,7 @@ onUnmounted(() => {
 
 .nav-card.active {
   transform: translateY(-1px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 8px 25px rgba(255, 215, 0, 0.3),
     0 2px 8px rgba(255, 215, 0, 0.2);
 }
@@ -298,8 +298,8 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(255, 215, 0, 0.3) 0%, 
+  background: linear-gradient(135deg,
+    rgba(255, 215, 0, 0.3) 0%,
     rgba(255, 215, 0, 0.1) 100%);
   pointer-events: none;
 }
@@ -321,7 +321,7 @@ onUnmounted(() => {
   border: none;
   outline: none;
   cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -340,8 +340,8 @@ onUnmounted(() => {
   right: 1px;
   bottom: 1px;
   border-radius: 50%;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.15) 0%,
     rgba(255, 255, 255, 0.05) 50%,
     rgba(0, 0, 0, 0.05) 100%);
   pointer-events: none;
@@ -349,14 +349,14 @@ onUnmounted(() => {
 
 .nav-toggle:hover {
   transform: translateY(-4px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 12px 48px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .nav-toggle.expanded {
   background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(255, 107, 107, 0.4),
     0 2px 8px rgba(255, 107, 107, 0.2);
   transform: scale(1.1);
@@ -397,30 +397,30 @@ onUnmounted(() => {
     bottom: 20px;
     right: 30px;
   }
-  
+
   .nav-toggle {
     width: 48px;
     height: 48px;
   }
-  
+
   .nav-panel {
     bottom: 65px;
     min-width: 90px;
     padding: 12px;
     border-radius: 24px;
   }
-  
+
   .nav-card {
     padding: 8px 12px;
     min-height: 32px;
     margin-bottom: 6px;
           border-radius: 18px;
   }
-  
+
   .card-day {
     font-size: 0.75rem;
   }
-  
+
   .toggle-text {
     font-size: 0.5rem;
   }
@@ -431,10 +431,10 @@ onUnmounted(() => {
     min-width: 80px;
     padding: 10px;
   }
-  
+
   .nav-card {
     padding: 6px 10px;
     min-height: 28px;
   }
 }
-</style> 
+</style>

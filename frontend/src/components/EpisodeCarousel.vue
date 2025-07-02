@@ -1,7 +1,7 @@
 <template>
   <div class="episode-carousel-container">
     <h3 class="section-title">章节列表</h3>
-    
+
     <!-- 集数统计信息 -->
     <div v-if="!loading && !error && episodeStats" class="episode-stats">
       <span class="stats-text">
@@ -36,18 +36,18 @@
           <div class="episode-number">
             <span class="number">{{ String(episode.number).padStart(2, '0') }}</span>
           </div>
-          
+
           <!-- 集数信息 -->
           <div class="episode-info">
             <h4 class="episode-title">{{ episode.title || `第${episode.number}集` }}</h4>
             <p class="episode-subtitle" v-if="episode.subtitle">{{ episode.subtitle }}</p>
-            
+
             <div class="episode-meta">
               <span v-if="episode.duration" class="duration">时长: {{ episode.duration }}</span>
               <span v-if="episode.airdate" class="airdate">首播: {{ formatDate(episode.airdate) }}</span>
             </div>
           </div>
-          
+
           <!-- 资源状态 -->
           <div class="resource-status">
             <div v-if="episode.available" class="has-resources">
@@ -61,18 +61,18 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 滑动控制 -->
       <div class="carousel-controls">
-        <button 
-          @click="scrollLeft" 
+        <button
+          @click="scrollLeft"
           :disabled="isAtStart"
           class="control-btn prev-btn"
         >
           ←
         </button>
-        <button 
-          @click="scrollRight" 
+        <button
+          @click="scrollRight"
           :disabled="isAtEnd"
           class="control-btn next-btn"
         >
@@ -142,13 +142,13 @@ const selectedEpisode = ref<EpisodeDetail | null>(null)
 // 计算属性 - 集数列表（现在使用真实Bangumi数据）
 const episodes = computed((): EpisodeDetail[] => {
   const episodeList: EpisodeDetail[] = []
-  
+
   // 如果有Bangumi数据，优先使用
   if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
     props.bangumiEpisodes.forEach((bangumiEp) => {
       const episodeKey = Math.floor(bangumiEp.sort || bangumiEp.ep || 0).toString()
       const episodeData = availabilityData.value?.episodes[episodeKey]
-      
+
       episodeList.push({
         number: Math.floor(bangumiEp.sort || bangumiEp.ep || 0),
         title: bangumiEp.name_cn || bangumiEp.name || `第${Math.floor(bangumiEp.sort)}集`,
@@ -162,7 +162,7 @@ const episodes = computed((): EpisodeDetail[] => {
         bangumiData: bangumiEp
       })
     })
-    
+
     // 按集数排序
     episodeList.sort((a, b) => a.number - b.number)
   } else {
@@ -170,7 +170,7 @@ const episodes = computed((): EpisodeDetail[] => {
     for (let i = 1; i <= props.totalEpisodes; i++) {
       const episodeKey = i.toString()
       const episodeData = availabilityData.value?.episodes[episodeKey]
-      
+
       episodeList.push({
         number: i,
         title: `第${i}集`,
@@ -184,14 +184,14 @@ const episodes = computed((): EpisodeDetail[] => {
       })
     }
   }
-  
+
   return episodeList
 })
 
 // 计算属性 - 集数统计
 const episodeStats = computed(() => {
   if (!availabilityData.value) return null
-  
+
   const availableCount = episodes.value.filter(ep => ep.available).length
   return {
     totalCount: props.totalEpisodes,
@@ -204,14 +204,14 @@ const loadEpisodeData = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     // 先获取资源可用性
     const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
     availabilityData.value = data
-    
+
     // TODO: 未来在这里添加获取详细集数信息的API调用
     // const episodeDetails = await BangumiApiService.getEpisodeDetails(props.bangumiId)
-    
+
   } catch (err) {
     console.error('加载集数信息失败:', err)
     error.value = '加载集数信息失败，请检查网络连接'
@@ -314,11 +314,11 @@ const loadEpisodeAvailability = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     // 只获取资源可用性
     const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
     availabilityData.value = data
-    
+
   } catch (err) {
     console.error('加载资源可用性失败:', err)
     error.value = '加载资源信息失败，请检查网络连接'
@@ -591,12 +591,12 @@ const loadEpisodeAvailability = async () => {
   .episode-carousel-container {
     padding: 1.5rem;
   }
-  
+
   .episode-card {
     flex: 0 0 250px;
     height: 180px;
   }
-  
+
   .carousel-controls {
     display: none; /* 移动端隐藏控制按钮，使用触摸滑动 */
   }
@@ -608,13 +608,13 @@ const loadEpisodeAvailability = async () => {
     height: 160px;
     padding: 0.75rem;
   }
-  
+
   .episode-title {
     font-size: 1rem;
   }
-  
+
   .episode-meta {
     font-size: 0.75rem;
   }
 }
-</style> 
+</style>

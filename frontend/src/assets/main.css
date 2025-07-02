@@ -8,39 +8,39 @@
   --color-primary-light: #7c3aed;
   --color-secondary: #764ba2;
   --color-accent: #f093fb;
-  
+
   /* 辅助色 */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #06b6d4;
-  
+
   /* 文字色 */
   --color-text: #1f2937;
   --color-text-light: #6b7280;
   --color-text-dark: #111827;
   --color-white: #ffffff;
-  
+
   /* 背景色 */
   --color-bg: #f9fafb;
   --color-bg-white: #ffffff;
   --color-bg-light: #f3f4f6;
   --color-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  
+
   /* 边框色 */
   --color-border: #e5e7eb;
   --color-border-light: #f3f4f6;
-  
+
   /* 阴影 */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
-  
+
   /* 圆角 */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  
+
   /* 动画时长 */
   --transition-fast: 0.2s;
   --transition-normal: 0.3s;
@@ -53,14 +53,14 @@
     --color-text: #ecf0f1;
     --color-text-light: #bdc3c7;
     --color-text-dark: #ffffff;
-    
+
     --color-bg: #2c3e50;
     --color-bg-white: #34495e;
     --color-bg-light: #2c3e50;
-    
+
     --color-border: #34495e;
     --color-border-light: #3d566e;
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -233,11 +233,11 @@ img {
   .mobile-hidden {
     display: none;
   }
-  
+
   .mobile-center {
     text-align: center;
   }
-  
+
   .mobile-column {
     flex-direction: column;
   }

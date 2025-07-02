@@ -91,7 +91,7 @@ export const useSearchStore = defineStore('search', () => {
 
   // 获取可见的页码
   const getVisiblePages = () => {
-    const pages = [] 
+    const pages = []
     const current = pagination.current_page
     const total = pagination.total_pages
 

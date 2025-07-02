@@ -15,4 +15,6 @@ dependencies = [
     "scrapy>=2.13.2",
     "uvicorn[standard]>=0.34.3",
     "sqlmodel>=0.0.16",
+    "pre-commit>=4.2.0",
+    "ruff>=0.12.1",
 ]

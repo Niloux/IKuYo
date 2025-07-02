@@ -2,14 +2,14 @@
   <div class="app-layout">
     <!-- 应用头部 -->
     <AppHeader />
-    
+
     <!-- 主要内容区域 -->
     <main class="main-content">
       <div class="content-container">
         <slot />
       </div>
     </main>
-    
+
     <!-- 页脚（可选） -->
     <footer class="app-footer">
       <div class="footer-container">
@@ -87,4 +87,4 @@ import AppHeader from './AppHeader.vue'
     padding: 1rem 0.75rem;
   }
 }
-</style> 
+</style>

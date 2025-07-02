@@ -12,11 +12,11 @@ export const ensureScrollToTop = (immediate: boolean = true) => {
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
   }
-  
+
   if (immediate) {
     scrollToTop()
   }
-  
+
   // 使用requestAnimationFrame确保DOM更新后执行
   requestAnimationFrame(() => {
     scrollToTop()
@@ -46,8 +46,8 @@ export const getCurrentScrollPosition = (): number => {
  * 平滑滚动到顶部（用于置顶按钮）
  */
 export const smoothScrollToTop = () => {
-  window.scrollTo({ 
-    top: 0, 
-    behavior: 'smooth' 
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
   })
-} 
+}

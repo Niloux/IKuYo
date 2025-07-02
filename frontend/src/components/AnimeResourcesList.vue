@@ -8,7 +8,7 @@
           共 {{ resourcesData.total_resources }} 个资源
         </span>
       </div>
-      
+
       <div class="filters-right">
         <select v-model="selectedResolution" @change="handleFilterChange" class="filter-select">
           <option value="">全部分辨率</option>
@@ -16,7 +16,7 @@
           <option value="720p">720p</option>
           <option value="4K">4K</option>
         </select>
-        
+
         <select v-model="selectedSubtitleType" @change="handleFilterChange" class="filter-select">
           <option value="">全部字幕</option>
           <option value="简体中文">简体中文</option>
@@ -25,7 +25,7 @@
           <option value="简繁双语">简繁双语</option>
           <option value="无字幕">无字幕</option>
         </select>
-        
+
         <button @click="refreshResources" class="refresh-btn" :disabled="loading">
           {{ loading ? '刷新中...' : '刷新' }}
         </button>
@@ -49,13 +49,13 @@
     <div v-else-if="resourcesData && resourcesData.subtitle_groups.length > 0" class="resources-content">
       <!-- 按字幕组分类的资源列表 -->
       <div class="subtitle-groups">
-        <div 
-          v-for="group in resourcesData.subtitle_groups" 
-          :key="group.id" 
+        <div
+          v-for="group in resourcesData.subtitle_groups"
+          :key="group.id"
           class="subtitle-group"
         >
-          <div 
-            class="group-header" 
+          <div
+            class="group-header"
             :class="{ 'expanded': isGroupExpanded(group.id) }"
             @click="toggleGroup(group.id)"
           >
@@ -69,12 +69,12 @@
               </svg>
             </div>
           </div>
-          
+
           <transition name="expand-collapse">
             <div v-show="isGroupExpanded(group.id)" class="group-resources">
-              <div 
-                v-for="resource in group.resources" 
-                :key="resource.id" 
+              <div
+                v-for="resource in group.resources"
+                :key="resource.id"
                 class="resource-item"
               >
                 <div class="resource-info">
@@ -94,19 +94,19 @@
                     </span>
                   </div>
                 </div>
-                
+
                 <div class="resource-actions">
-                  <a 
-                    v-if="resource.magnet_url" 
-                    :href="resource.magnet_url" 
+                  <a
+                    v-if="resource.magnet_url"
+                    :href="resource.magnet_url"
                     class="action-btn magnet-btn"
                     title="磁力链接"
                   >
                     🧲
                   </a>
-                  <a 
-                    v-if="resource.torrent_url" 
-                    :href="resource.torrent_url" 
+                  <a
+                    v-if="resource.torrent_url"
+                    :href="resource.torrent_url"
                     class="action-btn torrent-btn"
                     title="种子下载"
                     download
@@ -122,21 +122,21 @@
 
       <!-- 分页控制（如果需要） -->
       <div v-if="needsPagination" class="pagination-controls">
-        <button 
-          @click="loadPreviousPage" 
+        <button
+          @click="loadPreviousPage"
           :disabled="!hasPreviousPage || loading"
           class="pagination-btn"
         >
           上一页
         </button>
-        
+
         <span class="pagination-info">
-          显示 {{ currentOffset + 1 }}-{{ Math.min(currentOffset + currentLimit, totalResources) }} 
+          显示 {{ currentOffset + 1 }}-{{ Math.min(currentOffset + currentLimit, totalResources) }}
           / 共 {{ totalResources }} 个
         </span>
-        
-        <button 
-          @click="loadNextPage" 
+
+        <button
+          @click="loadNextPage"
           :disabled="!hasNextPage || loading"
           class="pagination-btn"
         >
@@ -185,14 +185,14 @@ const expandedGroups = ref<Set<number>>(new Set())
 const totalResources = computed(() => resourcesData.value?.total_resources || 0)
 const needsPagination = computed(() => totalResources.value > currentLimit.value)
 const hasPreviousPage = computed(() => currentOffset.value > 0)
-const hasNextPage = computed(() => 
+const hasNextPage = computed(() =>
   currentOffset.value + currentLimit.value < totalResources.value
 )
 
 // 格式化发布日期
 const formatReleaseDate = (dateStr: string): string => {
   if (!dateStr) return ''
-  
+
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString('zh-CN', {
@@ -209,20 +209,20 @@ const formatReleaseDate = (dateStr: string): string => {
 // 加载资源列表
 const loadResources = async () => {
   if (!props.bangumiId) return
-  
+
   try {
     loading.value = true
     error.value = null
-    
+
     const options = {
       resolution: selectedResolution.value || undefined,
       subtitle_type: selectedSubtitleType.value || undefined,
       limit: currentLimit.value,
       offset: currentOffset.value
     }
-    
+
     resourcesData.value = await BangumiApiService.getAnimeResources(props.bangumiId, options)
-    
+
   } catch (err) {
     console.error('加载资源列表失败:', err)
     error.value = '加载资源列表失败，请检查网络连接'
@@ -648,25 +648,25 @@ onMounted(() => {
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .filters-left, .filters-right {
     text-align: center;
   }
-  
+
   .filters-right {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .resource-item {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .resource-actions {
     align-self: flex-start;
   }
-  
+
   .pagination-controls {
     flex-direction: column;
     gap: 1rem;
@@ -677,26 +677,26 @@ onMounted(() => {
   .anime-resources {
     padding: 1rem 0;
   }
-  
+
   .filters-bar {
     padding: 1rem;
   }
-  
+
   .resource-item {
     padding: 1rem;
   }
-  
+
   .group-header {
     padding: 0.75rem 1rem;
   }
-  
+
   .filter-select {
     width: 100%;
     margin-bottom: 0.5rem;
   }
-  
+
   .filters-right {
     width: 100%;
   }
 }
-</style> 
+</style>

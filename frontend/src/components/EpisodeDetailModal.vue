@@ -36,9 +36,9 @@
           <p :class="{ 'description-collapsed': !descExpanded && isDescLong }">
             {{ episodeData.desc }}
           </p>
-          <button 
-            v-if="isDescLong" 
-            @click="toggleDescription" 
+          <button
+            v-if="isDescLong"
+            @click="toggleDescription"
             class="expand-btn"
           >
             {{ descExpanded ? '收起' : '展开' }}
@@ -49,7 +49,7 @@
       <!-- 资源列表区域 -->
       <div class="resources-section">
         <h3 class="section-title">资源下载</h3>
-        
+
         <!-- 加载状态 -->
         <div v-if="resourcesLoading" class="resources-loading">
           <div class="loading-spinner"></div>
@@ -67,29 +67,29 @@
             <button class="retry-btn" @click="loadEpisodeResources">重试</button>
           </div>
         </div>
-        
+
         <!-- 有资源数据 -->
         <div v-else-if="resourcesData && resourcesData.subtitle_groups.length > 0" class="resources-available">
           <div class="resource-stats">
             找到 {{ resourcesData.total_resources }} 个可用资源，来自 {{ resourcesData.subtitle_groups.length }} 个字幕组
           </div>
-          
+
           <!-- 按字幕组分类的资源列表 -->
           <div class="subtitle-groups">
-            <div 
-              v-for="group in resourcesData.subtitle_groups" 
-              :key="group.id" 
+            <div
+              v-for="group in resourcesData.subtitle_groups"
+              :key="group.id"
               class="subtitle-group"
             >
               <div class="group-header">
                 <h4 class="group-name">{{ group.name }}</h4>
                 <span class="group-count">{{ group.resource_count }} 个资源</span>
               </div>
-              
+
               <div class="group-resources">
-                <div 
-                  v-for="resource in group.resources" 
-                  :key="resource.id" 
+                <div
+                  v-for="resource in group.resources"
+                  :key="resource.id"
                   class="resource-item"
                 >
                   <div class="resource-info">
@@ -100,18 +100,18 @@
                       <span v-if="resource.file_size" class="meta-tag size">{{ resource.file_size }}</span>
                     </div>
                   </div>
-                  
+
                   <div class="resource-actions">
-                    <button 
-                      v-if="resource.magnet_url" 
+                    <button
+                      v-if="resource.magnet_url"
                       @click="downloadResource(resource.magnet_url, 'magnet')"
                       class="download-btn magnet-btn"
                       title="磁力链接下载"
                     >
                       磁力
                     </button>
-                    <button 
-                      v-if="resource.torrent_url" 
+                    <button
+                      v-if="resource.torrent_url"
                       @click="downloadResource(resource.torrent_url, 'torrent')"
                       class="download-btn torrent-btn"
                       title="种子文件下载"
@@ -249,7 +249,7 @@ const refreshResources = () => {
 // 下载资源
 const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
   if (!url) return
-  
+
   try {
     if (type === 'magnet') {
       // 磁力链接可以直接在浏览器中打开
@@ -264,7 +264,7 @@ const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
       link.click()
       document.body.removeChild(link)
     }
-    
+
 
   } catch (err) {
     console.error('下载失败:', err)
@@ -277,10 +277,10 @@ const formatDate = (dateStr: string): string => {
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', { 
+    return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
-      month: 'short', 
-      day: 'numeric' 
+      month: 'short',
+      day: 'numeric'
     })
   } catch {
     return dateStr
@@ -816,4 +816,4 @@ watch(() => props.visible, (newVisible) => {
     gap: 1rem;
   }
 }
-</style> 
+</style>

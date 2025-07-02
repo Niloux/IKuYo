@@ -118,7 +118,7 @@ npm run dev
 #### 后端 (Python)
 - **核心框架**: FastAPI - 高性能异步API框架
 - **数据存储**: SQLite - 轻量级关系数据库
-- **爬虫引擎**: Scrapy - 专业网页爬虫框架  
+- **爬虫引擎**: Scrapy - 专业网页爬虫框架
 - **任务调度**: APScheduler - 定时任务管理
 - **外部API**: Bangumi API - 番剧元数据集成
 - **缓存机制**: 内置缓存 - 提升API响应性能
@@ -198,11 +198,11 @@ database:
 
 site:
   base_url: https://mikanani.me   # 🌐 目标站点地址
-  
+
 crawler:
   download_delay: 0.1             # ⏱️ 爬取延迟（秒）
   concurrent_requests: 32         # 🔄 并发请求数
-  
+
 scheduler:
   enabled: true                   # 📅 启用定时任务
   jobs:                          # 📋 任务列表
@@ -324,7 +324,7 @@ uv run python scripts/manage_scheduler.py test
 - **直观信息**: 评分、标签、集数状态等一目了然
 
 ### 🏗️ **技术架构**
-- **全栈TypeScript**: 前后端类型安全，减少运行时错误  
+- **全栈TypeScript**: 前后端类型安全，减少运行时错误
 - **API优先设计**: RESTful接口设计，便于第三方集成
 - **模块化开发**: 松耦合架构，便于维护和功能扩展
 - **缓存优化**: 多层缓存机制，显著提升响应速度
@@ -556,7 +556,7 @@ graph LR
 
 🐛 **遇到问题？** 欢迎通过 [GitHub Issues](https://github.com/Niloux/IKuYo/issues) 反馈
 
-💡 **有好想法？** 随时提交 [Pull Request](https://github.com/Niloux/IKuYo/pulls) 
+💡 **有好想法？** 随时提交 [Pull Request](https://github.com/Niloux/IKuYo/pulls)
 
 📧 **其他交流** 请在 Issue 区留言，作者会及时回复
 

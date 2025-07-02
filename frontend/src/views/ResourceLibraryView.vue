@@ -36,7 +36,7 @@
             找到 {{ pagination.total }} 个结果
           </span>
         </div>
-        
+
         <!-- 番剧网格 -->
         <div class="anime-grid">
           <AnimeCard
@@ -49,16 +49,16 @@
 
         <!-- 分页组件 -->
         <div v-if="pagination.total_pages > 1" class="pagination">
-          <button 
+          <button
             @click="searchStore.goToPage(pagination.current_page - 1)"
             :disabled="!pagination.has_prev"
             class="pagination-btn"
           >
             上一页
           </button>
-          
+
           <div class="page-numbers">
-            <span 
+            <span
               v-for="page in searchStore.getVisiblePages()"
               :key="page"
               :class="['page-number', { active: page === pagination.current_page }]"
@@ -67,8 +67,8 @@
               {{ page }}
             </span>
           </div>
-          
-          <button 
+
+          <button
             @click="searchStore.goToPage(pagination.current_page + 1)"
             :disabled="!pagination.has_next"
             class="pagination-btn"
@@ -175,10 +175,10 @@ onActivated(() => {
 // 组件挂载时清空搜索状态，确保每次都是干净的初始状态
 onMounted(() => {
   mountCounter.value++
-  
+
   // 检查是否从详情页返回（第一次缓存时也需要检查）
   const fromDetail = sessionStorage.getItem('fromDetail')
-  
+
   if (fromDetail === 'true') {
     // 从详情页返回，保持搜索状态，不清空
     sessionStorage.removeItem('fromDetail') // 清除标记
@@ -378,18 +378,18 @@ onBeforeRouteLeave((to: any, from: any) => {
   .search-section {
     padding: 1.5rem 0 1rem 0;
   }
-  
+
   .search-container {
     padding: 0 0.75rem;
   }
-  
+
   .search-input {
     font-size: 16px; /* 防止iOS Safari缩放 */
   }
-  
+
   .anime-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 1rem;
   }
 }
-</style> 
+</style>

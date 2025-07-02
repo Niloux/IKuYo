@@ -28,7 +28,7 @@
       </nav>
 
       <!-- 移动端菜单按钮 -->
-      <button 
+      <button
         class="mobile-menu-btn"
         @click="toggleMobileMenu"
         :class="{ 'active': isMobileMenuOpen }"
@@ -301,4 +301,4 @@ const closeMobileMenu = () => {
     font-size: 1.1rem;
   }
 }
-</style> 
+</style>

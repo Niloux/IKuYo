@@ -109,7 +109,7 @@ class CacheManager:
                     try:
                         os.remove(filepath)
                         print(f"🗑️ 清理损坏缓存文件: {filename}")
-                    except:
+                    except Exception:
                         pass
 
         except Exception as e:
@@ -152,7 +152,7 @@ class CacheManager:
             print(f"读取缓存文件失败 {cache_file}: {e}")
             try:
                 os.remove(cache_file)
-            except:
+            except Exception:
                 pass
             return None
 
@@ -253,7 +253,7 @@ class CacheManager:
             file_count = 0
             try:
                 file_count = len([f for f in os.listdir(self.cache_dir) if f.endswith(".json")])
-            except:
+            except Exception:
                 pass
 
             return {

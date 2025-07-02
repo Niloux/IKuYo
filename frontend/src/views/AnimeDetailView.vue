@@ -23,19 +23,19 @@
       <!-- 番剧基本信息 -->
       <div class="anime-header">
         <div class="anime-cover">
-          <img 
-            :src="anime.images.large" 
+          <img
+            :src="anime.images.large"
             :alt="anime.name_cn || anime.name"
             @error="onImageError"
           />
         </div>
-        
+
         <div class="anime-info">
           <h1 class="anime-title">{{ anime.name_cn || anime.name }}</h1>
           <h2 v-if="anime.name_cn && anime.name !== anime.name_cn" class="anime-subtitle">
             {{ anime.name }}
           </h2>
-          
+
           <div class="anime-meta">
             <div class="meta-item">
               <span class="meta-label">播出日期:</span>
@@ -61,8 +61,8 @@
           <!-- 动画标签 -->
           <div class="anime-tags" v-if="anime.tags && anime.tags.length > 0">
             <div class="tags-container">
-              <span 
-                v-for="tag in getTopTags(anime.tags)" 
+              <span
+                v-for="tag in getTopTags(anime.tags)"
                 :key="tag.name"
                 class="tag-item"
                 :class="getTagType(tag.name)"
@@ -82,14 +82,14 @@
       </div>
 
       <!-- 智能集数展示 -->
-      <EpisodeDisplay 
+      <EpisodeDisplay
         v-if="!route.meta.showResources && (anime.total_episodes > 0 || anime.eps > 0)"
         :bangumi-id="animeId"
       />
 
       <!-- 资源列表展示（资源库模式） -->
-      <AnimeResourcesList 
-        v-if="route.meta.showResources" 
+      <AnimeResourcesList
+        v-if="route.meta.showResources"
         :bangumi-id="animeId"
       />
     </div>
@@ -120,10 +120,10 @@ const loadAnimeDetail = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     const subjectData = await BangumiApiService.getSubject(animeId)
     anime.value = subjectData
-    
+
   } catch (err) {
     console.error('加载番剧详情失败:', err)
     error.value = '加载失败，请检查网络连接或API服务状态'
@@ -140,7 +140,7 @@ const goBack = () => {
 // 格式化播出日期
 const formatAirDate = (dateStr: string): string => {
   if (!dateStr) return '未知'
-  
+
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString('zh-CN', {
@@ -192,7 +192,7 @@ const onImageError = (event: Event) => {
 onMounted(() => {
   // 详情页无论从哪里进入都应该从头开始浏览
   ensureScrollToTop()
-  
+
   if (animeId) {
     loadAnimeDetail()
   } else {
@@ -442,32 +442,32 @@ onMounted(() => {
   .anime-detail {
     padding: 1rem;
   }
-  
+
   .anime-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
-  
+
   .anime-cover img {
     width: 200px;
     height: 267px;
   }
-  
+
   .anime-title {
     font-size: 1.5rem;
   }
-  
+
   .anime-meta {
     align-items: center;
   }
-  
+
   .meta-item {
     justify-content: center;
   }
-  
+
   .tags-container {
     justify-content: center;
   }
 }
-</style> 
+</style>
