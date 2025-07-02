@@ -142,11 +142,11 @@ class WorkerManager:
     def _setup_logging(self):
         """设置日志配置"""
         logging.basicConfig(
-            level=logging.DEBUG,
+            level=logging.INFO,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             handlers=[
                 logging.StreamHandler(),
-                logging.FileHandler("worker.log", encoding="utf-8"),
+                # logging.FileHandler("worker.log", encoding="utf-8"),
             ],
         )
 

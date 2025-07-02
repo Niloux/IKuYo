@@ -52,14 +52,7 @@ class MikanSpider(Spider):
         self.processed_items = 0
         self.progress_reporter = None
 
-        # 初始化进度报告器
-        if self.task_id is not None:
-            from ikuyo.core.crawler.progress_reporter import ProgressReporter
-
-            self.progress_reporter = ProgressReporter(self.task_id)
-            self.logger.info(f"MikanSpider __init__: progress_reporter initialized for task {self.task_id}")
-        else:
-            self.logger.warning("MikanSpider __init__: task_id is None, progress_reporter not initialized.")
+        # progress_reporter 将在 from_crawler 中初始化
 
         # 设置基础URL
         self.BASE_URL = self.config.get("mikan", {}).get(
@@ -557,23 +550,8 @@ class MikanSpider(Spider):
             # 更新统计信息
             self.crawler_stats["success"] += 1
 
-            # 更新已处理番剧数量并报告进度
+            # 更新已处理番剧数量
             self.processed_items += 1
-            if self.progress_reporter:
-                percentage = (
-                    (self.processed_items / self.total_items) * 100
-                    if self.total_items > 0
-                    else 0
-                )
-                self.progress_reporter.report_progress(
-                    {
-                        "total_items": self.total_items,
-                        "processed_items": self.processed_items,
-                        "percentage": percentage,
-                        "processing_speed": None,  # 让 Pipeline 来计算这个
-                        "estimated_remaining": None,  # 让 Pipeline 来计算这个
-                    }
-                )
 
         except Exception as e:
             self.logger.error(f"解析动画详情失败: {str(e)}")

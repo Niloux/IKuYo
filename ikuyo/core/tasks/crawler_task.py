@@ -108,9 +108,7 @@ class CrawlerTask(Task):
 
             self.logger.info(f"开始执行爬虫任务 {self.task_id}")
 
-            # 更新任务状态为running
-            self.task_record.status = "running"
-            self.repository.update(self.task_record)
+
 
             # 准备任务参数
             parameters = {}

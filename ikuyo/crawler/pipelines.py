@@ -460,29 +460,7 @@ class BatchSQLitePipeline:
 class ProgressReportPipeline:
     """进度报告管道"""
 
-    def process_item(self, item, spider):
-        """处理每个项目并更新进度"""
-        if (
-            not hasattr(spider, "task_id")
-            or spider.task_id is None
-            or not spider.progress_reporter
-        ):
-            return item
 
-        # 只有处理 AnimeItem 时才更新进度
-        if isinstance(item, AnimeItem):
-            # 报告进度
-            spider.progress_reporter.report_progress({
-                "total_items": spider.total_items,
-                "processed_items": spider.processed_items,
-                "percentage": round((spider.processed_items / spider.total_items) * 100, 2)
-                if spider.total_items > 0
-                else 0,
-                "processing_speed": None,  # 由 worker 端的消费者计算
-                "estimated_remaining": None,  # 由 worker 端的消费者计算
-            })
-
-        return item
 
     def close_spider(self, spider):
         """爬虫关闭时的处理"""
