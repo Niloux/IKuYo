@@ -5,6 +5,7 @@ from typing import Any, Dict
 class Task(ABC):
     """
     任务抽象基类，定义统一的生命周期接口和核心属性。
+    采用同步接口，职责仅限于任务的创建和状态管理。
     """
 
     def __init__(self, repository, task_record):
@@ -16,15 +17,27 @@ class Task(ABC):
         """参数校验"""
         pass
 
-    @abstractmethod
-    async def execute(self) -> None:
-        """异步执行主流程"""
-        pass
+    def write_to_db(self) -> None:
+        """写入任务到数据库"""
+        # 默认实现：验证参数并更新状态为pending
+        self.validate()
+        if self.task_record and hasattr(self.task_record, 'status'):
+            self.task_record.status = "pending"
+            self.repository.update(self.task_record)
 
     @abstractmethod
-    async def cancel(self) -> None:
-        """异步取消任务"""
+    def execute(self) -> None:
+        """
+        执行任务
+        注意：此方法由worker调用，用于实际执行任务
+        """
         pass
+
+    def cancel(self) -> None:
+        """取消任务"""
+        if self.task_record and hasattr(self.task_record, 'status'):
+            self.task_record.status = "cancelled"
+            self.repository.update(self.task_record)
 
     def on_progress(self, progress: Dict[str, Any]) -> None:
         """进度回调，可重写"""

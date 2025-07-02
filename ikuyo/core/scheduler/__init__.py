@@ -1,12 +1,12 @@
 """
 调度器模块
-提供定时任务调度和管理能力
+负责定时任务调度和管理
 """
 
-try:
-    from .unified_scheduler import UnifiedScheduler
+from typing import Optional
+from .unified_scheduler import UnifiedScheduler
 
-    __all__ = ['UnifiedScheduler']
-except ImportError:
-    # 在模块创建阶段可能出现导入错误，忽略
-    __all__ = []
+__all__ = ["UnifiedScheduler"]
+
+# 全局调度器实例
+unified_scheduler: Optional[UnifiedScheduler] = None

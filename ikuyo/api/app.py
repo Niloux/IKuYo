@@ -11,12 +11,21 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ikuyo.api.routes import bangumi, health, resources, crawler, scheduler
 from ikuyo.core.database import create_db_and_tables
+from ikuyo.core.scheduler import UnifiedScheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    # 初始化调度器
+    global unified_scheduler
+    unified_scheduler = UnifiedScheduler()
+    if not unified_scheduler.start():
+        raise RuntimeError("调度器启动失败")
     yield
+    # 停止调度器
+    if unified_scheduler:
+        unified_scheduler.stop()
 
 
 # 创建FastAPI应用实例

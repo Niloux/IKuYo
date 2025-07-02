@@ -4,7 +4,6 @@
 集成进程池执行和现有任务抽象层，保持API兼容性
 """
 
-import asyncio
 import logging
 from typing import Dict, Any, Optional
 from ikuyo.core.worker.process_pool import ProcessPool
@@ -35,7 +34,7 @@ class TaskExecutor:
         """设置进程池实例"""
         cls._process_pool = process_pool
 
-    async def execute_task(self, task_id: int, task_type: str, parameters: Dict[str, Any]) -> bool:
+    def execute_task(self, task_id: int, task_type: str, parameters: Dict[str, Any]) -> bool:
         """
         执行任务
         Args:
@@ -49,7 +48,7 @@ class TaskExecutor:
             # 检查进程池是否可用
             if not self._process_pool or not self._process_pool.is_running:
                 self.logger.warning("进程池未启动，任务将在当前进程中执行")
-                return await self._execute_in_current_process(task_id, task_type, parameters)
+                return self._execute_in_current_process(task_id, task_type, parameters)
 
             # 检查是否有空闲工作进程
             if self._process_pool.get_idle_workers() == 0:
@@ -73,7 +72,7 @@ class TaskExecutor:
             self.logger.error(f"执行任务 {task_id} 失败: {e}")
             return False
 
-    async def _execute_in_current_process(
+    def _execute_in_current_process(
         self, task_id: int, task_type: str, parameters: Dict[str, Any]
     ) -> bool:
         """
@@ -88,11 +87,8 @@ class TaskExecutor:
 
                 task_data = {"task_id": task_id, "task_type": task_type, "parameters": parameters}
 
-                # 在异步上下文中运行同步的爬虫代码
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    None, SpiderRunner.execute_in_process, task_data
-                )
+                # 直接执行爬虫任务
+                result = SpiderRunner.execute_in_process(task_data)
 
                 # 更新任务状态
                 reporter = ProgressReporter(task_id)

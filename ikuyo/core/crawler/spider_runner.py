@@ -91,7 +91,7 @@ class SpiderRunner:
     def _parse_config(self) -> SpiderConfig:
         """解析爬虫配置"""
         return SpiderConfig(
-            mode=self.config.get("mode", "homepage"),
+            mode=self.config.get("crawler_mode", self.config.get("mode", "homepage")),
             year=self.config.get("year"),
             season=self.config.get("season"),
             start_url=self.config.get("start_url"),
