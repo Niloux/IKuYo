@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import { ref } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
 import AppLayout from './components/AppLayout.vue'
 
-const cachedViews = ref(['HomeView', 'ResourceLibraryView'])
+const router = useRouter()
 </script>
 
 <template>
   <AppLayout>
-    <RouterView v-slot="{ Component }">
-      <keep-alive :include="cachedViews">
+    <RouterView v-slot="{ Component, route }">
+      <keep-alive v-if="route.meta.keepAlive">
         <component :is="Component" />
       </keep-alive>
+      <component :is="Component" v-else />
     </RouterView>
   </AppLayout>
 </template>
 
 <style scoped>
-/* App.vue现在只需要简单的容器样式 */
 </style>

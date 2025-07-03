@@ -1,5 +1,8 @@
 <template>
-  <div class="app-layout">
+  <div
+    class="app-layout"
+    :style="{ '--header-height': headerHeight + 'px', '--footer-height': footerHeight + 'px' }"
+  >
     <!-- 应用头部 -->
     <AppHeader />
 
@@ -14,7 +17,7 @@
     <footer class="app-footer">
       <div class="footer-container">
         <p class="footer-text">
-          © 2024 IKuYo - 追番助手 | 让追番更简单
+          © {{ currentYear }} IKuYo - 追番助手 | 让追番更简单
         </p>
       </div>
     </footer>
@@ -23,6 +26,25 @@
 
 <script setup lang="ts">
 import AppHeader from './AppHeader.vue'
+import { ref, onMounted, computed } from 'vue'
+
+const headerHeight = ref(0)
+const footerHeight = ref(0)
+const currentYear = computed(() => new Date().getFullYear())
+
+onMounted(() => {
+  // 获取AppHeader的实际高度
+  const headerElement = document.querySelector('.app-header')
+  if (headerElement) {
+    headerHeight.value = headerElement.clientHeight
+  }
+
+  // 获取app-footer的实际高度
+  const footerElement = document.querySelector('.app-footer')
+  if (footerElement) {
+    footerHeight.value = footerElement.clientHeight
+  }
+})
 </script>
 
 <style scoped>
@@ -42,7 +64,7 @@ import AppHeader from './AppHeader.vue'
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  min-height: calc(100vh - 140px); /* 减去header和footer的高度 */
+  min-height: calc(100vh - var(--header-height, 70px) - var(--footer-height, 70px));
 }
 
 .app-footer {
@@ -70,7 +92,7 @@ import AppHeader from './AppHeader.vue'
 @media (max-width: 768px) {
   .content-container {
     padding: 1.5rem 1rem;
-    min-height: calc(100vh - 130px);
+    min-height: calc(100vh - var(--header-height, 65px) - var(--footer-height, 60px));
   }
 
   .footer-container {

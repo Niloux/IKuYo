@@ -12,7 +12,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: {title: 'IKuYo - 追番助手'}
+      meta: {title: 'IKuYo - 追番助手', keepAlive: true}
     },
     {
       path: '/anime/:id',
@@ -33,7 +33,7 @@ const router = createRouter({
       path: '/library',
       name: 'resource-library',
       component: () => import('../views/ResourceLibraryView.vue'),
-      meta: {title: '资源库'}
+      meta: {title: '资源库', keepAlive: true}
     },
     {
       path: '/library/detail/:id',
@@ -46,6 +46,12 @@ const router = createRouter({
       name: 'task-management',
       component: () => import('../views/TaskManagementView.vue'),
       meta: {title: '任务管理'}
+    },
+    {
+      path: '/:pathMatch(.*)*', // 捕获所有未匹配的路由
+      name: 'NotFound',
+      component: () => import('../views/NotFoundView.vue'),
+      meta: { title: '页面未找到' }
     }
   ]
 })
