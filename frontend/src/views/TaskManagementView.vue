@@ -203,7 +203,6 @@ const submitCreateTask = async () => {
     }
 
     const createdTask = await taskStore.createTask(payload)
-    alert(`任务创建成功！ID: ${createdTask.id}`)
     closeCreateTaskModal()
     // 如果新任务是运行中或待处理状态，建立WebSocket连接
     if (createdTask.status === 'running' || createdTask.status === 'pending') {
@@ -338,6 +337,10 @@ const setupTaskWebSocket = (taskId: number) => {
         // 确保只更新WebSocket发送的字段，避免覆盖其他字段
         taskStore.tasks[index] = { ...taskStore.tasks[index], ...data }
       }
+      // 检查是否有final_status字段，若有则立即刷新任务列表
+      if (data.final_status) {
+        taskStore.fetchTasks()
+      }
     },
     (event: Event) => {
       console.error(`任务 ${taskId} 的WebSocket连接错误:`, event)
@@ -346,13 +349,13 @@ const setupTaskWebSocket = (taskId: number) => {
     (event: CloseEvent) => {
       console.log(`任务 ${taskId} 的WebSocket连接关闭:`, event)
       activeWebSockets.value.delete(taskId)
-      // 如果连接是正常关闭（例如任务完成），可以不显示错误
-      // 如果是非正常关闭，可以尝试重新连接或显示提示
-      if (event.code !== 1000) { // 1000是正常关闭
+      // 无论正常还是异常关闭，都延迟刷新任务列表
+      if (event.code !== 1000) {
         console.warn(`任务 ${taskId} 的WebSocket连接异常关闭，尝试重新获取任务状态...`)
-        // 重新获取任务状态以确保显示最新状态
-        taskStore.fetchTasks()
       }
+      setTimeout(() => {
+        taskStore.fetchTasks()
+      }, 300)
     },
   )
   activeWebSockets.value.set(taskId, ws)
