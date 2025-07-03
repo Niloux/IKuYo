@@ -1,6 +1,7 @@
-from typing import Optional
 from datetime import datetime, timezone
-from sqlmodel import SQLModel, Field
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class CrawlerTask(SQLModel, table=True):
@@ -10,12 +11,13 @@ class CrawlerTask(SQLModel, table=True):
     parameters: Optional[str] = Field(default=None)
     result_summary: Optional[str] = Field(default=None)
     created_at: Optional[datetime] = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc),
+        index=True
     )
     started_at: Optional[datetime] = Field(default=None)
     completed_at: Optional[datetime] = Field(default=None)
     error_message: Optional[str] = Field(default=None)
-    worker_pid: Optional[int] = Field(default=None) # 用于存储执行该任务的 worker 进程 PID
+    worker_pid: Optional[int] = Field(default=None, index=True)  # 用于存储执行该任务的 worker 进程 PID  # noqa: E501
 
     # 进度相关字段
     percentage: Optional[float] = Field(default=None)  # 总体完成百分比 (0-100)

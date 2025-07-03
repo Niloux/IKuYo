@@ -1,17 +1,30 @@
 <template>
   <div class="task-management-view">
+    <!-- 即时任务区域 -->
     <div class="task-section">
-      <TaskTable
-        :tasks="taskStore.tasks"
-        :isLoading="taskStore.isLoadingTasks"
-        :error="taskStore.error"
-        :onCancel="cancelTask"
-      />
+      <div class="section-header">
+        <span class="section-title">即时任务</span>
+        <button @click="openCreateTaskModal" class="create-button">新建任务</button>
+      </div>
+      <div class="section-content">
+        <TaskTable
+          :tasks="taskStore.tasks"
+          :isLoading="taskStore.isLoadingTasks"
+          :error="taskStore.error"
+          :onCancel="cancelTask"
+          :currentPage="taskStore.currentPage"
+          :pageSize="taskStore.pageSize"
+          @retry="taskStore.fetchTasks"
+          @page-change="handlePageChange"
+        />
+      </div>
     </div>
+
+    <!-- 定时任务区域 -->
     <div class="task-section">
       <div class="section-header">
         <span class="section-title">定时任务</span>
-        <button @click="openCreateScheduledJobModal" class="create-button">新建</button>
+        <button @click="openCreateScheduledJobModal" class="create-button">新建定时任务</button>
       </div>
       <div class="section-content">
         <ScheduledJobTable
@@ -21,10 +34,12 @@
           :onEdit="editScheduledJob"
           :onDelete="deleteScheduledJob"
           :onToggle="toggleScheduledJob"
+          @retry="taskStore.fetchScheduledJobs"
         />
       </div>
     </div>
 
+    <!-- 任务创建模态框 -->
     <TaskModal
       :visible="showCreateTaskModal"
       :task="newTask"
@@ -34,6 +49,7 @@
       :onUpdateTask="(t) => { newTask = t }"
     />
 
+    <!-- 定时任务模态框 -->
     <ScheduledJobModal
       :visible="showScheduledJobModal"
       :job="currentScheduledJob"
@@ -375,30 +391,11 @@ const formatTime = (seconds: number | undefined): string => {
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes}m ${remainingSeconds}s`
 }
+
+const handlePageChange = (page: number) => {
+  taskStore.setCurrentPage(page)
+  taskStore.fetchTasks()
+}
 </script>
 
 <style src="../assets/task.css"></style>
-<style scoped>
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 24px;
-  margin-bottom: 10px;
-  padding-top: 8px;
-}
-.section-title {
-  font-size: 1.13em;
-  color: #666;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  margin-left: 2px;
-}
-.section-content {
-  margin-bottom: 32px;
-  margin-top: 8px;
-}
-.task-section:first-child .section-header {
-  margin-top: 12px;
-}
-</style>

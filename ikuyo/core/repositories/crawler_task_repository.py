@@ -1,6 +1,8 @@
-from typing import Optional, List
 from datetime import datetime
-from sqlmodel import Session, select
+from typing import List, Optional
+
+from sqlmodel import Session, desc, select
+
 from ikuyo.core.models import CrawlerTask
 
 
@@ -17,8 +19,13 @@ class CrawlerTaskRepository:
     def get_by_id(self, task_id: int) -> Optional[CrawlerTask]:
         return self.session.get(CrawlerTask, task_id)
 
-    def list(self, limit: int = 100, offset: int = 0) -> List[CrawlerTask]:
-        statement = select(CrawlerTask).offset(offset).limit(limit)
+    def list(self, limit: int = 10, offset: int = 0) -> List[CrawlerTask]:
+        statement = (
+            select(CrawlerTask)
+            .order_by(desc(CrawlerTask.created_at))
+            .offset(offset)
+            .limit(limit)
+        )
         return list(self.session.exec(statement))
 
     def update(self, task: CrawlerTask) -> CrawlerTask:

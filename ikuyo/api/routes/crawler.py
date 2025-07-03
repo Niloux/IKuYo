@@ -1,3 +1,7 @@
+import asyncio
+import json
+from typing import List, Union
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -6,18 +10,14 @@ from fastapi import (
     WebSocketDisconnect,
     status,
 )
-from typing import List, Union
-import asyncio
 
-from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
-from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
-from ikuyo.core.tasks.task_factory import TaskFactory
-from ikuyo.core.tasks.crawler_task import CrawlerTask
-from ikuyo.api.models.schemas import TaskResponse, CrawlerTaskCreate
+from ikuyo.api.models.schemas import CrawlerTaskCreate, TaskResponse
 from ikuyo.core.database import get_session
-
-import json
+from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
 from ikuyo.core.redis_client import get_redis_connection
+from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
+from ikuyo.core.tasks.crawler_task import CrawlerTask
+from ikuyo.core.tasks.task_factory import TaskFactory
 
 router = APIRouter(prefix="/crawler/tasks", tags=["crawler-tasks"])
 
@@ -60,9 +60,7 @@ def _get_task_or_404(task_id: int, repo: CrawlerTaskRepository) -> CrawlerTaskMo
     """获取任务或返回404错误"""
     task = repo.get_by_id(task_id)
     if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"任务 {task_id} 不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"任务 {task_id} 不存在")
     return task
 
 
@@ -79,9 +77,7 @@ def _get_progress_data(task: CrawlerTaskModel) -> dict:
 
 
 @router.post("", response_model=TaskResponse)
-def create_task(
-    task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = Depends(get_repo)
-):
+def create_task(task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = Depends(get_repo)):
     """创建新任务并推送到Redis队列"""
     try:
         # 1. 使用TaskFactory创建任务对象
@@ -109,9 +105,7 @@ def create_task(
             # 如果Redis推送失败，这是一个严重问题
             # 将任务标记为失败，因为worker无法接收到它
             task.task_record.status = "failed"
-            task.task_record.error_message = (
-                f"Failed to publish task to Redis: {redis_error}"
-            )
+            task.task_record.error_message = f"Failed to publish task to Redis: {redis_error}"
             repo.update(task.task_record)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -127,10 +121,19 @@ def create_task(
 
 
 @router.get("", response_model=List[TaskResponse])
-def list_tasks(repo: CrawlerTaskRepository = Depends(get_repo)):
-    """获取任务列表"""
+def list_tasks(
+    page: int = 1, page_size: int = 10, repo: CrawlerTaskRepository = Depends(get_repo)
+):
+    """获取任务列表，支持分页
+
+    Args:
+        page: 页码，从1开始
+        page_size: 每页数量，默认10
+        repo: 任务仓库实例
+    """
     try:
-        tasks = repo.list(limit=100)
+        offset = (page - 1) * page_size
+        tasks = repo.list(limit=page_size, offset=offset)
         return [_to_response(t) for t in tasks]
     except Exception as e:
         raise HTTPException(
@@ -193,12 +196,10 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
                     task = repo.get_by_id(task_id)
 
                     if not task:
-                        await websocket.send_json(
-                            {
-                                "error": f"任务 {task_id} 不存在",
-                                "code": "task_not_found",
-                            }
-                        )
+                        await websocket.send_json({
+                            "error": f"任务 {task_id} 不存在",
+                            "code": "task_not_found",
+                        })
                         break
 
                     # 检查进度是否有更新
@@ -210,23 +211,19 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
 
                     # 如果任务已完成或失败，发送最终状态并关闭连接
                     if task.status in ["completed", "failed", "cancelled"]:
-                        await websocket.send_json(
-                            {
-                                **current_progress,
-                                "final_status": task.status,
-                                "result_summary": task.result_summary,
-                                "error_message": task.error_message,
-                            }
-                        )
+                        await websocket.send_json({
+                            **current_progress,
+                            "final_status": task.status,
+                            "result_summary": task.result_summary,
+                            "error_message": task.error_message,
+                        })
                         break
 
             except Exception as e:
-                await websocket.send_json(
-                    {
-                        "error": f"获取任务进度失败: {str(e)}",
-                        "code": "internal_error",
-                    }
-                )
+                await websocket.send_json({
+                    "error": f"获取任务进度失败: {str(e)}",
+                    "code": "internal_error",
+                })
                 break
 
     except WebSocketDisconnect:

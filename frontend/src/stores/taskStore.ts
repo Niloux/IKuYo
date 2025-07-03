@@ -8,6 +8,8 @@ export const useTaskStore = defineStore('task', () => {
   const isLoadingTasks = ref(false)
   const isLoadingScheduledJobs = ref(false)
   const error = ref<string | null>(null)
+  const currentPage = ref(1)
+  const pageSize = ref(10)
 
   // WebSocket连接管理
   const taskProgressWsMap = new Map<number, WebSocket>()
@@ -21,13 +23,21 @@ export const useTaskStore = defineStore('task', () => {
     isLoadingTasks.value = true
     error.value = null
     try {
-      tasks.value = await CrawlerApiService.listTasks()
+      tasks.value =
+          await CrawlerApiService.listTasks(currentPage.value, pageSize.value)
     } catch (err: any) {
       error.value = err.message || '获取任务列表失败'
       console.error('获取任务列表失败:', err)
     } finally {
       isLoadingTasks.value = false
     }
+  }
+
+  /**
+   * 设置当前页码
+   */
+  const setCurrentPage = (page: number) => {
+  currentPage.value = page
   }
 
   /**
@@ -265,22 +275,10 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   return {
-    tasks,
-    scheduledJobs,
-    isLoadingTasks,
-    isLoadingScheduledJobs,
-    error,
-    fetchTasks,
-    createTask,
-    cancelTask,
-    connectTaskProgressWs,
-    startTaskProgressWs,
-    stopTaskProgressWs,
-    stopAllTaskProgressWs,
-    fetchScheduledJobs,
-    createScheduledJob,
-    updateScheduledJob,
-    deleteScheduledJob,
-    toggleScheduledJob,
+  tasks, scheduledJobs, isLoadingTasks, isLoadingScheduledJobs, error,
+      currentPage, pageSize, fetchTasks, setCurrentPage, createTask, cancelTask,
+      connectTaskProgressWs, startTaskProgressWs, stopTaskProgressWs,
+      stopAllTaskProgressWs, fetchScheduledJobs, createScheduledJob,
+      updateScheduledJob, deleteScheduledJob, toggleScheduledJob,
   }
 })

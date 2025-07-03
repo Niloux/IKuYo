@@ -80,9 +80,13 @@ export class CrawlerApiService {
 
   /**
    * 获取所有爬虫任务列表
+   * @param page 页码，从1开始
+   * @param pageSize 每页数量
    */
-  static async listTasks(): Promise<TaskResponse[]> {
-    const response = await apiClient.get('/crawler/tasks')
+  static async listTasks(page: number = 1, pageSize: number = 10):
+      Promise<TaskResponse[]> {
+    const response = await apiClient.get(
+        '/crawler/tasks', {params: {page, page_size: pageSize}})
     return response as unknown as TaskResponse[]
   }
 
