@@ -1,22 +1,22 @@
-from typing import Optional
 import json
 import logging
-from ikuyo.core.tasks.base import Task
-from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
-from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
-from pydantic import BaseModel, ValidationError
-from datetime import datetime, timezone
 import os
 import signal
+from datetime import datetime, timezone
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ValidationError
+
+from ikuyo.core.models.crawler_task import CrawlerTask as CrawlerTaskModel
+from ikuyo.core.repositories.crawler_task_repository import CrawlerTaskRepository
+from ikuyo.core.tasks.base import Task
 
 
 class CrawlerTaskParams(BaseModel):
-    mode: str
+    mode: Literal["homepage", "season", "year"]
     year: Optional[int] = None
-    season: Optional[str] = None
-    start_url: Optional[str] = None
+    season: Optional[Literal["春", "夏", "秋", "冬"]] = None
     limit: Optional[int] = None
-    # 待扩展
 
 
 class CrawlerTask(Task):
@@ -110,8 +110,6 @@ class CrawlerTask(Task):
 
             self.logger.info(f"开始执行爬虫任务 {self.task_id}")
 
-
-
             # 准备任务参数
             parameters = {}
             if isinstance(self.task_record.parameters, str):
@@ -169,13 +167,21 @@ class CrawlerTask(Task):
             if self.task_record.worker_pid:
                 try:
                     os.kill(self.task_record.worker_pid, signal.SIGTERM)
-                    self.logger.info(f"已向 worker 进程 {self.task_record.worker_pid} 发送 SIGTERM 信号。")
+                    self.logger.info(
+                        f"已向 worker 进程 {self.task_record.worker_pid} 发送 SIGTERM 信号。"
+                    )
                 except ProcessLookupError:
-                    self.logger.warning(f"worker 进程 {self.task_record.worker_pid} 不存在，可能已退出。")
+                    self.logger.warning(
+                        f"worker 进程 {self.task_record.worker_pid} 不存在，可能已退出。"
+                    )
                 except Exception as e:
-                    self.logger.error(f"发送信号给 worker 进程 {self.task_record.worker_pid} 失败: {e}")
+                    self.logger.error(
+                        f"发送信号给 worker 进程 {self.task_record.worker_pid} 失败: {e}"
+                    )
             else:
-                self.logger.warning(f"任务 {self.task_id} 没有关联的 worker PID，无法发送取消信号。")
+                self.logger.warning(
+                    f"任务 {self.task_id} 没有关联的 worker PID，无法发送取消信号。"
+                )
 
         except Exception as e:
             self.logger.error(f"取消任务 {self.task_id} 失败: {e}")

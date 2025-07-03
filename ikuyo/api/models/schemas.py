@@ -4,8 +4,8 @@ API数据模型
 专注于资源获取场景的简洁设计
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -125,10 +125,9 @@ class BangumiEpisodesResponse(BaseResponse):
 
 
 class CrawlerTaskCreate(BaseModel):
-    mode: str
+    mode: Literal["homepage", "season", "year"]
     year: Optional[int] = None
-    season: Optional[str] = None
-    start_url: Optional[str] = None
+    season: Optional[Literal["春", "夏", "秋", "冬"]] = None
     limit: Optional[int] = None
 
 

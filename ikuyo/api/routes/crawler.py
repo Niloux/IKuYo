@@ -81,9 +81,26 @@ def create_task(task_create: CrawlerTaskCreate, repo: CrawlerTaskRepository = De
     """创建新任务并推送到Redis队列"""
     try:
         # 1. 使用TaskFactory创建任务对象
+        parameters = {"mode": task_create.mode}
+        if task_create.mode == "season" or task_create.mode == "year":
+            if task_create.year is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="年份是必填项",
+                )
+            parameters["year"] = str(task_create.year)
+
+        if task_create.mode == "season":
+            if task_create.season is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="季度是必填项",
+                )
+            parameters["season"] = task_create.season
+
         task = TaskFactory.create_task(
             task_type="crawler",
-            parameters=task_create.model_dump(),
+            parameters=parameters,
             repository=repo,
             task_type_db="manual",
         )
@@ -231,4 +248,4 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
             except WebSocketDisconnect:
                 # 如果在发送错误消息时也发生断开，则忽略并退出
                 pass
-            break # 发送错误消息后或发送失败后，退出循环
+            break  # 发送错误消息后或发送失败后，退出循环
