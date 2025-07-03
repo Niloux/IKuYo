@@ -186,47 +186,49 @@ async def websocket_task_progress(websocket: WebSocket, task_id: int):
     await websocket.accept()
     last_progress = None
 
-    try:
-        while True:
-            await asyncio.sleep(1)  # 每秒检查一次进度
+    while True:
+        await asyncio.sleep(1)  # 每秒检查一次进度
 
+        try:
+            with get_session() as session:
+                repo = CrawlerTaskRepository(session)
+                task = repo.get_by_id(task_id)
+
+                if not task:
+                    await websocket.send_json({
+                        "error": f"任务 {task_id} 不存在",
+                        "code": "task_not_found",
+                    })
+                    break
+
+                # 检查进度是否有更新
+                current_progress = _get_progress_data(task)
+
+                if current_progress != last_progress:
+                    await websocket.send_json(current_progress)
+                    last_progress = current_progress
+
+                # 如果任务已完成或失败，发送最终状态并关闭连接
+                if task.status in ["completed", "failed", "cancelled"]:
+                    await websocket.send_json({
+                        **current_progress,
+                        "final_status": task.status,
+                        "result_summary": task.result_summary,
+                        "error_message": task.error_message,
+                    })
+                    break
+
+        except WebSocketDisconnect:
+            # 客户端断开连接，直接退出循环，不再尝试发送任何消息
+            break
+        except Exception as e:
+            # 处理其他内部错误，但要确保在发送错误消息时连接仍然有效
             try:
-                with get_session() as session:
-                    repo = CrawlerTaskRepository(session)
-                    task = repo.get_by_id(task_id)
-
-                    if not task:
-                        await websocket.send_json({
-                            "error": f"任务 {task_id} 不存在",
-                            "code": "task_not_found",
-                        })
-                        break
-
-                    # 检查进度是否有更新
-                    current_progress = _get_progress_data(task)
-
-                    if current_progress != last_progress:
-                        await websocket.send_json(current_progress)
-                        last_progress = current_progress
-
-                    # 如果任务已完成或失败，发送最终状态并关闭连接
-                    if task.status in ["completed", "failed", "cancelled"]:
-                        await websocket.send_json({
-                            **current_progress,
-                            "final_status": task.status,
-                            "result_summary": task.result_summary,
-                            "error_message": task.error_message,
-                        })
-                        break
-
-            except Exception as e:
                 await websocket.send_json({
                     "error": f"获取任务进度失败: {str(e)}",
                     "code": "internal_error",
                 })
-                break
-
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await websocket.close()
+            except WebSocketDisconnect:
+                # 如果在发送错误消息时也发生断开，则忽略并退出
+                pass
+            break # 发送错误消息后或发送失败后，退出循环
