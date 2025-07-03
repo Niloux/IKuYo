@@ -118,16 +118,26 @@ const getStatusText = (status: string): string => {
 
 // 获取任务标题
 const getTaskTitle = (task: TaskResponse): string => {
-  const mode = getParameter(task.parameters, 'mode')
-  if (mode === 'bangumi_id') {
-    const bangumiId = getParameter(task.parameters, 'bangumi_id')
-    return `番剧采集任务 (ID: ${bangumiId})`
-  } else if (mode === 'url') {
-    return '链接采集任务'
-  } else if (mode === 'homepage') {
-    return '首页采集任务'
+  if (!task.parameters) return '采集任务'
+
+  try {
+    const params = JSON.parse(task.parameters)
+    const mode = params.mode
+
+    switch (mode) {
+      case 'homepage':
+        return '首页采集任务'
+      case 'season':
+        return `季度采集任务 (${params.year || ''}年${params.season || ''})`
+      case 'year':
+        return `年份采集任务 (${params.year || ''}年)`
+      default:
+        return '采集任务'
+    }
+  } catch (e) {
+    console.error('解析任务参数失败:', e)
+    return '采集任务'
   }
-  return '采集任务'
 }
 
 // 判断是否可以取消

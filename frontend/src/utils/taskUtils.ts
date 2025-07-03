@@ -4,8 +4,19 @@ export function getParameter(parameters: string | undefined, key: string): strin
   if (!parameters) return '-'
   try {
     const params = JSON.parse(parameters)
-    if (key === 'mode' && params.bangumi_id) {
-      return `bangumi_id: ${params.bangumi_id}`
+    // 特殊处理mode字段，显示更友好的信息
+    if (key === 'mode') {
+      const mode = params.mode || '-';
+      switch (mode) {
+        case 'homepage':
+          return '首页';
+        case 'season':
+          return `季度 (${params.year || ''}年${params.season || ''})`;
+        case 'year':
+          return `年份 (${params.year || ''}年)`;
+        default:
+          return mode;
+      }
     }
     return params[key] || '-'
   } catch (e) {

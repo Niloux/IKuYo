@@ -78,12 +78,10 @@ const showScheduledJobModal = ref(false)
 const editingJob = ref<ScheduledJobResponse | null>(null)
 
 // 新任务表单数据
-const newTask = ref<CrawlerTaskCreate & { bangumi_id?: number }>({
-  mode: '',
-  bangumi_id: undefined,
+const newTask = ref<CrawlerTaskCreate>({
+  mode: 'homepage',
   year: undefined,
   season: undefined,
-  start_url: undefined,
   limit: undefined,
 })
 
@@ -134,11 +132,9 @@ onUnmounted(() => {
 const openCreateTaskModal = () => {
   // 重置表单
   newTask.value = {
-    mode: '',
-    bangumi_id: undefined,
+    mode: 'homepage',
     year: undefined,
     season: undefined,
-    start_url: undefined,
     limit: undefined,
   }
   showCreateTaskModal.value = true
@@ -156,11 +152,11 @@ function validateCreateTaskForm() {
   if (!newTask.value.mode) {
     createTaskFormErrors.value.mode = '请选择模式'
   }
-  if (newTask.value.mode === 'bangumi_id' && (!newTask.value.bangumi_id || newTask.value.bangumi_id <= 0)) {
-    createTaskFormErrors.value.bangumi_id = '请输入有效的番剧ID'
+  if ((newTask.value.mode === 'season' || newTask.value.mode === 'year') && !newTask.value.year) {
+    createTaskFormErrors.value.year = '请选择年份'
   }
-  if (newTask.value.mode === 'url' && !newTask.value.start_url) {
-    createTaskFormErrors.value.start_url = '请输入起始URL'
+  if (newTask.value.mode === 'season' && !newTask.value.season) {
+    createTaskFormErrors.value.season = '请选择季度'
   }
   if (newTask.value.limit !== undefined && newTask.value.limit !== null && (!Number.isInteger(newTask.value.limit) || newTask.value.limit <= 0)) {
     createTaskFormErrors.value.limit = '请输入正整数或留空'
@@ -192,17 +188,18 @@ function validateScheduledJobForm() {
 const submitCreateTask = async () => {
   if (!validateCreateTaskForm()) return
   try {
-    // 根据mode调整发送的参数
     const payload: CrawlerTaskCreate = {
       mode: newTask.value.mode,
       limit: newTask.value.limit,
     }
-    // @ts-ignore
-    if (newTask.value.mode === 'bangumi_id') {
-      // @ts-ignore
-      payload.bangumi_id = newTask.value.bangumi_id
-    } else if (newTask.value.mode === 'url') {
-      payload.start_url = newTask.value.start_url
+
+    // 根据模式添加必要参数
+    if (newTask.value.mode === 'season' || newTask.value.mode === 'year') {
+      payload.year = newTask.value.year
+    }
+
+    if (newTask.value.mode === 'season') {
+      payload.season = newTask.value.season
     }
 
     const createdTask = await taskStore.createTask(payload)
@@ -213,7 +210,7 @@ const submitCreateTask = async () => {
       setupTaskWebSocket(createdTask.id)
     }
   } catch (e: any) {
-    alert(`创建任务失败: ${e.value.message}`)
+    alert(`创建任务失败: ${e.message}`)
   }
 }
 

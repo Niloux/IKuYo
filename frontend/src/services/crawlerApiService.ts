@@ -6,10 +6,9 @@ import {apiClient, type ApiResponse} from './api'
 // =============================================================================
 
 export interface CrawlerTaskCreate {
-  mode: string
+  mode: 'homepage'|'season'|'year'
   year?: number
-  season?: string
-  start_url?: string
+  season?: '春'|'夏'|'秋'|'冬'
   limit?: number
 }
 
@@ -71,11 +70,8 @@ export class CrawlerApiService {
    * @param data 任务创建数据
    */
   static async createTask(data: CrawlerTaskCreate): Promise<TaskResponse> {
-    const response: ApiResponse<TaskResponse> = await apiClient.post(
-      '/crawler/tasks',
-      data,
-    )
-    return response.data
+    const response = await apiClient.post('/crawler/tasks', data)
+    return response as unknown as TaskResponse
   }
 
   /**
@@ -95,10 +91,8 @@ export class CrawlerApiService {
    * @param taskId 任务ID
    */
   static async getTask(taskId: number): Promise<TaskResponse> {
-    const response: ApiResponse<TaskResponse> = await apiClient.get(
-      `/crawler/tasks/${taskId}`,
-    )
-    return response.data
+    const response = await apiClient.get(`/crawler/tasks/${taskId}`)
+    return response as unknown as TaskResponse
   }
 
   /**
@@ -106,10 +100,8 @@ export class CrawlerApiService {
    * @param taskId 任务ID
    */
   static async cancelTask(taskId: number): Promise<TaskResponse> {
-    const response: ApiResponse<TaskResponse> = await apiClient.delete(
-      `/crawler/tasks/${taskId}`,
-    )
-    return response.data
+    const response = await apiClient.delete(`/crawler/tasks/${taskId}`)
+    return response as unknown as TaskResponse
   }
 
   /**
@@ -117,10 +109,8 @@ export class CrawlerApiService {
    * @param taskId 任务ID
    */
   static async getTaskProgress(taskId: number): Promise<any> {
-    const response: ApiResponse<any> = await apiClient.get(
-      `/crawler/tasks/${taskId}/progress`,
-    )
-    return response.data
+    const response = await apiClient.get(`/crawler/tasks/${taskId}/progress`)
+    return response
   }
 
   /**
@@ -144,10 +134,8 @@ export class CrawlerApiService {
    * 获取所有计划任务列表
    */
   static async listScheduledJobs(): Promise<ScheduledJobResponse[]> {
-    const response: ApiResponse<ScheduledJobResponse[]> = await apiClient.get(
-      '/api/v1/scheduler/jobs',
-    )
-    return response.data
+    const response = await apiClient.get('/api/v1/scheduler/jobs')
+    return response as unknown as ScheduledJobResponse[]
   }
 
   /**
@@ -157,11 +145,8 @@ export class CrawlerApiService {
   static async createScheduledJob(
     data: ScheduledJobCreate,
   ): Promise<ScheduledJobResponse> {
-    const response: ApiResponse<ScheduledJobResponse> = await apiClient.post(
-      '/api/v1/scheduler/jobs',
-      data,
-    )
-    return response.data
+    const response = await apiClient.post('/api/v1/scheduler/jobs', data)
+    return response as unknown as ScheduledJobResponse
   }
 
   /**
@@ -173,11 +158,9 @@ export class CrawlerApiService {
     job_id: string,
     data: ScheduledJobUpdate,
   ): Promise<ScheduledJobResponse> {
-    const response: ApiResponse<ScheduledJobResponse> = await apiClient.put(
-      `/api/v1/scheduler/jobs/${job_id}`,
-      data,
-    )
-    return response.data
+    const response =
+        await apiClient.put(`/api/v1/scheduler/jobs/${job_id}`, data)
+    return response as unknown as ScheduledJobResponse
   }
 
   /**
@@ -185,10 +168,8 @@ export class CrawlerApiService {
    * @param job_id 计划任务的job_id
    */
   static async deleteScheduledJob(job_id: string): Promise<ScheduledJobResponse> {
-    const response: ApiResponse<ScheduledJobResponse> = await apiClient.delete(
-      `/api/v1/scheduler/jobs/${job_id}`,
-    )
-    return response.data
+    const response = await apiClient.delete(`/api/v1/scheduler/jobs/${job_id}`)
+    return response as unknown as ScheduledJobResponse
   }
 
   /**
@@ -196,9 +177,8 @@ export class CrawlerApiService {
    * @param job_id 计划任务的job_id
    */
   static async toggleScheduledJob(job_id: string): Promise<ScheduledJobResponse> {
-    const response: ApiResponse<ScheduledJobResponse> = await apiClient.post(
-      `/api/v1/scheduler/jobs/${job_id}/toggle`,
-    )
-    return response.data
+    const response =
+        await apiClient.post(`/api/v1/scheduler/jobs/${job_id}/toggle`)
+    return response as unknown as ScheduledJobResponse
   }
 }
