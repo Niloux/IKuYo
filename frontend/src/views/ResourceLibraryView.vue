@@ -1,89 +1,88 @@
 <template>
   <div class="resource-library">
-    <!-- 搜索区域 -->
-    <div class="search-section">
-      <div class="search-container">
-        <div class="search-box">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索番剧名称..."
-            class="search-input"
-            @input="handleSearchInput"
-          />
+    <div class="content-card">
+      <div class="search-section">
+        <div class="search-container">
+          <div class="search-box">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索番剧名称..."
+              class="search-input"
+              @input="handleSearchInput"
+            />
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- 搜索结果区域 -->
-    <div class="results-section">
-      <!-- 加载状态 -->
-      <div v-if="loading" class="loading">
-        <p>正在搜索...</p>
-      </div>
-
-      <!-- 错误状态 -->
-      <div v-else-if="error" class="error">
-        <p>{{ error }}</p>
-        <button @click="retrySearch" class="retry-btn">重试</button>
-      </div>
-
-      <!-- 搜索结果 -->
-      <div v-else-if="searchResults.length > 0">
-        <div class="results-header">
-          <h2>搜索结果</h2>
-          <span class="results-count">
-            找到 {{ pagination.total }} 个结果
-          </span>
+      <div class="results-section">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading">
+          <p>正在搜索...</p>
         </div>
 
-        <!-- 番剧网格 -->
-        <div class="anime-grid">
-          <AnimeCard
-            v-for="anime in searchResults"
-            :key="anime.id"
-            :anime="anime"
-            @click="goToLibraryDetail(anime.id)"
-          />
+        <!-- 错误状态 -->
+        <div v-else-if="error" class="error">
+          <p>{{ error }}</p>
+          <button @click="retrySearch" class="retry-btn">重试</button>
         </div>
 
-        <!-- 分页组件 -->
-        <div v-if="pagination.total_pages > 1" class="pagination">
-          <button
-            @click="searchStore.goToPage(pagination.current_page - 1)"
-            :disabled="!pagination.has_prev"
-            class="pagination-btn"
-          >
-            上一页
-          </button>
-
-          <div class="page-numbers">
-            <span
-              v-for="page in searchStore.getVisiblePages()"
-              :key="page"
-              :class="['page-number', { active: page === pagination.current_page }]"
-              @click="searchStore.goToPage(page)"
-            >
-              {{ page }}
+        <!-- 搜索结果 -->
+        <div v-else-if="searchResults.length > 0">
+          <div class="results-header">
+            <h2>搜索结果</h2>
+            <span class="results-count">
+              找到 {{ pagination.total }} 个结果
             </span>
           </div>
 
-          <button
-            @click="searchStore.goToPage(pagination.current_page + 1)"
-            :disabled="!pagination.has_next"
-            class="pagination-btn"
-          >
-            下一页
-          </button>
+          <!-- 番剧网格 -->
+          <div class="anime-grid">
+            <AnimeCard
+              v-for="anime in searchResults"
+              :key="anime.id"
+              :anime="anime"
+              @click="goToLibraryDetail(anime.id)"
+            />
+          </div>
+
+          <!-- 分页组件 -->
+          <div v-if="pagination.total_pages > 1" class="pagination">
+            <button
+              @click="searchStore.goToPage(pagination.current_page - 1)"
+              :disabled="!pagination.has_prev"
+              class="pagination-btn"
+            >
+              上一页
+            </button>
+
+            <div class="page-numbers">
+              <span
+                v-for="page in searchStore.getVisiblePages()"
+                :key="page"
+                :class="['page-number', { active: page === pagination.current_page }]"
+                @click="searchStore.goToPage(page)"
+              >
+                {{ page }}
+              </span>
+            </div>
+
+            <button
+              @click="searchStore.goToPage(pagination.current_page + 1)"
+              :disabled="!pagination.has_next"
+              class="pagination-btn"
+            >
+              下一页
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- 空搜索状态 -->
-      <div v-else-if="hasSearched && searchResults.length === 0" class="empty-results">
-        <p>没有找到相关番剧</p>
-        <p class="empty-subtitle">尝试使用其他关键词搜索</p>
-      </div>
+        <!-- 空搜索状态 -->
+        <div v-else-if="hasSearched && searchResults.length === 0" class="empty-results">
+          <p>没有找到相关番剧</p>
+          <p class="empty-subtitle">尝试使用其他关键词搜索</p>
+        </div>
 
+      </div>
     </div>
   </div>
 </template>
@@ -207,9 +206,14 @@ onBeforeRouteLeave((to: any, from: any) => {
   background: #f2f2f7;
 }
 
-.search-section {
+.content-card {
   background: #f2f2f7;
   padding: 2rem 0 1.5rem 0;
+}
+
+.search-section {
+  /* background: #f2f2f7; */
+  padding: 1.5rem 0 1rem 0;
 }
 
 .search-container {
@@ -246,9 +250,9 @@ onBeforeRouteLeave((to: any, from: any) => {
 }
 
 .results-section {
-  background: #f2f2f7;
+  /* background: #f2f2f7; */
   min-height: 70vh;
-  padding: 1.5rem;
+  /* padding: 1.5rem; */
 }
 
 .results-header {

@@ -25,7 +25,7 @@
           v-for="(day, dayIndex) in calendar"
           :key="day.weekday.id"
           :id="`day-${day.weekday.id}`"
-          class="day-section"
+          class="day-section content-card"
         >
           <h2 class="day-title" :class="{ 'today': isToday(day.weekday.id) }">
             {{ day.weekday.cn }}
@@ -206,10 +206,11 @@ onMounted(() => {
 }
 
 .day-section {
-  background: var(--color-bg-white);
-  border-radius: var(--radius-md);
-  padding: 2rem;
-  box-shadow: var(--shadow-md);
+  /* 移除通用卡片样式，改为复用.content-card */
+  /* background: var(--color-bg-white); */
+  /* border-radius: var(--radius-md); */
+  /* padding: 2rem; */
+  /* box-shadow: var(--shadow-md); */
   transition: transform var(--transition-normal);
 }
 

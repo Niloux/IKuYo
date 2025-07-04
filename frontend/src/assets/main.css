@@ -379,3 +379,22 @@ img {
   opacity: 0;
   transform: translateX(-20px);
 }
+
+.content-card {
+  background: var(--color-bg-white);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-normal);
+}
+
+.content-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+  .content-card {
+    padding: 1.5rem;
+  }
+}
