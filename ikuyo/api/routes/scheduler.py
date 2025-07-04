@@ -1,17 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
 import json
-from ikuyo.core.database import get_session
-from ikuyo.core.repositories.scheduled_job_repository import ScheduledJobRepository
-from ikuyo.core.models.scheduled_job import ScheduledJob
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from ikuyo.api.models.schemas import (
     ScheduledJobCreate,
-    ScheduledJobUpdate,
     ScheduledJobResponse,
+    ScheduledJobUpdate,
 )
+from ikuyo.core.database import get_session
+from ikuyo.core.models.scheduled_job import ScheduledJob
+from ikuyo.core.repositories.scheduled_job_repository import ScheduledJobRepository
 from ikuyo.core.scheduler import unified_scheduler
 
-router = APIRouter(prefix="/api/v1/scheduler/jobs", tags=["scheduler-jobs"])
+router = APIRouter(prefix="/scheduler/jobs", tags=["scheduler-jobs"])
 
 
 def get_repo():
@@ -25,7 +27,7 @@ def get_repo():
 
 @router.get("", response_model=List[ScheduledJobResponse])
 def list_jobs(repo: ScheduledJobRepository = Depends(get_repo)):
-    jobs = repo.list(limit=100)
+    jobs = repo.list()
     return [ScheduledJobResponse(**j.model_dump()) for j in jobs]
 
 

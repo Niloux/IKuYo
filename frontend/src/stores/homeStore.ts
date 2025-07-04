@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { BangumiWeekday } from '../services/api'
+import type { BangumiWeekday } from '../services/bangumi/bangumiTypes'
 
 export const useHomeStore = defineStore('home', () => {
   // 基本状态

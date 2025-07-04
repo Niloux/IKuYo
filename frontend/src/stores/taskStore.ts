@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { CrawlerApiService, type TaskResponse, type CrawlerTaskCreate, type ScheduledJobResponse, type ScheduledJobCreate, type ScheduledJobUpdate } from '../services/crawlerApiService'
+
+import CrawlerApiService from '../services/crawler/crawlerApiService'
+import type { CrawlerTaskCreate, TaskResponse } from '../services/crawler/crawlerTypes'
+import ScheduledJobApiService from '../services/scheduler/schedulerApiService'
+import type { ScheduledJobCreate, ScheduledJobResponse, ScheduledJobUpdate } from '../services/scheduler/schedulerTypes'
 
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref<TaskResponse[]>([])
@@ -125,7 +129,7 @@ export const useTaskStore = defineStore('task', () => {
     isLoadingScheduledJobs.value = true
     error.value = null
     try {
-      scheduledJobs.value = await CrawlerApiService.listScheduledJobs()
+      scheduledJobs.value = await ScheduledJobApiService.listScheduledJobs()
     } catch (err: any) {
       error.value = err.message || '获取计划任务列表失败'
       console.error('获取计划任务列表失败:', err)
@@ -141,8 +145,9 @@ export const useTaskStore = defineStore('task', () => {
   const createScheduledJob = async (jobCreateData: ScheduledJobCreate) => {
     error.value = null
     try {
-      const newJob = await CrawlerApiService.createScheduledJob(jobCreateData)
-      await fetchScheduledJobs() // 刷新列表
+      const newJob =
+        await ScheduledJobApiService.createScheduledJob(jobCreateData)
+      await fetchScheduledJobs()  // 刷新列表
       return newJob
     } catch (err: any) {
       error.value = err.message || '创建计划任务失败'
@@ -162,7 +167,7 @@ export const useTaskStore = defineStore('task', () => {
   ) => {
     error.value = null
     try {
-      const updatedJob = await CrawlerApiService.updateScheduledJob(
+      const updatedJob = await ScheduledJobApiService.updateScheduledJob(
         job_id,
         jobUpdateData,
       )
@@ -182,7 +187,7 @@ export const useTaskStore = defineStore('task', () => {
   const deleteScheduledJob = async (job_id: string) => {
     error.value = null
     try {
-      const deletedJob = await CrawlerApiService.deleteScheduledJob(job_id)
+      const deletedJob = await ScheduledJobApiService.deleteScheduledJob(job_id)
       await fetchScheduledJobs() // 刷新列表
       return deletedJob
     } catch (err: any) {
@@ -199,7 +204,7 @@ export const useTaskStore = defineStore('task', () => {
   const toggleScheduledJob = async (job_id: string) => {
     error.value = null
     try {
-      const toggledJob = await CrawlerApiService.toggleScheduledJob(job_id)
+      const toggledJob = await ScheduledJobApiService.toggleScheduledJob(job_id)
       await fetchScheduledJobs() // 刷新列表
       return toggledJob
     } catch (err: any) {

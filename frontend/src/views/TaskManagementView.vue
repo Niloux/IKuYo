@@ -69,7 +69,8 @@ import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
 import TaskModal from '../components/TaskModal.vue'
 import ScheduledJobModal from '../components/ScheduledJobModal.vue'
-import type { ScheduledJobResponse, CrawlerTaskCreate, TaskResponse, ScheduledJobCreate, ScheduledJobUpdate } from '../services/crawlerApiService'
+import type { CrawlerTaskCreate } from '../services/crawler/crawlerTypes'
+import type { ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse } from '../services/scheduler/schedulerTypes'
 
 const taskStore = useTaskStore()
 

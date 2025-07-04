@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CrawlerTaskCreate } from '../services/crawlerApiService'
+import type { CrawlerTaskCreate } from '../services/crawler/crawlerTypes'
 
 defineProps<{
   visible: boolean

@@ -99,7 +99,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
-import BangumiApiService, { type EpisodeAvailabilityData, type BangumiEpisode } from '../services/api'
+import BangumiApiService from '../services/bangumi/bangumiApiService'
+import type { EpisodeAvailabilityData, BangumiEpisode } from '../services/bangumi/bangumiTypes'
 import EpisodeDetailModal from './EpisodeDetailModal.vue'
 
 // Props定义

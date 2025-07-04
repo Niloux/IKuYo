@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ScheduledJobResponse } from '../services/crawlerApiService'
+import type { ScheduledJobResponse } from '../services/scheduler/schedulerTypes'
 
 defineProps<{
   jobs: ScheduledJobResponse[]

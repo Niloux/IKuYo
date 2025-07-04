@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
-import BangumiApiService, { type BangumiCalendarItem, convertSubjectToCalendarItem } from '../services/api'
+import BangumiApiService, { convertSubjectToCalendarItem } from '../services/bangumi/bangumiApiService'
+import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 
 interface SearchPagination {
   current_page: number
@@ -62,7 +63,8 @@ export const useSearchStore = defineStore('search', () => {
 
       if (searchData.bangumi_ids.length > 0) {
         // 批量获取番剧详情
-        const subjects = await BangumiApiService.batchGetSubjects(searchData.bangumi_ids)
+        const { success: subjects } =
+          await BangumiApiService.batchGetSubjects(searchData.bangumi_ids)
 
         // 转换为AnimeCard兼容格式
         searchResults.value = subjects.map(subject => convertSubjectToCalendarItem(subject))

@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TaskResponse } from '../services/crawlerApiService'
+import type { TaskResponse } from '../services/crawler/crawlerTypes'
 import { getParameter, formatDateTime, formatTime } from '../utils/taskUtils'
 
 const props = defineProps<{

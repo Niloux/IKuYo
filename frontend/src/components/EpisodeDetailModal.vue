@@ -144,7 +144,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import BangumiApiService, { type EpisodeResourcesData, type SubtitleGroupData } from '../services/api'
+import BangumiApiService from '../services/bangumi/bangumiApiService'
+import type { EpisodeResourcesData } from '../services/bangumi/bangumiTypes'
 
 // 集数详细信息类型
 interface EpisodeDetail {

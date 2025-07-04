@@ -156,7 +156,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import BangumiApiService, { type EpisodeResourcesData } from '../services/api'
+import BangumiApiService from '../services/bangumi/bangumiApiService'
+import type { EpisodeResourcesData } from '../services/bangumi/bangumiTypes'
 
 // Props定义
 interface Props {

@@ -44,7 +44,8 @@
   import { computed, onMounted, ref } from 'vue'
   import EpisodeCarousel from './EpisodeCarousel.vue'
   import EpisodeGrid from './EpisodeGrid.vue'
-  import BangumiApiService, { type BangumiEpisode } from '@/services/api'
+  import BangumiApiService from '../services/bangumi/bangumiApiService'
+  import type { BangumiEpisode } from '../services/bangumi/bangumiTypes'
 
   // Props定义
   interface Props {

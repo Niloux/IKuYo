@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import type { BangumiWeekday } from '../services/api'
+import type { BangumiWeekday } from '../services/bangumi/bangumiTypes'
 
 // Props定义
 const props = defineProps<{

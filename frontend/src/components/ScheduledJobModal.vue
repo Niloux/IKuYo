@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ScheduledJobCreate } from '../services/crawlerApiService'
+import type { ScheduledJobCreate } from '../services/scheduler/schedulerTypes'
 
 defineProps<{
   visible: boolean

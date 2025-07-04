@@ -37,7 +37,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BangumiCalendarItem } from '../services/api'
+import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import defaultCover from '../assets/ikuyo-avatar.png'
 
 // Props定义

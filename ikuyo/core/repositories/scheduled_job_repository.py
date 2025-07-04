@@ -1,6 +1,8 @@
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
 from sqlmodel import Session, select
+
 from ikuyo.core.models import ScheduledJob
 
 
@@ -21,7 +23,7 @@ class ScheduledJobRepository:
         statement = select(ScheduledJob).where(ScheduledJob.job_id == job_id)
         return self.session.exec(statement).first()
 
-    def list(self, limit: int = 100, offset: int = 0) -> List[ScheduledJob]:
+    def list(self, limit: int = 0, offset: int = 0) -> List[ScheduledJob]:
         statement = select(ScheduledJob).offset(offset).limit(limit)
         return list(self.session.exec(statement))
 

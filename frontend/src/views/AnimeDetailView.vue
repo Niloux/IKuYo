@@ -101,7 +101,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import BangumiApiService, { type BangumiSubject } from '../services/api'
+import BangumiApiService from '../services/bangumi/bangumiApiService'
+import type { BangumiSubject } from '../services/bangumi/bangumiTypes'
 import { ensureScrollToTop } from '../utils/scrollUtils'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 import AnimeResourcesList from '../components/AnimeResourcesList.vue'
