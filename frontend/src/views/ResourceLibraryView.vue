@@ -15,8 +15,8 @@
         </div>
       </div>
       <div class="results-section">
-        <!-- 只保留搜索结果和空状态，无需v-else-if -->
-        <div v-if="searchResults.length > 0">
+        <Skeleton :loading="loading" type="list" :rows="8" customClass="library-skeleton" />
+        <div v-if="!loading && searchResults.length > 0">
           <div class="results-header">
             <h2>搜索结果</h2>
             <span class="results-count">
@@ -58,7 +58,7 @@
             </button>
           </div>
         </div>
-        <div v-else-if="hasSearched && searchResults.length === 0" class="empty-results">
+        <div v-else-if="!loading && hasSearched && searchResults.length === 0" class="empty-results">
           <p>没有找到相关番剧</p>
           <p class="empty-subtitle">尝试使用其他关键词搜索</p>
         </div>
@@ -81,6 +81,7 @@ import AnimeCard from '../components/AnimeCard.vue'
 import { useSearchStore } from '../stores/searchStore'
 import { ensureScrollToTop, getCurrentScrollPosition, restoreScrollPosition } from '../utils/scrollUtils'
 import { onBeforeRouteLeave } from 'vue-router'
+import Skeleton from '../components/common/Skeleton.vue'
 
 const route = useRoute()
 const router = useRouter()

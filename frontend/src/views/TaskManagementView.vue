@@ -9,8 +9,8 @@
       <div class="section-content">
         <TaskTable
           :tasks="taskStore.tasks"
-          :isLoading="taskStore.isLoadingTasks"
-          :error="taskStore.error"
+          :isLoading="taskStore.fetchTasksAsync.loading"
+          :error="taskStore.fetchTasksAsync.error"
           :onCancel="cancelTask"
           :currentPage="taskStore.currentPage"
           :pageSize="taskStore.pageSize"
@@ -28,13 +28,13 @@
       </div>
       <div class="section-content">
         <ScheduledJobTable
-          :jobs="taskStore.scheduledJobs"
-          :isLoading="taskStore.isLoadingScheduledJobs"
-          :error="taskStore.error"
+          :jobs="schedulerStore.scheduledJobs"
+          :isLoading="schedulerStore.fetchScheduledJobsAsync.loading"
+          :error="schedulerStore.fetchScheduledJobsAsync.error"
           :onEdit="editScheduledJob"
           :onDelete="deleteScheduledJob"
           :onToggle="toggleScheduledJob"
-          @retry="taskStore.fetchScheduledJobs"
+          @retry="schedulerStore.fetchScheduledJobs"
         />
       </div>
     </div>
@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useTaskStore } from '../stores/taskStore'
+import { useSchedulerStore } from '../stores/schedulerStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
 import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
@@ -75,6 +76,7 @@ import type { ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse } fro
 import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const taskStore = useTaskStore()
+const schedulerStore = useSchedulerStore()
 const feedbackStore = useFeedbackStore()
 
 const showCreateTaskModal = ref(false)
@@ -125,7 +127,7 @@ watch(
 onMounted(() => {
   ensureScrollToTop() // 每次进入页面自动置顶
   taskStore.fetchTasks()
-  taskStore.fetchScheduledJobs()
+  schedulerStore.fetchScheduledJobs()
   // 可选：定时轮询作为兜底
   // setInterval(() => { if (!wsEnabled.value) taskStore.fetchTasks() }, 10000)
 })
@@ -402,7 +404,7 @@ const formatTime = (seconds: number | undefined): string => {
 }
 
 const handlePageChange = (page: number) => {
-  taskStore.setCurrentPage(page)
+  taskStore.currentPage = page
   taskStore.fetchTasks()
 }
 </script>

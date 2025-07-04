@@ -7,8 +7,8 @@
       </button>
     </div>
 
-    <!-- 只有subject存在时才渲染详情内容，避免null类型错误 -->
-    <div v-if="subject" class="detail-container">
+    <Skeleton :loading="loading" type="card" customClass="detail-skeleton" />
+    <div v-if="!loading && subject" class="detail-container">
       <!-- 番剧基本信息 -->
       <div class="anime-header">
         <div class="anime-cover">
@@ -82,6 +82,10 @@
         :bangumi-id="animeId"
       />
     </div>
+    <div v-if="!loading && error" class="error-message">
+      <p>{{ error || '加载失败' }}</p>
+      <button @click="feedbackStore.showError(error || '加载失败')">全局弹窗提示</button>
+    </div>
   </div>
 </template>
 
@@ -92,16 +96,21 @@ import { storeToRefs } from 'pinia'
 import { useAnimeDetailStore } from '../stores/animeDetailStore'
 import { useResourceStore } from '../stores/resourceStore'
 import { useEpisodeAvailabilityStore } from '../stores/episodeAvailabilityStore'
+import { useFeedbackStore } from '../stores/feedbackStore'
 import { ensureScrollToTop } from '../utils/scrollUtils'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 import AnimeResourcesList from '../components/AnimeResourcesList.vue'
+import Skeleton from '../components/common/Skeleton.vue'
 
 const route = useRoute()
 const router = useRouter()
 const animeDetailStore = useAnimeDetailStore()
 const resourceStore = useResourceStore()
 const episodeAvailabilityStore = useEpisodeAvailabilityStore()
-const { subject, episodes, availability, loading, error } = storeToRefs(animeDetailStore)
+const feedbackStore = useFeedbackStore()
+const { subject, episodes, availability } = storeToRefs(animeDetailStore)
+const loading = computed(() => animeDetailStore.fetchAllAsync.loading)
+const error = computed(() => animeDetailStore.fetchAllAsync.error)
 
 // 获取番剧ID
 const animeId = computed(() => parseInt(route.params.id as string))

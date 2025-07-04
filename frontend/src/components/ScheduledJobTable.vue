@@ -1,20 +1,14 @@
 <template>
   <div class="fade-in">
-    <div v-if="isLoading" class="loading-indicator">
-      <div class="loading-spinner"></div>
-      <p>正在加载定时任务...</p>
-    </div>
-
-    <div v-else-if="error" class="error-message">
+    <Skeleton :loading="isLoading" type="list" :rows="3" customClass="scheduled-job-skeleton" />
+    <div v-if="!isLoading && error" class="error-message">
       <p>{{ error }}</p>
       <button @click="$emit('retry')" class="create-button">重试</button>
     </div>
-
     <div v-else-if="!Array.isArray(jobs) || jobs.length === 0" class="no-data-message">
       <p>⏰ 暂无定时任务</p>
       <p style="margin-top: 0.5rem; font-size: 0.875rem; opacity: 0.7;">创建定时任务来自动化您的工作流程</p>
     </div>
-
     <div v-else class="task-list-container">
       <div v-for="job in jobs" :key="job.job_id" class="scheduled-job-card">
         <!-- 启用/禁用开关 -->
@@ -81,6 +75,7 @@
 
 <script setup lang="ts">
 import type { ScheduledJobResponse } from '../services/scheduler/schedulerTypes'
+import Skeleton from './common/Skeleton.vue'
 
 defineProps<{
   jobs: ScheduledJobResponse[]

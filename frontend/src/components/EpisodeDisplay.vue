@@ -2,21 +2,12 @@
     <div class="episode-display">
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-state">
-        <p>{{ loadingProgress || '正在加载章节信息...' }}</p>
-        <div v-if="batchProgress" class="batch-progress">
-          <p>进度：{{ batchProgress.current }} / {{ batchProgress.total }}</p>
-          <div class="progress-bar">
-            <div
-              class="progress-fill"
-              :style="{ width: (batchProgress.current / batchProgress.total) * 100 + '%' }"
-            ></div>
-          </div>
-        </div>
+        <p>正在加载章节信息...</p>
       </div>
 
       <!-- 错误状态 -->
       <div v-else-if="error" class="error-state">
-        <p>{{ error }}</p>
+        <p>{{ error || '加载失败' }}</p>
       </div>
 
       <!-- 根据集数智能选择展示方式 -->
@@ -55,7 +46,9 @@
   const props = defineProps<Props>()
 
   const animeDetailStore = useAnimeDetailStore()
-  const { episodes, availability, loading, error } = storeToRefs(animeDetailStore)
+  const { episodes, availability } = storeToRefs(animeDetailStore)
+  const loading = computed(() => animeDetailStore.fetchAllAsync.loading)
+  const error = computed(() => animeDetailStore.fetchAllAsync.error)
 
   // 本地统计信息接口定义
   interface EpisodeStats {

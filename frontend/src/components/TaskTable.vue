@@ -1,11 +1,7 @@
 <template>
   <div class="fade-in">
-    <div v-if="isLoading" class="loading-indicator">
-      <div class="loading-spinner"></div>
-      <p>正在加载任务...</p>
-    </div>
-
-    <div v-else-if="error" class="error-message">
+    <Skeleton :loading="isLoading" type="list" :rows="4" customClass="task-table-skeleton" />
+    <div v-if="!isLoading && error" class="error-message">
       <p>{{ error }}</p>
       <button @click="$emit('retry')" class="retry-button">重试</button>
     </div>
@@ -89,6 +85,7 @@
 <script setup lang="ts">
 import type { TaskResponse } from '../services/crawler/crawlerTypes'
 import { getParameter, formatDateTime, formatTime } from '../utils/taskUtils'
+import Skeleton from './common/Skeleton.vue'
 
 const props = defineProps<{
   tasks: TaskResponse[]

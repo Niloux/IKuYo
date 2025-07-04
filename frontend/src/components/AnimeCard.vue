@@ -9,9 +9,7 @@
         @error="onImageError"
         @load="$emit('imageLoad')"
       />
-      <div v-else class="image-placeholder">
-        <div class="loading-text">加载中...</div>
-      </div>
+      <Skeleton v-else type="image" customClass="anime-card-skeleton" />
       <div class="rating-badge" v-if="props.anime.rating && props.anime.rating.score > 0">
         {{ props.anime.rating.score.toFixed(1) }}
       </div>
@@ -40,6 +38,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import defaultCover from '../assets/ikuyo-avatar.png'
 import { createLazyObserver } from '../utils/lazyLoad'
+import Skeleton from './common/Skeleton.vue'
 
 // Props定义
 const props = defineProps<{ anime: BangumiCalendarItem }>()
@@ -142,46 +141,6 @@ const onImageError = (event: Event) => {
   object-fit: cover;
   object-position: center top;  /* 从顶部中心开始显示，保留更多重要内容 */
   transition: transform 0.3s ease;
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  background-color: #f8f9fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* 骨架屏动画 */
-.image-placeholder::before {
-  content: '';
-  display: block;
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, #f8f9fa 25%, #e0e0e0 50%, #f8f9fa 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.2s infinite linear;
-  border-radius: 8px;
-  z-index: 1;
-  opacity: 0.7;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.loading-text {
-  color: #6c757d;
-  font-size: 0.9rem;
-  position: relative;
-  z-index: 2;
 }
 
 .anime-card:hover .card-image img {

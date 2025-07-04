@@ -51,10 +51,7 @@
         <h3 class="section-title">资源下载</h3>
 
         <!-- 加载状态 -->
-        <div v-if="loading" class="resources-loading">
-          <div class="loading-spinner"></div>
-          <p>正在加载资源列表...</p>
-        </div>
+        <Skeleton v-if="loading" type="list" :rows="4" customClass="modal-skeleton" />
 
         <!-- 加载错误 -->
         <div v-else-if="error" class="resources-error">
@@ -146,6 +143,7 @@
 import { ref, watch, computed, defineEmits } from 'vue'
 import { useResourceStore } from '../stores/resourceStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
+import Skeleton from './common/Skeleton.vue'
 
 // 集数详细信息类型
 interface EpisodeDetail {
