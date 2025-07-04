@@ -125,9 +125,7 @@ onMounted(() => {
   ensureScrollToTop()
   if (animeId.value) {
     animeDetailStore.fetchAll(animeId.value)
-    if (isResourceMode) {
-      resourceStore.fetchResources({ bangumiId: animeId.value, limit: 100, offset: 0 })
-    }
+    // 资源拉取已由AnimeResourcesList.vue负责，这里无需再调用resourceStore.fetchResources
   }
 })
 
@@ -135,9 +133,7 @@ onMounted(() => {
 watch(animeId, (newId, oldId) => {
   if (newId && newId !== oldId) {
     animeDetailStore.fetchAll(newId)
-    if (isResourceMode) {
-      resourceStore.fetchResources({ bangumiId: newId, limit: 100, offset: 0 })
-    }
+    // 资源拉取已由AnimeResourcesList.vue负责，这里无需再调用resourceStore.fetchResources
   }
 })
 
