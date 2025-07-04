@@ -203,7 +203,6 @@ onBeforeRouteLeave((to: any, from: any) => {
 <style scoped>
 .resource-library {
   min-height: 100vh;
-  background: #f2f2f7;
 }
 
 .content-card {
