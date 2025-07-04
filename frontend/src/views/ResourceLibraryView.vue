@@ -206,8 +206,9 @@ onBeforeRouteLeave((to: any, from: any) => {
 }
 
 .content-card {
+  width: 100%;
+  padding: 2rem;
   background: #f2f2f7;
-  padding: 2rem 0 1.5rem 0;
 }
 
 .search-section {
@@ -259,9 +260,9 @@ onBeforeRouteLeave((to: any, from: any) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
+  /* max-width: 1200px; */
+  /* margin-left: auto; */
+  /* margin-right: auto; */
 }
 
 .results-header h2 {
@@ -277,10 +278,10 @@ onBeforeRouteLeave((to: any, from: any) => {
 
 .anime-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto 3rem auto;
+  /* max-width: 1200px; */
+  /* margin: 0 auto 3rem auto; */
 }
 
 .loading, .error, .empty-results, .initial-state {
@@ -391,8 +392,8 @@ onBeforeRouteLeave((to: any, from: any) => {
   }
 
   .anime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
   }
 }
 </style>
