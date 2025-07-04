@@ -97,7 +97,7 @@
                     <div class="resource-meta">
                       <span v-if="resource.resolution" class="meta-tag resolution">{{ resource.resolution }}</span>
                       <span v-if="resource.subtitle_type" class="meta-tag subtitle">{{ resource.subtitle_type }}</span>
-                      <span v-if="resource.file_size" class="meta-tag size">{{ resource.file_size }}</span>
+                      <span v-if="resource.size" class="meta-tag size">{{ resource.size }}</span>
                     </div>
                   </div>
 
@@ -143,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, defineEmits } from 'vue'
 import { useResourceStore } from '../stores/resourceStore'
 
 // 集数详细信息类型
@@ -176,25 +176,15 @@ const currentBangumiId = computed(() => props.bangumiId)
 
 const resourceQuery = computed(() => ({
   bangumiId: currentBangumiId.value!,
+  episodeNumber: currentEpisodeNumber.value,
   limit: 100,
   offset: 0,
 }))
 
-// 只展示当前集的资源
-const resourcesData = computed(() => {
-  const all = resourceStore.resourcesData
-  if (!all || !currentEpisodeNumber.value) return null
-  // 过滤出当前集的资源
-  const groups = (all.subtitle_groups?.map((group: any) => ({
-    ...group,
-    resources: group.resources.filter((r: any) => r.episode_number === currentEpisodeNumber.value)
-  })).filter((group: any) => group.resources.length > 0)) || []
-  return {
-    ...all,
-    subtitle_groups: groups,
-    total_resources: groups.reduce((sum: any, g: any) => sum + g.resources.length, 0)
-  }
-})
+/**
+ * 资源数据：API已按集过滤，无需前端再过滤
+ */
+const resourcesData = computed(() => resourceStore.resourcesData)
 const loading = computed(() => resourceStore.loading)
 const error = computed(() => resourceStore.error)
 
@@ -215,12 +205,15 @@ const toggleDescription = () => {
   descExpanded.value = !descExpanded.value
 }
 
+const emit = defineEmits(['close'])
+
 // 关闭模态框
 const closeModal = () => {
   isClosing.value = true
   // 等待关闭动画完成后再真正关闭
   setTimeout(() => {
     isClosing.value = false
+    emit('close') // 通知父组件关闭弹窗
   }, 250) // 与CSS动画时间保持一致
 }
 
