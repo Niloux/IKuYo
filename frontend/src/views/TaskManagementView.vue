@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useTaskStore } from '../stores/taskStore'
+import { useFeedbackStore } from '../stores/feedbackStore'
 import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
 import TaskModal from '../components/TaskModal.vue'
@@ -74,6 +75,7 @@ import type { ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse } fro
 import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const taskStore = useTaskStore()
+const feedbackStore = useFeedbackStore()
 
 const showCreateTaskModal = ref(false)
 const showScheduledJobModal = ref(false)
@@ -216,7 +218,7 @@ const submitCreateTask = async () => {
       setupTaskWebSocket(createdTask.id)
     }
   } catch (e: any) {
-    alert(`创建任务失败: ${e.message}`)
+    feedbackStore.showError(`创建任务失败: ${e.message}`)
   }
 }
 
@@ -263,7 +265,7 @@ const submitScheduledJob = async () => {
       try {
         parsedParameters = JSON.parse(currentScheduledJob.value.parameters_json)
       } catch (e) {
-        alert('参数JSON格式不正确！')
+        feedbackStore.showError('参数JSON格式不正确！')
         return
       }
     }
@@ -280,15 +282,15 @@ const submitScheduledJob = async () => {
     if (editingJob.value) {
       // 更新现有任务
       await taskStore.updateScheduledJob(editingJob.value.job_id, payload as ScheduledJobUpdate)
-      alert('定时任务更新成功！')
+      feedbackStore.showError('定时任务更新成功！')
     } else {
       // 创建新任务
       await taskStore.createScheduledJob(payload as ScheduledJobCreate)
-      alert('定时任务创建成功！')
+      feedbackStore.showError('定时任务创建成功！')
     }
     closeScheduledJobModal()
   } catch (e: any) {
-    alert(`操作失败: ${e.message}`)
+    feedbackStore.showError(`操作失败: ${e.message}`)
   }
 }
 
@@ -296,14 +298,14 @@ const cancelTask = async (taskId: number) => {
   if (confirm('确定要取消这个任务吗？')) {
     try {
       const cancelledTask = await taskStore.cancelTask(taskId)
-      alert('任务已取消！')
+      feedbackStore.showError('任务已取消！')
       // 如果任务被取消，关闭对应的WebSocket连接
       if (activeWebSockets.value.has(taskId)) {
         activeWebSockets.value.get(taskId)?.close()
         activeWebSockets.value.delete(taskId)
       }
     } catch (e: any) {
-      alert(`取消任务失败: ${e.message}`)
+      feedbackStore.showError(`取消任务失败: ${e.message}`)
     }
   }
 }
@@ -311,9 +313,9 @@ const cancelTask = async (taskId: number) => {
 const toggleScheduledJob = async (jobId: string) => {
   try {
     await taskStore.toggleScheduledJob(jobId)
-    alert('定时任务状态已更新！')
+    feedbackStore.showError('定时任务状态已更新！')
   } catch (e: any) {
-    alert(`更新定时任务状态失败: ${e.message}`)
+    feedbackStore.showError(`更新定时任务状态失败: ${e.message}`)
   }
 }
 
@@ -321,9 +323,9 @@ const deleteScheduledJob = async (jobId: string) => {
   if (confirm('确定要删除这个定时任务吗？')) {
     try {
       await taskStore.deleteScheduledJob(jobId)
-      alert('定时任务已删除！')
+      feedbackStore.showError('定时任务已删除！')
     } catch (e: any) {
-      alert(`删除定时任务失败: ${e.message}`)
+      feedbackStore.showError(`删除定时任务失败: ${e.message}`)
     }
   }
 }

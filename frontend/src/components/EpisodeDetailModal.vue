@@ -145,6 +145,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, defineEmits } from 'vue'
 import { useResourceStore } from '../stores/resourceStore'
+import { useFeedbackStore } from '../stores/feedbackStore'
 
 // 集数详细信息类型
 interface EpisodeDetail {
@@ -169,6 +170,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const resourceStore = useResourceStore()
+const feedbackStore = useFeedbackStore()
 
 // 资源数据相关
 const currentEpisodeNumber = computed(() => props.episodeData?.number)
@@ -258,11 +260,9 @@ const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
       link.click()
       document.body.removeChild(link)
     }
-
-
   } catch (err) {
     console.error('下载失败:', err)
-    alert('下载失败，请检查链接或重试')
+    feedbackStore.showError('下载失败，请检查链接或重试')
   }
 }
 

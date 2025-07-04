@@ -49,11 +49,18 @@ export class BangumiApiService {
     /**
      * 获取集数可用性状态
      */
-    static async getEpisodeAvailability(bangumiId: number):
-        Promise<EpisodeAvailabilityData> {
-        const response: ApiResponse<EpisodeAvailabilityData> =
-            await apiClient.get(`/animes/${bangumiId}/episodes/availability`)
-        return response.data
+    static async getEpisodeAvailability(bangumiId: number): Promise<EpisodeAvailabilityData | null> {
+        try {
+            const response: ApiResponse<EpisodeAvailabilityData> =
+                await apiClient.get(`/animes/${bangumiId}/episodes/availability`)
+            return response.data
+        } catch (err: any) {
+            if (err?.response?.status === 404) {
+                // 404视为无资源，返回null
+                return null
+            }
+            throw err
+        }
     }
 
     /**
@@ -77,11 +84,18 @@ export class BangumiApiService {
     /**
      * 获取特定集数的资源列表
      */
-    static async getEpisodeResources(bangumiId: number, episode: number):
-        Promise<EpisodeResourcesData> {
-        const response: ApiResponse<EpisodeResourcesData> = await apiClient.get(
-            `/animes/${bangumiId}/resources?episode=${episode}`);
-        return response.data;
+    static async getEpisodeResources(bangumiId: number, episode: number): Promise<EpisodeResourcesData | null> {
+        try {
+            const response: ApiResponse<EpisodeResourcesData> = await apiClient.get(
+                `/animes/${bangumiId}/resources?episode=${episode}`);
+            return response.data;
+        } catch (err: any) {
+            if (err?.response?.status === 404) {
+                // 404视为无资源，返回null
+                return null;
+            }
+            throw err;
+        }
     }
 
     /**

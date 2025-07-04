@@ -1,24 +1,11 @@
 <template>
   <div class="home">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading">
-      <p>正在加载番剧数据...</p>
-    </div>
-
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="error">
-      <p>{{ error }}</p>
-      <button @click="loadCalendar" class="retry-btn">重试</button>
-    </div>
-
-    <!-- 内容区域 -->
-    <div v-else>
+    <!-- 直接渲染内容区，无需v-else -->
+    <div>
       <!-- 星期导航栏 -->
       <WeekNavigation :calendar="calendar" />
-
       <!-- 置顶按钮 -->
       <ScrollToTopButton />
-
       <!-- 每日放送内容 -->
       <div class="calendar-container">
         <div

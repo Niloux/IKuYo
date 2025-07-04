@@ -15,27 +15,14 @@
         </div>
       </div>
       <div class="results-section">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading">
-          <p>正在搜索...</p>
-        </div>
-
-        <!-- 错误状态 -->
-        <div v-else-if="error" class="error">
-          <p>{{ error }}</p>
-          <button @click="retrySearch" class="retry-btn">重试</button>
-        </div>
-
-        <!-- 搜索结果 -->
-        <div v-else-if="searchResults.length > 0">
+        <!-- 只保留搜索结果和空状态，无需v-else-if -->
+        <div v-if="searchResults.length > 0">
           <div class="results-header">
             <h2>搜索结果</h2>
             <span class="results-count">
               找到 {{ pagination.total }} 个结果
             </span>
           </div>
-
-          <!-- 番剧网格 -->
           <div class="anime-grid">
             <AnimeCard
               v-for="anime in searchResults"
@@ -44,8 +31,6 @@
               @click="goToLibraryDetail(anime.id)"
             />
           </div>
-
-          <!-- 分页组件 -->
           <div v-if="pagination.total_pages > 1" class="pagination">
             <button
               @click="searchStore.goToPage(pagination.current_page - 1)"
@@ -54,7 +39,6 @@
             >
               上一页
             </button>
-
             <div class="page-numbers">
               <span
                 v-for="page in searchStore.getVisiblePages()"
@@ -65,7 +49,6 @@
                 {{ page }}
               </span>
             </div>
-
             <button
               @click="searchStore.goToPage(pagination.current_page + 1)"
               :disabled="!pagination.has_next"
@@ -75,13 +58,10 @@
             </button>
           </div>
         </div>
-
-        <!-- 空搜索状态 -->
         <div v-else-if="hasSearched && searchResults.length === 0" class="empty-results">
           <p>没有找到相关番剧</p>
           <p class="empty-subtitle">尝试使用其他关键词搜索</p>
         </div>
-
       </div>
     </div>
   </div>

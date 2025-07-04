@@ -7,19 +7,8 @@
       </button>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading">
-      <p>正在加载番剧详情...</p>
-    </div>
-
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="error">
-      <p>{{ error }}</p>
-      <button @click="() => animeDetailStore.fetchAll(animeId)" class="retry-btn">重试</button>
-    </div>
-
-    <!-- 番剧详情内容 -->
-    <div v-else-if="subject" class="detail-container">
+    <!-- 只有subject存在时才渲染详情内容，避免null类型错误 -->
+    <div v-if="subject" class="detail-container">
       <!-- 番剧基本信息 -->
       <div class="anime-header">
         <div class="anime-cover">

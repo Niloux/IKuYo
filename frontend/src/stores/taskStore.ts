@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useFeedbackStore } from './feedbackStore'
 
 import CrawlerApiService from '../services/crawler/crawlerApiService'
 import type { CrawlerTaskCreate, TaskResponse } from '../services/crawler/crawlerTypes'
@@ -24,6 +25,7 @@ export const useTaskStore = defineStore('task', () => {
    * 获取所有即时任务列表
    */
   const fetchTasks = async () => {
+    const feedbackStore = useFeedbackStore()
     isLoadingTasks.value = true
     error.value = null
     try {
@@ -31,6 +33,7 @@ export const useTaskStore = defineStore('task', () => {
           await CrawlerApiService.listTasks(currentPage.value, pageSize.value)
     } catch (err: any) {
       error.value = err.message || '获取任务列表失败'
+      feedbackStore.showError(error.value || '获取任务列表失败')
       console.error('获取任务列表失败:', err)
     } finally {
       isLoadingTasks.value = false
@@ -49,16 +52,17 @@ export const useTaskStore = defineStore('task', () => {
    * @param taskCreateData 任务创建数据
    */
   const createTask = async (taskCreateData: CrawlerTaskCreate) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const newTask = await CrawlerApiService.createTask(taskCreateData)
-      // 成功创建后，刷新任务列表或添加到现有列表
-      await fetchTasks() // 简单起见，直接刷新列表
+      await fetchTasks()
       return newTask
     } catch (err: any) {
       error.value = err.message || '创建任务失败'
+      feedbackStore.showError(error.value || '创建任务失败')
       console.error('创建任务失败:', err)
-      throw err // 抛出错误以便组件处理
+      throw err
     }
   }
 
@@ -67,10 +71,10 @@ export const useTaskStore = defineStore('task', () => {
    * @param taskId 任务ID
    */
   const cancelTask = async (taskId: number) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const cancelledTask = await CrawlerApiService.cancelTask(taskId)
-      // 更新任务状态
       const index = tasks.value.findIndex(t => t.id === taskId)
       if (index !== -1) {
         tasks.value[index] = cancelledTask
@@ -78,6 +82,7 @@ export const useTaskStore = defineStore('task', () => {
       return cancelledTask
     } catch (err: any) {
       error.value = err.message || '取消任务失败'
+      feedbackStore.showError(error.value || '取消任务失败')
       console.error('取消任务失败:', err)
       throw err
     }
@@ -126,12 +131,14 @@ export const useTaskStore = defineStore('task', () => {
    * 获取所有计划任务列表
    */
   const fetchScheduledJobs = async () => {
+    const feedbackStore = useFeedbackStore()
     isLoadingScheduledJobs.value = true
     error.value = null
     try {
       scheduledJobs.value = await ScheduledJobApiService.listScheduledJobs()
     } catch (err: any) {
       error.value = err.message || '获取计划任务列表失败'
+      feedbackStore.showError(error.value || '获取计划任务列表失败')
       console.error('获取计划任务列表失败:', err)
     } finally {
       isLoadingScheduledJobs.value = false
@@ -143,14 +150,16 @@ export const useTaskStore = defineStore('task', () => {
    * @param jobCreateData 计划任务创建数据
    */
   const createScheduledJob = async (jobCreateData: ScheduledJobCreate) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const newJob =
         await ScheduledJobApiService.createScheduledJob(jobCreateData)
-      await fetchScheduledJobs()  // 刷新列表
+      await fetchScheduledJobs()
       return newJob
     } catch (err: any) {
       error.value = err.message || '创建计划任务失败'
+      feedbackStore.showError(error.value || '创建计划任务失败')
       console.error('创建计划任务失败:', err)
       throw err
     }
@@ -165,16 +174,18 @@ export const useTaskStore = defineStore('task', () => {
     job_id: string,
     jobUpdateData: ScheduledJobUpdate,
   ) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const updatedJob = await ScheduledJobApiService.updateScheduledJob(
         job_id,
         jobUpdateData,
       )
-      await fetchScheduledJobs() // 刷新列表
+      await fetchScheduledJobs()
       return updatedJob
     } catch (err: any) {
       error.value = err.message || '更新计划任务失败'
+      feedbackStore.showError(error.value || '更新计划任务失败')
       console.error('更新计划任务失败:', err)
       throw err
     }
@@ -185,13 +196,15 @@ export const useTaskStore = defineStore('task', () => {
    * @param job_id 任务ID
    */
   const deleteScheduledJob = async (job_id: string) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const deletedJob = await ScheduledJobApiService.deleteScheduledJob(job_id)
-      await fetchScheduledJobs() // 刷新列表
+      await fetchScheduledJobs()
       return deletedJob
     } catch (err: any) {
       error.value = err.message || '删除计划任务失败'
+      feedbackStore.showError(error.value || '删除计划任务失败')
       console.error('删除计划任务失败:', err)
       throw err
     }
@@ -202,13 +215,15 @@ export const useTaskStore = defineStore('task', () => {
    * @param job_id 任务ID
    */
   const toggleScheduledJob = async (job_id: string) => {
+    const feedbackStore = useFeedbackStore()
     error.value = null
     try {
       const toggledJob = await ScheduledJobApiService.toggleScheduledJob(job_id)
-      await fetchScheduledJobs() // 刷新列表
+      await fetchScheduledJobs()
       return toggledJob
     } catch (err: any) {
       error.value = err.message || '切换计划任务状态失败'
+      feedbackStore.showError(error.value || '切换计划任务状态失败')
       console.error('切换计划任务状态失败:', err)
       throw err
     }

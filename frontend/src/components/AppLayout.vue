@@ -21,12 +21,19 @@
         </p>
       </div>
     </footer>
+
+    <GlobalLoading />
+    <GlobalToast />
+    <GlobalError />
   </div>
 </template>
 
 <script setup lang="ts">
 import AppHeader from './AppHeader.vue'
 import { ref, onMounted, computed } from 'vue'
+import GlobalLoading from './common/GlobalLoading.vue';
+import GlobalToast from './common/GlobalToast.vue';
+import GlobalError from './common/GlobalError.vue';
 
 const headerHeight = ref(0)
 const footerHeight = ref(0)

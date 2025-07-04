@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import BangumiApiService from '../services/bangumi/bangumiApiService'
 import type { BangumiSubject, BangumiEpisode } from '../services/bangumi/bangumiTypes'
+import { useFeedbackStore } from './feedbackStore'
 
 export const useAnimeDetailStore = defineStore('animeDetail', () => {
     const bangumiId = ref<number | null>(null)
@@ -31,6 +32,7 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
 
     // 并发请求所有详情数据
     async function fetchAll(id: number) {
+        const feedbackStore = useFeedbackStore()
         if (bangumiId.value === id && subject.value && episodes.value.length > 0 && availability.value) {
             // 已有数据且id未变，直接复用
             return
@@ -49,19 +51,18 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
             episodes.value = episodesRes.data
             // availability单独catch
             try {
-                availability.value = await BangumiApiService.getEpisodeAvailability(id)
+                const avail = await BangumiApiService.getEpisodeAvailability(id)
+                availability.value = avail // null视为无资源
             } catch (err: any) {
-                // 仅404时静默，其他错误toast
-                if (err?.response?.status === 404) {
-                    availability.value = null
-                } else {
-                    availability.value = null
-                    if (window && window.$toast) window.$toast.error('资源可用性加载失败')
+                availability.value = null
+                // 只有非404异常才反馈error
+                if (!err?.response || err?.response?.status !== 404) {
+                    feedbackStore.showError('资源可用性加载失败')
                 }
             }
         } catch (err: any) {
             error.value = err?.message || '加载番剧详情失败'
-            if (window && window.$toast) window.$toast.error(String(error.value))
+            feedbackStore.showError(String(error.value))
         } finally {
             loading.value = false
         }
@@ -69,6 +70,7 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
 
     // 单独请求
     async function fetchSubject(id: number) {
+        const feedbackStore = useFeedbackStore()
         try {
             subject.value = await BangumiApiService.getSubject(id)
         } catch (err: any) {
@@ -87,10 +89,14 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
     }
     async function fetchAvailability(id: number) {
         try {
-            availability.value = await BangumiApiService.getEpisodeAvailability(id)
+            const avail = await BangumiApiService.getEpisodeAvailability(id)
+            availability.value = avail // null视为无资源
         } catch (err: any) {
-            error.value = err?.message || '加载资源可用性失败'
-            if (window && window.$toast) window.$toast.error(String(error.value))
+            availability.value = null
+            if (!err?.response || err?.response?.status !== 404) {
+                error.value = err?.message || '加载资源可用性失败'
+                if (window && window.$toast) window.$toast.error(String(error.value))
+            }
         }
     }
 

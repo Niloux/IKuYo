@@ -50,10 +50,15 @@ export const useResourceStore = defineStore('resourceStore', () => {
         loadingCache.value[key] = true
         errorCache.value[key] = null
         try {
-            let data: EpisodeResourcesData
+            let data: EpisodeResourcesData | null
             if (query.episodeNumber !== undefined) {
                 // 按集拉取
                 data = await BangumiApiService.getEpisodeResources(query.bangumiId, query.episodeNumber)
+                if (data === null) {
+                    // 404视为无资源，正常情况
+                    resourceCache.value[key] = null
+                    return
+                }
             } else {
                 // 全量拉取
                 data = await BangumiApiService.getAnimeResources(query.bangumiId, {

@@ -3,6 +3,7 @@
 // =============================================================================
 
 import axios, { type AxiosResponse } from 'axios'
+import { useFeedbackStore } from '../../stores/feedbackStore';
 
 // API基础配置
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
@@ -24,51 +25,70 @@ export interface ApiResponse<T = unknown> {
     total?: number;
 }
 
-// 全局通知（Toast）工具函数（假设已在全局注册，或可替换为你项目的通知实现）
-function showToast(message: string, type: 'error' | 'info' | 'success' = 'error') {
-    // 优先使用UI库toast（如Element Plus/Antd $message）
-    if (window && (window as any).$toast && typeof (window as any).$toast[type] === 'function') {
-        (window as any).$toast[type](message, { duration: 2500 })
-    } else {
-        // 兜底：用alert（仅开发调试用，生产应确保toast全局可用）
-        alert(message)
-    }
-}
-
-// 响应拦截器 - 统一处理响应数据
-apiClient.interceptors.response.use(
-    (response: AxiosResponse) => {// 直接返回data部分
-        return response.data
+// 请求拦截器 - 自动开启loading
+apiClient.interceptors.request.use(
+    (config) => {
+        const feedbackStore = useFeedbackStore();
+        feedbackStore.showLoading();
+        return config;
     },
     (error) => {
-        const { response } = error
+        const feedbackStore = useFeedbackStore();
+        feedbackStore.hideLoading();
+        return Promise.reject(error);
+    }
+);
+
+// 响应拦截器 - 统一处理响应数据和异常，自动关闭loading和推送错误
+apiClient.interceptors.response.use(
+    (response: AxiosResponse) => {
+        const feedbackStore = useFeedbackStore();
+        feedbackStore.hideLoading();
+        return response.data;
+    },
+    (error) => {
+        const feedbackStore = useFeedbackStore();
+        feedbackStore.hideLoading();
+        const { response, config } = error;
+        let msg = '请求发生错误';
+        // 404白名单静默处理
+        if (response && response.status === 404 && config && config.url) {
+            const url = config.url;
+            // 匹配/animes/{id}/episodes/availability 或 /animes/{id}/resources?episode=
+            const isAvailability = /\/animes\/\d+\/episodes\/availability$/.test(url);
+            const isEpisodeResource = /\/animes\/\d+\/resources\?episode=\d+/.test(url);
+            if (isAvailability || isEpisodeResource) {
+                // 白名单命中，静默处理，不弹窗
+                return Promise.reject(error);
+            }
+        }
         if (response) {
-            const status = response.status
-            let msg = response.data?.message || '请求发生错误'
+            const status = response.status;
+            msg = response.data?.message || msg;
             switch (status) {
                 case 401:
                 case 403:
-                    msg = '认证失败，请重新登录'
-                    showToast(msg, 'error')
-                    window.location.href = '/login'
+                    msg = '认证失败，请重新登录';
+                    feedbackStore.showError(msg);
+                    window.location.href = '/login';
                     break;
                 case 404:
-                    msg = '资源未找到'
-                    showToast(msg, 'error')
+                    msg = '资源未找到';
+                    feedbackStore.showError(msg);
                     break;
                 case 500:
-                    msg = '服务器内部错误'
-                    showToast(msg, 'error')
+                    msg = '服务器内部错误';
+                    feedbackStore.showError(msg);
                     break;
                 default:
-                    showToast(msg, 'error')
-                    break
+                    feedbackStore.showError(msg);
+                    break;
             }
+        } else {
+            feedbackStore.showError('网络连接失败');
         }
-        else {
-            showToast('网络连接失败', 'error')
-        }
-        return Promise.reject(error)
-    })
+        return Promise.reject(error);
+    }
+);
 
 export { apiClient }
