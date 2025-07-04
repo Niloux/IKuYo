@@ -51,20 +51,20 @@
         <h3 class="section-title">资源下载</h3>
 
         <!-- 加载状态 -->
-        <div v-if="resourcesLoading" class="resources-loading">
+        <div v-if="loading" class="resources-loading">
           <div class="loading-spinner"></div>
           <p>正在加载资源列表...</p>
         </div>
 
         <!-- 加载错误 -->
-        <div v-else-if="resourcesError" class="resources-error">
+        <div v-else-if="error" class="resources-error">
           <div class="error-message">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="error-icon">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <path d="m15 9-6 6m0-6 6 6" stroke="currentColor" stroke-width="2"/>
             </svg>
-            <p>{{ resourcesError }}</p>
-            <button class="retry-btn" @click="loadEpisodeResources">重试</button>
+            <p>{{ error }}</p>
+            <button class="retry-btn" @click="refreshResources">重试</button>
           </div>
         </div>
 
@@ -144,8 +144,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import BangumiApiService from '../services/bangumi/bangumiApiService'
-import type { EpisodeResourcesData } from '../services/bangumi/bangumiTypes'
+import { useResourceStore } from '../stores/resourceStore'
 
 // 集数详细信息类型
 interface EpisodeDetail {
@@ -167,14 +166,37 @@ interface Props {
   episodeData: EpisodeDetail | null
   bangumiId?: number
 }
-
 const props = defineProps<Props>()
 
-// Emits定义
-const emit = defineEmits<{
-  close: []
-  refreshResources: [episodeNumber: number]
-}>()
+const resourceStore = useResourceStore()
+
+// 资源数据相关
+const currentEpisodeNumber = computed(() => props.episodeData?.number)
+const currentBangumiId = computed(() => props.bangumiId)
+
+const resourceQuery = computed(() => ({
+  bangumiId: currentBangumiId.value!,
+  limit: 100,
+  offset: 0,
+}))
+
+// 只展示当前集的资源
+const resourcesData = computed(() => {
+  const all = resourceStore.resourcesData
+  if (!all || !currentEpisodeNumber.value) return null
+  // 过滤出当前集的资源
+  const groups = (all.subtitle_groups?.map((group: any) => ({
+    ...group,
+    resources: group.resources.filter((r: any) => r.episode_number === currentEpisodeNumber.value)
+  })).filter((group: any) => group.resources.length > 0)) || []
+  return {
+    ...all,
+    subtitle_groups: groups,
+    total_resources: groups.reduce((sum: any, g: any) => sum + g.resources.length, 0)
+  }
+})
+const loading = computed(() => resourceStore.loading)
+const error = computed(() => resourceStore.error)
 
 // 剧情简介展开/收起状态
 const descExpanded = ref(false)
@@ -182,11 +204,6 @@ const DESC_COLLAPSE_LENGTH = 150 // 收起时显示的字符数
 
 // 关闭动画状态
 const isClosing = ref(false)
-
-// 资源数据状态
-const resourcesData = ref<EpisodeResourcesData | null>(null)
-const resourcesLoading = ref(false)
-const resourcesError = ref<string | null>(null)
 
 // 计算属性：判断剧情简介是否足够长需要展开/收起功能
 const isDescLong = computed(() => {
@@ -204,7 +221,6 @@ const closeModal = () => {
   // 等待关闭动画完成后再真正关闭
   setTimeout(() => {
     isClosing.value = false
-    emit('close')
   }, 250) // 与CSS动画时间保持一致
 }
 
@@ -213,37 +229,21 @@ const handleOverlayClick = () => {
   closeModal()
 }
 
-// 加载资源数据
-const loadEpisodeResources = async () => {
-  if (!props.bangumiId || !props.episodeData?.number) {
-    return
-  }
-
-  try {
-    resourcesLoading.value = true
-    resourcesError.value = null
-    resourcesData.value = null
-
-    const data = await BangumiApiService.getEpisodeResources(
-      props.bangumiId,
-      props.episodeData.number
-    )
-    resourcesData.value = data
-
-
-  } catch (err: any) {
-    console.error('❌ 加载资源数据失败:', err)
-    resourcesError.value = err.response?.data?.message || '加载资源数据失败'
-  } finally {
-    resourcesLoading.value = false
-  }
-}
+// 监听弹窗打开时拉取资源
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible && props.bangumiId && currentEpisodeNumber.value) {
+      resourceStore.fetchResources(resourceQuery.value)
+    }
+  },
+  { immediate: false }
+)
 
 // 刷新资源
 const refreshResources = () => {
-  if (props.episodeData) {
-    loadEpisodeResources()
-    emit('refreshResources', props.episodeData.number)
+  if (props.bangumiId && currentEpisodeNumber.value) {
+    resourceStore.fetchResources(resourceQuery.value)
   }
 }
 
@@ -332,7 +332,6 @@ watch(() => props.visible, (newVisible) => {
     disableBodyScroll() // 禁止背景滚动并补偿偏移
     descExpanded.value = false // 重置展开状态
     isClosing.value = false // 重置关闭状态
-    loadEpisodeResources() // 加载资源数据
   } else {
     document.removeEventListener('keydown', handleKeyDown)
     enableBodyScroll() // 恢复背景滚动

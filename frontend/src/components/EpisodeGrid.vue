@@ -20,7 +20,6 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button @click="loadEpisodeAvailability" class="retry-btn">重试</button>
     </div>
 
     <!-- 集数网格 -->
@@ -133,9 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import BangumiApiService from '../services/bangumi/bangumiApiService'
-import type { EpisodeAvailabilityData } from '../services/bangumi/bangumiTypes'
+import { ref, onMounted, computed, watch } from 'vue'
 import EpisodeDetailModal from './EpisodeDetailModal.vue'
 
 // Props定义
@@ -143,15 +140,15 @@ interface Props {
   bangumiId: number
   totalEpisodes: number
   bangumiEpisodes?: any[]  // Bangumi集数数据
-  preloadedAvailability?: EpisodeAvailabilityData
+  preloadedAvailability?: any // 由父组件传递
 }
 
 const props = defineProps<Props>()
 
-// 响应式数据
-const loading = ref(true)
-const error = ref<string | null>(null)
-const availabilityData = ref<EpisodeAvailabilityData | null>(null)
+// availability数据直接用props.preloadedAvailability
+const availabilityData = computed(() => props.preloadedAvailability)
+const loading = computed(() => false)
+const error = computed(() => null)
 
 // 分页相关状态
 const currentPage = ref(1)
@@ -266,22 +263,6 @@ const gridStyle = computed(() => {
   }
 })
 
-// 加载集数可用性数据
-const loadEpisodeAvailability = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
-    availabilityData.value = data
-  } catch (err) {
-    console.error('加载集数可用性失败:', err)
-    error.value = '加载集数信息失败，请检查网络连接'
-  } finally {
-    loading.value = false
-  }
-}
-
 // 分页控制方法
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
@@ -351,16 +332,8 @@ const closeEpisodeModal = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   if (props.bangumiId && props.totalEpisodes > 0) {
-    // 如果有预加载的资源可用性数据，直接使用（包括null值，表示资源API失败）
-    if (props.preloadedAvailability !== undefined) {
-      availabilityData.value = props.preloadedAvailability
-      loading.value = false
-    } else {
-      loadEpisodeAvailability()
-    }
-  } else {
-    error.value = '无效的番剧信息'
-    loading.value = false
+    // 这里需要根据实际情况实现加载集数可用性数据的逻辑
+    // 由于episodeAvailabilityStore已被移除，这里需要根据新的逻辑实现
   }
 })
 </script>
@@ -397,21 +370,6 @@ onMounted(() => {
 
 .error-state {
   color: #e74c3c;
-}
-
-.retry-btn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.retry-btn:hover {
-  background-color: #2980b9;
 }
 
 .episode-grid {

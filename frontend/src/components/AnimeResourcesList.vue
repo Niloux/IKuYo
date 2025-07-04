@@ -42,7 +42,7 @@
     <div v-else-if="error" class="error-state">
       <div class="error-icon">⚠️</div>
       <p>{{ error }}</p>
-      <button @click="loadResources" class="retry-btn">重试</button>
+      <button @click="refreshResources" class="retry-btn">重试</button>
     </div>
 
     <!-- 资源列表 -->
@@ -86,8 +86,8 @@
                     <span v-if="resource.subtitle_type" class="meta-tag subtitle">
                       {{ resource.subtitle_type }}
                     </span>
-                    <span v-if="resource.file_size" class="meta-tag size">
-                      {{ resource.file_size }}
+                    <span v-if="resource.size" class="meta-tag size">
+                      {{ resource.size }}
                     </span>
                     <span v-if="resource.release_date" class="meta-tag date">
                       {{ formatReleaseDate(resource.release_date) }}
@@ -155,34 +155,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import BangumiApiService from '../services/bangumi/bangumiApiService'
-import type { EpisodeResourcesData } from '../services/bangumi/bangumiTypes'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useResourceStore } from '../stores/resourceStore'
 
 // Props定义
 interface Props {
   bangumiId: number
 }
-
 const props = defineProps<Props>()
 
-// 响应式数据
-const resourcesData = ref<EpisodeResourcesData | null>(null)
-const loading = ref(false)
-const error = ref<string | null>(null)
+const resourceStore = useResourceStore()
 
-// 筛选状态
+// 分页和筛选状态
 const selectedResolution = ref('')
 const selectedSubtitleType = ref('')
-
-// 分页状态
 const currentLimit = ref(100)
 const currentOffset = ref(0)
 
-// 折叠状态管理
-const expandedGroups = ref<Set<number>>(new Set())
+// 组装查询参数
+const getQuery = () => ({
+  bangumiId: props.bangumiId,
+  resolution: selectedResolution.value || undefined,
+  subtitleType: selectedSubtitleType.value || undefined,
+  limit: currentLimit.value,
+  offset: currentOffset.value
+})
+
+// 监听筛选和分页变化自动拉取数据
+watch([
+  () => props.bangumiId,
+  selectedResolution,
+  selectedSubtitleType,
+  currentLimit,
+  currentOffset
+], () => {
+  if (props.bangumiId) {
+    resourceStore.fetchResources(getQuery())
+  }
+}, { immediate: true })
 
 // 计算属性
+const resourcesData = computed(() => resourceStore.resourcesData)
+const loading = computed(() => resourceStore.loading)
+const error = computed(() => resourceStore.error)
+
 const totalResources = computed(() => resourcesData.value?.total_resources || 0)
 const needsPagination = computed(() => totalResources.value > currentLimit.value)
 const hasPreviousPage = computed(() => currentOffset.value > 0)
@@ -193,7 +209,6 @@ const hasNextPage = computed(() =>
 // 格式化发布日期
 const formatReleaseDate = (dateStr: string): string => {
   if (!dateStr) return ''
-
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString('zh-CN', {
@@ -207,58 +222,31 @@ const formatReleaseDate = (dateStr: string): string => {
   }
 }
 
-// 加载资源列表
-const loadResources = async () => {
-  if (!props.bangumiId) return
-
-  try {
-    loading.value = true
-    error.value = null
-
-    const options = {
-      resolution: selectedResolution.value || undefined,
-      subtitle_type: selectedSubtitleType.value || undefined,
-      limit: currentLimit.value,
-      offset: currentOffset.value
-    }
-
-    resourcesData.value = await BangumiApiService.getAnimeResources(props.bangumiId, options)
-
-  } catch (err) {
-    console.error('加载资源列表失败:', err)
-    error.value = '加载资源列表失败，请检查网络连接'
-  } finally {
-    loading.value = false
-  }
-}
-
 // 处理筛选变化
 const handleFilterChange = () => {
   currentOffset.value = 0 // 重置到第一页
-  loadResources()
+  resourceStore.fetchResources(getQuery())
 }
 
 // 刷新资源
 const refreshResources = () => {
-  loadResources()
+  resourceStore.fetchResources(getQuery())
 }
 
 // 分页控制
 const loadPreviousPage = () => {
   if (hasPreviousPage.value) {
     currentOffset.value = Math.max(0, currentOffset.value - currentLimit.value)
-    loadResources()
   }
 }
-
 const loadNextPage = () => {
   if (hasNextPage.value) {
     currentOffset.value += currentLimit.value
-    loadResources()
   }
 }
 
-// 切换字幕组展开/收起状态
+// 折叠状态管理
+const expandedGroups = ref<Set<number>>(new Set())
 const toggleGroup = (groupId: number) => {
   const newExpandedGroups = new Set(expandedGroups.value)
   if (newExpandedGroups.has(groupId)) {
@@ -268,16 +256,9 @@ const toggleGroup = (groupId: number) => {
   }
   expandedGroups.value = newExpandedGroups
 }
-
-// 检查字幕组是否展开
 const isGroupExpanded = (groupId: number): boolean => {
   return expandedGroups.value.has(groupId)
 }
-
-// 组件挂载时加载数据
-onMounted(() => {
-  loadResources()
-})
 </script>
 
 <style scoped>

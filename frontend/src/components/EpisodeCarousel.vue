@@ -17,7 +17,6 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button @click="loadEpisodeData" class="retry-btn">重试</button>
     </div>
 
     <!-- 横向滑动卡片 -->
@@ -92,27 +91,28 @@
       :episode-data="selectedEpisode"
       :bangumi-id="bangumiId"
       @close="closeModal"
-      @refresh-resources="handleRefreshResources"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
-import BangumiApiService from '../services/bangumi/bangumiApiService'
-import type { EpisodeAvailabilityData, BangumiEpisode } from '../services/bangumi/bangumiTypes'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import EpisodeDetailModal from './EpisodeDetailModal.vue'
 
 // Props定义
 interface Props {
   bangumiId: number
   totalEpisodes: number
-  bangumiEpisodes?: BangumiEpisode[]
-  episodeStats?: any
-  preloadedAvailability?: EpisodeAvailabilityData
+  bangumiEpisodes?: any[]
+  preloadedAvailability?: any // 由父组件传递
 }
 
 const props = defineProps<Props>()
+
+// availability数据直接用props.preloadedAvailability
+const availabilityData = computed(() => props.preloadedAvailability)
+const loading = ref(false)
+const error = ref(null)
 
 // 集数详细信息类型（现在使用真实Bangumi数据）
 interface EpisodeDetail {
@@ -125,13 +125,10 @@ interface EpisodeDetail {
   comment?: number      // 评论数
   available: boolean    // 是否有资源
   resourceCount: number // 资源数量
-  bangumiData?: BangumiEpisode  // 完整的Bangumi数据
+  bangumiData?: any      // 完整的Bangumi数据
 }
 
 // 响应式数据
-const loading = ref(true)
-const error = ref<string | null>(null)
-const availabilityData = ref<EpisodeAvailabilityData | null>(null)
 const carouselContainer = ref<HTMLElement>()
 const isAtStart = ref(true)
 const isAtEnd = ref(false)
@@ -200,30 +197,6 @@ const episodeStats = computed(() => {
   }
 })
 
-// 加载集数数据
-const loadEpisodeData = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    // 先获取资源可用性
-    const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
-    availabilityData.value = data
-
-    // TODO: 未来在这里添加获取详细集数信息的API调用
-    // const episodeDetails = await BangumiApiService.getEpisodeDetails(props.bangumiId)
-
-  } catch (err) {
-    console.error('加载集数信息失败:', err)
-    error.value = '加载集数信息失败，请检查网络连接'
-  } finally {
-    loading.value = false
-    nextTick(() => {
-      updateScrollButtons()
-    })
-  }
-}
-
 // 处理集数点击
 const handleEpisodeClick = (episode: EpisodeDetail) => {
   selectedEpisode.value = episode
@@ -236,16 +209,6 @@ const closeModal = () => {
   selectedEpisode.value = null
 }
 
-// 处理刷新资源
-const handleRefreshResources = async (episodeNumber: number) => {
-  // TODO: 实现刷新特定集数资源的逻辑
-  try {
-    // 重新加载该集数的资源信息
-    await loadEpisodeAvailability()
-  } catch (err) {
-    console.error('刷新资源失败:', err)
-  }
-}
 
 // 格式化日期
 const formatDate = (dateStr: string): string => {
@@ -290,46 +253,9 @@ const updateScrollButtons = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   if (props.bangumiId && props.totalEpisodes > 0) {
-    // 如果有预加载的资源可用性数据，直接使用（包括null值，表示资源API失败）
-    if (props.preloadedAvailability !== undefined) {
-      availabilityData.value = props.preloadedAvailability
-      loading.value = false
-      nextTick(() => {
-        updateScrollButtons()
-      })
-    }
-    // 如果已有Bangumi章节数据，只加载资源可用性
-    else if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
-      loadEpisodeAvailability()
-    } else {
-      loadEpisodeData()
-    }
-  } else {
-    error.value = '无效的番剧信息'
-    loading.value = false
+    // 可以考虑在这里预加载章节资源
   }
 })
-
-// 单独加载资源可用性的函数
-const loadEpisodeAvailability = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    // 只获取资源可用性
-    const data = await BangumiApiService.getEpisodeAvailability(props.bangumiId)
-    availabilityData.value = data
-
-  } catch (err) {
-    console.error('加载资源可用性失败:', err)
-    error.value = '加载资源信息失败，请检查网络连接'
-  } finally {
-    loading.value = false
-    nextTick(() => {
-      updateScrollButtons()
-    })
-  }
-}
 </script>
 
 <style scoped>
@@ -508,8 +434,6 @@ const loadEpisodeAvailability = async () => {
   opacity: 0.9;
   margin-bottom: 0.5rem;
 }
-
-
 
 .resource-status {
   margin-top: auto;

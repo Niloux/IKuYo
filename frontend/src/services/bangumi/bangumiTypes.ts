@@ -111,25 +111,26 @@ export interface BangumiEpisodesResponse extends ApiResponse<BangumiEpisode[]> {
 // 资源相关类型定义
 export interface SubtitleGroupResource {
     id: number;
-    title: string;
-    resolution?: string;
-    subtitle_type?: string;
-    file_size?: string;
-    magnet_url?: string;
-    torrent_url?: string;
-    release_date?: string;
-}
-
-export interface SubtitleGroupData {
-    id: number;
     name: string;
     resource_count: number;
-    resources: SubtitleGroupResource[];
+    resources: EpisodeResource[];
+}
+
+export interface EpisodeResource {
+    id: number;
+    episode_number: number;
+    title: string;
+    resolution: string;
+    subtitle_type: string;
+    magnet_url: string;
+    torrent_url: string;
+    release_date: string;
+    size: string;
+    group_id: number;
+    group_name: string;
 }
 
 export interface EpisodeResourcesData {
-    bangumi_id: number;
-    episode: number;
     total_resources: number;
-    subtitle_groups: SubtitleGroupData[];
+    subtitle_groups: SubtitleGroupResource[];
 }

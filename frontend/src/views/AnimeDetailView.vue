@@ -81,15 +81,15 @@
         <p>{{ subject.summary }}</p>
       </div>
 
-      <!-- 智能集数展示 -->
+      <!-- 追番模式：章节信息 -->
       <EpisodeDisplay
-        v-if="!route.meta.showResources && (subject.total_episodes > 0 || subject.eps > 0)"
+        v-if="!isResourceMode && (subject.total_episodes > 0 || subject.eps > 0)"
         :bangumi-id="animeId"
       />
 
-      <!-- 资源列表展示（资源库模式） -->
+      <!-- 资源库模式：资源列表 -->
       <AnimeResourcesList
-        v-if="route.meta.showResources"
+        v-if="isResourceMode"
         :bangumi-id="animeId"
       />
     </div>
@@ -97,10 +97,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAnimeDetailStore } from '../stores/animeDetailStore'
+import { useResourceStore } from '../stores/resourceStore'
+import { useEpisodeAvailabilityStore } from '../stores/episodeAvailabilityStore'
 import { ensureScrollToTop } from '../utils/scrollUtils'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 import AnimeResourcesList from '../components/AnimeResourcesList.vue'
@@ -108,22 +110,45 @@ import AnimeResourcesList from '../components/AnimeResourcesList.vue'
 const route = useRoute()
 const router = useRouter()
 const animeDetailStore = useAnimeDetailStore()
+const resourceStore = useResourceStore()
+const episodeAvailabilityStore = useEpisodeAvailabilityStore()
 const { subject, episodes, availability, loading, error } = storeToRefs(animeDetailStore)
 
 // 获取番剧ID
-const animeId = parseInt(route.params.id as string)
+const animeId = computed(() => parseInt(route.params.id as string))
 
-// 页面加载时拉取详情
+// 判断是否为资源库模式
+const isResourceMode = route.meta.showResources === true
+
+// 页面加载时拉取数据
 onMounted(() => {
   ensureScrollToTop()
-  if (animeId) {
-    animeDetailStore.fetchAll(animeId)
+  if (animeId.value) {
+    animeDetailStore.fetchAll(animeId.value)
+    if (isResourceMode) {
+      resourceStore.fetchResources({ bangumiId: animeId.value, limit: 100, offset: 0 })
+    }
   }
 })
 
-// 页面卸载时清空store
+// 监听animeId变化，自动拉取数据
+watch(animeId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    animeDetailStore.fetchAll(newId)
+    if (isResourceMode) {
+      resourceStore.fetchResources({ bangumiId: newId, limit: 100, offset: 0 })
+    }
+  }
+})
+
+// 页面卸载时清空store（只在真正卸载时清理，避免keep-alive下丢失）
 onBeforeUnmount(() => {
   animeDetailStore.clear()
+  if (isResourceMode) {
+    resourceStore.clear()
+  } else {
+    episodeAvailabilityStore.clear()
+  }
 })
 
 // 返回上一页
