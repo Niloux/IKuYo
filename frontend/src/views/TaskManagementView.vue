@@ -69,8 +69,7 @@ import { useSchedulerStore } from '../stores/schedulerStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
 import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
-import TaskModal from '../components/TaskModal.vue'
-import ScheduledJobModal from '../components/ScheduledJobModal.vue'
+import { defineAsyncComponent } from 'vue'
 import type { CrawlerTaskCreate } from '../services/crawler/crawlerTypes'
 import type { ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse } from '../services/scheduler/schedulerTypes'
 import { ensureScrollToTop } from '../utils/scrollUtils'
@@ -407,6 +406,9 @@ const handlePageChange = (page: number) => {
   taskStore.currentPage = page
   taskStore.fetchTasks()
 }
+
+const TaskModal = defineAsyncComponent(() => import('../components/TaskModal.vue'))
+const ScheduledJobModal = defineAsyncComponent(() => import('../components/ScheduledJobModal.vue'))
 </script>
 
 <style src="../assets/task.css"></style>

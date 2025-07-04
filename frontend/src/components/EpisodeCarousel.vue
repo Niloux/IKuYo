@@ -96,8 +96,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import EpisodeDetailModal from './EpisodeDetailModal.vue'
+import { ref, onMounted, computed, nextTick, watch, defineAsyncComponent } from 'vue'
+const EpisodeDetailModal = defineAsyncComponent(() => import('./EpisodeDetailModal.vue'))
 
 // Props定义
 interface Props {

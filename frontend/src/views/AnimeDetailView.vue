@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAnimeDetailStore } from '../stores/animeDetailStore'
@@ -98,8 +98,6 @@ import { useResourceStore } from '../stores/resourceStore'
 import { useEpisodeAvailabilityStore } from '../stores/episodeAvailabilityStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
 import { ensureScrollToTop } from '../utils/scrollUtils'
-import EpisodeDisplay from '../components/EpisodeDisplay.vue'
-import AnimeResourcesList from '../components/AnimeResourcesList.vue'
 import Skeleton from '../components/common/Skeleton.vue'
 
 const route = useRoute()
@@ -190,6 +188,9 @@ const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.style.display = 'none'
 }
+
+const AnimeResourcesList = defineAsyncComponent(() => import('../components/AnimeResourcesList.vue'))
+const EpisodeDisplay = defineAsyncComponent(() => import('../components/EpisodeDisplay.vue'))
 </script>
 
 <style scoped>

@@ -77,7 +77,7 @@ export default {
 import { ref, onMounted, onActivated, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import AnimeCard from '../components/AnimeCard.vue'
+import { defineAsyncComponent } from 'vue'
 import { useSearchStore } from '../stores/searchStore'
 import { ensureScrollToTop, getCurrentScrollPosition, restoreScrollPosition } from '../utils/scrollUtils'
 import { onBeforeRouteLeave } from 'vue-router'
@@ -105,6 +105,8 @@ let searchTimeout: number | null = null
 
 // 保存滚动位置的key
 const SCROLL_KEY = 'library_scroll_position'
+
+const AnimeCard = defineAsyncComponent(() => import('../components/AnimeCard.vue'))
 
 const handleSearchInput = () => {
   if (searchTimeout) {
