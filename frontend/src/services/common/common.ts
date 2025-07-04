@@ -39,7 +39,10 @@ apiClient.interceptors.request.use(
     }
 );
 
-// 响应拦截器 - 统一处理响应数据和异常，自动关闭loading和推送错误
+// ================= 全局axios响应拦截器 =================
+// 统一处理所有API请求的loading、异常和全局反馈
+// 404白名单静默逻辑：对/animes/{id}/episodes/availability 和 /animes/{id}/resources?episode= 的404响应不弹窗，仅业务层处理
+// 其他异常依然全局弹窗
 apiClient.interceptors.response.use(
     (response: AxiosResponse) => {
         const feedbackStore = useFeedbackStore();
@@ -52,9 +55,9 @@ apiClient.interceptors.response.use(
         const { response, config } = error;
         let msg = '请求发生错误';
         // 404白名单静默处理
+        // 命中/animes/{id}/episodes/availability 或 /animes/{id}/resources?episode= 的404响应时，不弹窗
         if (response && response.status === 404 && config && config.url) {
             const url = config.url;
-            // 匹配/animes/{id}/episodes/availability 或 /animes/{id}/resources?episode=
             const isAvailability = /\/animes\/\d+\/episodes\/availability$/.test(url);
             const isEpisodeResource = /\/animes\/\d+\/resources\?episode=\d+/.test(url);
             if (isAvailability || isEpisodeResource) {

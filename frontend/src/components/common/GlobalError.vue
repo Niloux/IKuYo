@@ -1,3 +1,8 @@
+<!--
+  GlobalError.vue
+  全局错误弹窗组件：用于显示全局错误信息，通常由feedbackStore.showError推送
+  只需在主布局(AppLayout.vue)中挂载一次，全局可用
+-->
 <template>
   <transition name="fade">
     <div v-if="visible" class="global-error-overlay">

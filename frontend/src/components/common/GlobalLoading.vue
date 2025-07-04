@@ -1,3 +1,8 @@
+<!--
+  GlobalLoading.vue
+  全局Loading遮罩组件：用于显示全局加载状态，通常由feedbackStore.loading控制
+  只需在主布局(AppLayout.vue)中挂载一次，全局可用
+-->
 <template>
   <transition name="fade">
     <div v-if="visible" class="global-loading-overlay">

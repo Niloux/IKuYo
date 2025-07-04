@@ -1,3 +1,8 @@
+<!--
+  GlobalToast.vue
+  全局消息提示组件：用于显示全局Toast消息，通常由feedbackStore.showToast推送
+  只需在主布局(AppLayout.vue)中挂载一次，全局可用
+-->
 <template>
   <transition-group name="toast-fade" tag="div" class="global-toast-container">
     <div v-for="toast in toasts" :key="toast.id" :class="['global-toast', toast.type]">
