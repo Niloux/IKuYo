@@ -36,9 +36,8 @@
               v-for="(anime, animeIndex) in day.items"
               :key="anime.id"
               :anime="anime"
-              :should-load-image="isFirstBatch(dayIndex, animeIndex) || secondBatchEnabled"
               @click="goToDetail(anime.id)"
-              @image-load="onImageLoad"
+              @image-load="() => {}"
             />
           </div>
         </div>
@@ -76,11 +75,6 @@ const { loading, error, cachedCalendar, hasCalendarData } = storeToRefs(homeStor
 // 响应式数据 - 现在使用store中的缓存数据
 const calendar = cachedCalendar
 
-// 分批加载状态
-const firstBatchLoaded = ref(0)
-const secondBatchEnabled = ref(false)
-let totalFirstBatch = 0
-
 // 获取距离今天的天数差
 const getDaysFromToday = (weekdayId: number): number => {
   const today = new Date().getDay()
@@ -115,11 +109,6 @@ const loadCalendar = async () => {
     // 按照现实周期排序，今天的放在最前面
     const sortedData = sortCalendarByWeek(data)
     homeStore.setCalendarData(sortedData)
-
-    // 计算第一批加载的总数（一半）
-    totalFirstBatch = Math.ceil(
-      calendar.value.reduce((total, day) => total + day.items.length, 0) / 2
-    )
   } catch (err) {
     console.error('加载每日放送失败:', err)
     homeStore.error = '加载失败，请检查网络连接或API服务状态'
@@ -134,24 +123,6 @@ const isToday = (weekdayId: number): boolean => {
   const todayId = today === 0 ? 7 : today
   const adjustedWeekdayId = weekdayId === 0 ? 7 : weekdayId
   return adjustedWeekdayId === todayId
-}
-
-// 判断是否应该在第一批加载
-const isFirstBatch = (dayIndex: number, animeIndex: number): boolean => {
-  let currentIndex = 0
-  for (let i = 0; i < dayIndex; i++) {
-    currentIndex += calendar.value[i].items.length
-  }
-  currentIndex += animeIndex
-  return currentIndex < totalFirstBatch
-}
-
-// 图片加载完成处理
-const onImageLoad = () => {
-  firstBatchLoaded.value++
-  if (firstBatchLoaded.value >= totalFirstBatch) {
-    secondBatchEnabled.value = true
-  }
 }
 
 // 跳转到番剧详情页

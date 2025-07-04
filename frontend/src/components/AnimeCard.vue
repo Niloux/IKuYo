@@ -1,9 +1,9 @@
 <template>
-  <div class="anime-card" @click="$emit('click')">
+  <div class="anime-card" @click="$emit('click')" ref="cardRef">
     <!-- 番剧封面 -->
     <div class="card-image">
       <img
-        v-if="props.shouldLoadImage"
+        v-if="shouldLoadImage"
         :src="imageUrl"
         :alt="props.anime.name_cn || props.anime.name"
         @error="onImageError"
@@ -36,23 +36,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import defaultCover from '../assets/ikuyo-avatar.png'
+import { createLazyObserver } from '../utils/lazyLoad'
 
 // Props定义
-const props = withDefaults(defineProps<{
-  anime: BangumiCalendarItem
-  shouldLoadImage?: boolean
-}>(), {
-  shouldLoadImage: true
-})
+const props = defineProps<{ anime: BangumiCalendarItem }>()
 
 // Events定义
 defineEmits<{
   click: []
   imageLoad: []
 }>()
+
+// 懒加载本地状态
+const shouldLoadImage = ref(false)
+const cardRef = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  if (cardRef.value) {
+    observer = createLazyObserver(cardRef.value, () => {
+      shouldLoadImage.value = true
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+})
 
 // 格式化播出日期
 const formatAirDate = (dateStr: string): string => {
@@ -90,7 +106,7 @@ const imageUrl = computed(() => {
 // 图片加载失败处理
 const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
-  img.style.display = 'none'
+  img.src = defaultCover
 }
 </script>
 
@@ -135,11 +151,37 @@ const onImageError = (event: Event) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+/* 骨架屏动画 */
+.image-placeholder::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, #f8f9fa 25%, #e0e0e0 50%, #f8f9fa 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.2s infinite linear;
+  border-radius: 8px;
+  z-index: 1;
+  opacity: 0.7;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .loading-text {
   color: #6c757d;
   font-size: 0.9rem;
+  position: relative;
+  z-index: 2;
 }
 
 .anime-card:hover .card-image img {
