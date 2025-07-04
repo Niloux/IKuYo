@@ -15,54 +15,54 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error">
       <p>{{ error }}</p>
-      <button @click="loadAnimeDetail" class="retry-btn">重试</button>
+      <button @click="() => animeDetailStore.fetchAll(animeId)" class="retry-btn">重试</button>
     </div>
 
     <!-- 番剧详情内容 -->
-    <div v-else-if="anime" class="detail-container">
+    <div v-else-if="subject" class="detail-container">
       <!-- 番剧基本信息 -->
       <div class="anime-header">
         <div class="anime-cover">
           <img
-            :src="anime.images.large"
-            :alt="anime.name_cn || anime.name"
+            :src="subject.images.large"
+            :alt="subject.name_cn || subject.name"
             @error="onImageError"
           />
         </div>
 
         <div class="anime-info">
-          <h1 class="anime-title">{{ anime.name_cn || anime.name }}</h1>
-          <h2 v-if="anime.name_cn && anime.name !== anime.name_cn" class="anime-subtitle">
-            {{ anime.name }}
+          <h1 class="anime-title">{{ subject.name_cn || subject.name }}</h1>
+          <h2 v-if="subject.name_cn && subject.name !== subject.name_cn" class="anime-subtitle">
+            {{ subject.name }}
           </h2>
 
           <div class="anime-meta">
             <div class="meta-item">
               <span class="meta-label">播出日期:</span>
-              <span class="meta-value">{{ formatAirDate(anime.date) }}</span>
+              <span class="meta-value">{{ formatAirDate(subject.date) }}</span>
             </div>
-            <div class="meta-item" v-if="anime.eps">
+            <div class="meta-item" v-if="subject.eps">
               <span class="meta-label">总集数:</span>
-              <span class="meta-value">{{ anime.eps }}集</span>
+              <span class="meta-value">{{ subject.eps }}集</span>
             </div>
-            <div class="meta-item" v-if="anime.rating.score > 0">
+            <div class="meta-item" v-if="subject.rating.score > 0">
               <span class="meta-label">评分:</span>
               <span class="meta-value rating">
-                {{ anime.rating.score.toFixed(1) }}
-                <span class="rating-total">({{ anime.rating.total }}人评价)</span>
+                {{ subject.rating.score.toFixed(1) }}
+                <span class="rating-total">({{ subject.rating.total }}人评价)</span>
               </span>
             </div>
-            <div class="meta-item" v-if="anime.rank">
+            <div class="meta-item" v-if="subject.rank">
               <span class="meta-label">排名:</span>
-              <span class="meta-value">#{{ anime.rank }}</span>
+              <span class="meta-value">#{{ subject.rank }}</span>
             </div>
           </div>
 
           <!-- 动画标签 -->
-          <div class="anime-tags" v-if="anime.tags && anime.tags.length > 0">
+          <div class="anime-tags" v-if="subject.tags && subject.tags.length > 0">
             <div class="tags-container">
               <span
-                v-for="tag in getTopTags(anime.tags)"
+                v-for="tag in getTopTags(subject.tags)"
                 :key="tag.name"
                 class="tag-item"
                 :class="getTagType(tag.name)"
@@ -76,17 +76,15 @@
       </div>
 
       <!-- 番剧简介 -->
-      <div class="anime-summary" v-if="anime.summary">
+      <div class="anime-summary" v-if="subject.summary">
         <h3>简介</h3>
-        <p>{{ anime.summary }}</p>
+        <p>{{ subject.summary }}</p>
       </div>
 
       <!-- 智能集数展示 -->
       <EpisodeDisplay
-        v-if="!route.meta.showResources && (anime.total_episodes > 0 || anime.eps > 0)"
+        v-if="!route.meta.showResources && (subject.total_episodes > 0 || subject.eps > 0)"
         :bangumi-id="animeId"
-        :preloaded-episodes="episodes"
-        :preloaded-availability="episodeAvailability"
       />
 
       <!-- 资源列表展示（资源库模式） -->
@@ -99,72 +97,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import BangumiApiService from '../services/bangumi/bangumiApiService'
-import type { BangumiSubject } from '../services/bangumi/bangumiTypes'
+import { storeToRefs } from 'pinia'
+import { useAnimeDetailStore } from '../stores/animeDetailStore'
 import { ensureScrollToTop } from '../utils/scrollUtils'
 import EpisodeDisplay from '../components/EpisodeDisplay.vue'
 import AnimeResourcesList from '../components/AnimeResourcesList.vue'
 
 const route = useRoute()
 const router = useRouter()
-
-// 响应式数据
-const anime = ref<BangumiSubject | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-const episodes = ref<any[]>([])
-const episodeAvailability = ref<any>(null)
+const animeDetailStore = useAnimeDetailStore()
+const { subject, episodes, availability, loading, error } = storeToRefs(animeDetailStore)
 
 // 获取番剧ID
 const animeId = parseInt(route.params.id as string)
 
-// 加载番剧详情数据
-const loadAnimeDetail = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    // 使用Promise.allSettled替代Promise.all，允许部分请求失败
-    const results = await Promise.allSettled([
-      BangumiApiService.getSubject(animeId),
-      BangumiApiService.getBangumiEpisodes(animeId, 0, 1000, 0),
-      BangumiApiService.getEpisodeAvailability(animeId)
-    ])
-
-    // 处理番剧详情数据
-    if (results[0].status === 'fulfilled') {
-      anime.value = results[0].value
-    } else {
-      console.error('加载番剧详情失败:', results[0].reason)
-      error.value = '加载番剧详情失败，请稍后重试'
-      return
-    }
-
-    // 处理集数数据
-    if (results[1].status === 'fulfilled') {
-      episodes.value = results[1].value.data
-    } else {
-      console.warn('加载集数数据失败:', results[1].reason)
-      episodes.value = []
-    }
-
-    // 处理资源可用性数据
-    if (results[2].status === 'fulfilled') {
-      episodeAvailability.value = results[2].value
-    } else {
-      console.warn('加载资源可用性数据失败:', results[2].reason)
-      episodeAvailability.value = null
-    }
-
-  } catch (err) {
-    console.error('加载数据失败:', err)
-    error.value = '加载失败，请稍后重试'
-  } finally {
-    loading.value = false
+// 页面加载时拉取详情
+onMounted(() => {
+  ensureScrollToTop()
+  if (animeId) {
+    animeDetailStore.fetchAll(animeId)
   }
-}
+})
+
+// 页面卸载时清空store
+onBeforeUnmount(() => {
+  animeDetailStore.clear()
+})
 
 // 返回上一页
 const goBack = () => {
@@ -174,7 +134,6 @@ const goBack = () => {
 // 格式化播出日期
 const formatAirDate = (dateStr: string): string => {
   if (!dateStr) return '未知'
-
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString('zh-CN', {
@@ -196,23 +155,14 @@ const getTopTags = (tags: any[]) => {
 
 // 根据标签名称返回标签类型（用于样式）
 const getTagType = (tagName: string): string => {
-  // 媒体类型标签
-  if (['TV', 'TV动画', 'OVA', 'OAD', '电影', '特别篇'].includes(tagName)) {
-    return 'tag-media'
-  }
-  // 题材类型标签
-  if (['恋爱', '治愈', '奇幻', '科幻', '日常', '冒险', '悬疑', '战斗', '搞笑'].includes(tagName)) {
-    return 'tag-genre'
-  }
-  // 改编类型标签
-  if (tagName.includes('改') || tagName.includes('GAL') || tagName.includes('游戏') || tagName.includes('小说') || tagName.includes('漫画')) {
-    return 'tag-source'
-  }
-  // 制作相关标签
-  if (tagName.includes('年') || tagName.includes('月') || /^[A-Z][a-z]*\.?$/.test(tagName)) {
-    return 'tag-production'
-  }
-  // 默认标签
+  if ([
+    'TV', 'TV动画', 'OVA', 'OAD', '电影', '特别篇'
+  ].includes(tagName)) return 'tag-media'
+  if ([
+    '恋爱', '治愈', '奇幻', '科幻', '日常', '冒险', '悬疑', '战斗', '搞笑'
+  ].includes(tagName)) return 'tag-genre'
+  if (tagName.includes('改') || tagName.includes('GAL') || tagName.includes('游戏') || tagName.includes('小说') || tagName.includes('漫画')) return 'tag-source'
+  if (tagName.includes('年') || tagName.includes('月') || /^[A-Z][a-z]*\.?$/.test(tagName)) return 'tag-production'
   return 'tag-default'
 }
 
@@ -221,19 +171,6 @@ const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.style.display = 'none'
 }
-
-// 组件挂载时初始化页面（优化版）
-onMounted(() => {
-  // 详情页无论从哪里进入都应该从头开始浏览
-  ensureScrollToTop()
-
-  if (animeId) {
-    loadAnimeDetail()
-  } else {
-    error.value = '无效的番剧ID'
-    loading.value = false
-  }
-})
 </script>
 
 <style scoped>

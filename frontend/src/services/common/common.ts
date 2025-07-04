@@ -26,11 +26,11 @@ export interface ApiResponse<T = unknown> {
 
 // 全局通知（Toast）工具函数（假设已在全局注册，或可替换为你项目的通知实现）
 function showToast(message: string, type: 'error' | 'info' | 'success' = 'error') {
-    // 这里假设有全局window.$toast，实际可替换为Element Plus/Antd等通知API
-    if (window && (window as any).$toast) {
-        (window as any).$toast[type](message)
+    // 优先使用UI库toast（如Element Plus/Antd $message）
+    if (window && (window as any).$toast && typeof (window as any).$toast[type] === 'function') {
+        (window as any).$toast[type](message, { duration: 2500 })
     } else {
-        // 兜底：用alert
+        // 兜底：用alert（仅开发调试用，生产应确保toast全局可用）
         alert(message)
     }
 }
