@@ -44,6 +44,7 @@ import { ref, onMounted, onActivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useHomeStore } from '../stores/homeStore'
+import { useSubscriptionStore } from '../stores/subscriptionStore'
 import AnimeCard from '../components/AnimeCard.vue'
 import WeekNavigation from '../components/WeekNavigation.vue'
 import ScrollToTopButton from '../components/ScrollToTopButton.vue'
@@ -55,6 +56,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 const homeStore = useHomeStore()
+const subscriptionStore = useSubscriptionStore()
 
 // 从store获取响应式状态
 const { loading, error, cachedCalendar, hasCalendarData } = storeToRefs(homeStore)
@@ -152,6 +154,8 @@ onMounted(() => {
   if (!hasCalendarData.value) {
     loadCalendar()
   }
+  // 拉取订阅数据，避免首页订阅状态不同步
+  subscriptionStore.fetchSubscriptions()
 })
 </script>
 
