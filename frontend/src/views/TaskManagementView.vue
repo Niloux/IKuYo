@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useTaskStore } from '../stores/taskStore'
 import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
@@ -71,6 +71,7 @@ import TaskModal from '../components/TaskModal.vue'
 import ScheduledJobModal from '../components/ScheduledJobModal.vue'
 import type { CrawlerTaskCreate } from '../services/crawler/crawlerTypes'
 import type { ScheduledJobCreate, ScheduledJobUpdate, ScheduledJobResponse } from '../services/scheduler/schedulerTypes'
+import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const taskStore = useTaskStore()
 
@@ -120,10 +121,15 @@ watch(
 )
 
 onMounted(() => {
+  ensureScrollToTop() // 每次进入页面自动置顶
   taskStore.fetchTasks()
   taskStore.fetchScheduledJobs()
   // 可选：定时轮询作为兜底
   // setInterval(() => { if (!wsEnabled.value) taskStore.fetchTasks() }, 10000)
+})
+
+onActivated(() => {
+  ensureScrollToTop() // keep-alive恢复时也自动置顶
 })
 
 onUnmounted(() => {
