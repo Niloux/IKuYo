@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="modal-overlay" @click.self="onCancel">
-    <div class="modal-content">
+    <div class="modal-content scale-in">
       <h3>{{ editing ? '编辑' : '创建' }}定时任务</h3>
       <form @submit.prevent="onSubmit">
         <div class="form-group" :class="{ 'has-error': errors.job_id }">

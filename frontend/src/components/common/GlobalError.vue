@@ -6,7 +6,7 @@
 <template>
   <transition name="fade">
     <div v-if="visible" class="global-error-overlay">
-      <div class="global-error-box">
+      <div class="global-error-box scale-in">
         <div class="global-error-title">发生错误</div>
         <div class="global-error-message">{{ errorMessage }}</div>
         <button class="global-error-close" @click="close">关闭</button>

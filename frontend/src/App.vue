@@ -7,12 +7,14 @@ const router = useRouter()
 
 <template>
   <AppLayout>
-    <RouterView v-slot="{ Component, route }">
-      <keep-alive v-if="route.meta.keepAlive">
-        <component :is="Component" />
-      </keep-alive>
-      <component :is="Component" v-else />
-    </RouterView>
+    <transition name="fade-page" mode="out-in">
+      <RouterView v-slot="{ Component, route }">
+        <keep-alive v-if="route.meta.keepAlive">
+          <component :is="Component" :key="route.fullPath" />
+        </keep-alive>
+        <component :is="Component" v-else :key="route.fullPath" />
+      </RouterView>
+    </transition>
   </AppLayout>
 </template>
 

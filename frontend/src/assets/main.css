@@ -258,6 +258,10 @@ img {
   animation: slideUp var(--transition-normal) ease-out;
 }
 
+.scale-in {
+  animation: scaleIn var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -274,6 +278,17 @@ img {
   }
   to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -377,4 +392,14 @@ img {
   .content-card {
     padding: 1.5rem;
   }
+}
+
+.fade-page-enter-active, .fade-page-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.fade-page-enter-from, .fade-page-leave-to {
+  opacity: 0;
+}
+.fade-page-enter-to, .fade-page-leave-from {
+  opacity: 1;
 }

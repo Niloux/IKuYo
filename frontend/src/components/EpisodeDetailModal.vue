@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" :class="['modal-overlay', { closing: isClosing }]" @click="handleOverlayClick">
-    <div :class="['modal-content', { closing: isClosing }]" @click.stop>
+    <div :class="['modal-content', { closing: isClosing }, 'scale-in']" @click.stop>
       <!-- 模态框头部 - 固定不滚动 -->
       <div class="modal-header">
         <h2 class="episode-title">{{ episodeData?.title || `第${episodeData?.number}集` }}</h2>
