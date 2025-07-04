@@ -4,11 +4,19 @@ import { useAsyncAction } from './asyncUtils'
 import ScheduledJobApiService from '../services/scheduler/schedulerApiService'
 import type { ScheduledJobCreate, ScheduledJobResponse, ScheduledJobUpdate } from '../services/scheduler/schedulerTypes'
 
+/**
+ * Pinia 定时任务管理 Store
+ * 管理定时任务相关状态和异步操作
+ */
 export const useSchedulerStore = defineStore('scheduler', () => {
     const scheduledJobs = ref<ScheduledJobResponse[]>([])
 
     // 获取所有计划任务列表
     const fetchScheduledJobsAsync = useAsyncAction(() => ScheduledJobApiService.listScheduledJobs())
+    /**
+     * 获取所有计划任务列表
+     * @returns Promise<ScheduledJobResponse[]>
+     */
     const fetchScheduledJobs = async () => {
         const result = await fetchScheduledJobsAsync.run()
         scheduledJobs.value = result
@@ -17,6 +25,11 @@ export const useSchedulerStore = defineStore('scheduler', () => {
 
     // 创建新的计划任务
     const createScheduledJobAsync = useAsyncAction((jobCreateData: ScheduledJobCreate) => ScheduledJobApiService.createScheduledJob(jobCreateData))
+    /**
+     * 创建新的计划任务
+     * @param jobCreateData 计划任务创建数据
+     * @returns Promise<ScheduledJobResponse>
+     */
     const createScheduledJob = async (jobCreateData: ScheduledJobCreate) => {
         const result = await createScheduledJobAsync.run(jobCreateData)
         await fetchScheduledJobs()

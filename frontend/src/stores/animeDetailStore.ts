@@ -4,6 +4,10 @@ import BangumiApiService from '../services/bangumi/bangumiApiService'
 import type { BangumiSubject, BangumiEpisode } from '../services/bangumi/bangumiTypes'
 import { useAsyncAction } from './asyncUtils'
 
+/**
+ * Pinia 番剧详情 Store
+ * 管理番剧详情、集数、可用性等状态和异步操作
+ */
 export const useAnimeDetailStore = defineStore('animeDetail', () => {
     const bangumiId = ref<number | null>(null)
     const subject = ref<BangumiSubject | null>(null)
@@ -26,7 +30,11 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
         availability.value = null
     }
 
-    // 并发请求所有详情数据
+    /**
+     * 并发请求所有详情数据
+     * @param id 番剧ID
+     * @returns Promise<{ subject, episodes, availability }>
+     */
     const fetchAllAsync = useAsyncAction(async (id: number) => {
         if (bangumiId.value === id && subject.value && episodes.value.length > 0 && availability.value) {
             // 已有数据且id未变，直接复用
@@ -58,7 +66,11 @@ export const useAnimeDetailStore = defineStore('animeDetail', () => {
         return await fetchAllAsync.run(id)
     }
 
-    // 单独请求
+    /**
+     * 单独请求番剧详情
+     * @param id 番剧ID
+     * @returns Promise<BangumiSubject>
+     */
     const fetchSubjectAsync = useAsyncAction(async (id: number) => {
         const res = await BangumiApiService.getSubject(id)
         subject.value = res

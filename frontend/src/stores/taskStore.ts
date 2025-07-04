@@ -7,6 +7,10 @@ import type { CrawlerTaskCreate, TaskResponse } from '../services/crawler/crawle
 import ScheduledJobApiService from '../services/scheduler/schedulerApiService'
 import type { ScheduledJobCreate, ScheduledJobResponse, ScheduledJobUpdate } from '../services/scheduler/schedulerTypes'
 
+/**
+ * Pinia 任务管理 Store
+ * 管理即时任务相关状态、异步操作和WebSocket进度
+ */
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref<TaskResponse[]>([])
   const scheduledJobs = ref<ScheduledJobResponse[]>([])
@@ -16,7 +20,10 @@ export const useTaskStore = defineStore('task', () => {
   const taskProgressWsMap = new Map<number, WebSocket>()
 
   // --- 即时任务相关操作 ---
-  // 获取所有即时任务列表
+  /**
+   * 获取所有即时任务列表
+   * @returns Promise<TaskResponse[]>
+   */
   const fetchTasksAsync = useAsyncAction(() => CrawlerApiService.listTasks(currentPage.value, pageSize.value))
   const fetchTasks = async () => {
     const result = await fetchTasksAsync.run()
@@ -24,7 +31,11 @@ export const useTaskStore = defineStore('task', () => {
     return result
   }
 
-  // 创建新的即时任务
+  /**
+   * 创建新的即时任务
+   * @param taskCreateData 任务创建数据
+   * @returns Promise<TaskResponse>
+   */
   const createTaskAsync = useAsyncAction((taskCreateData: CrawlerTaskCreate) => CrawlerApiService.createTask(taskCreateData))
   const createTask = async (taskCreateData: CrawlerTaskCreate) => {
     const result = await createTaskAsync.run(taskCreateData)
@@ -32,7 +43,11 @@ export const useTaskStore = defineStore('task', () => {
     return result
   }
 
-  // 取消即时任务
+  /**
+   * 取消即时任务
+   * @param taskId 任务ID
+   * @returns Promise<TaskResponse>
+   */
   const cancelTaskAsync = useAsyncAction((taskId: number) => CrawlerApiService.cancelTask(taskId))
   const cancelTask = async (taskId: number) => {
     const result = await cancelTaskAsync.run(taskId)

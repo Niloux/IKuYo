@@ -98,3 +98,26 @@ feedbackStore.clearError();
 - 推荐所有页面和组件统一用`<Skeleton :loading="loading" ... />`，避免无意义闪烁。
 - `delay`可根据实际体验调整，建议150~200ms。
 - 兼容老用法（不传loading时骨架屏始终显示），建议逐步迁移。
+
+## Pinia异步状态管理与最佳实践
+
+本项目所有核心store（如taskStore、schedulerStore、animeDetailStore）均采用统一的异步状态管理模式：
+- 所有异步action均用useAsyncAction辅助函数包装，返回{ loading, error, data, run }结构。
+- UI层通过store.xxxAsync.loading、store.xxxAsync.error等状态渲染骨架屏、错误提示等。
+- 异步action异常由UI层决定是否调用全局反馈（如feedbackStore.showError），store本身不再直接依赖全局反馈。
+- 推荐所有新store和异步action均采用此模式，便于维护和测试。
+
+### useAsyncAction用法示例
+```ts
+import { useAsyncAction } from '@/stores/asyncUtils'
+const fetchDataAsync = useAsyncAction(fetchData)
+await fetchDataAsync.run(...args)
+if (fetchDataAsync.error) {
+  // UI层决定是否反馈
+}
+```
+
+### store解耦与异常反馈规范
+- store只负责数据和状态管理，异常通过Promise链传递，UI层决定反馈方式。
+- 推荐所有页面和组件均用store.xxxAsync.loading、error等状态渲染UI，避免直接依赖store内部error/loading。
+- 详见各store文件JSDoc注释。
