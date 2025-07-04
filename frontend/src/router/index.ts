@@ -48,6 +48,12 @@ const router = createRouter({
       meta: {title: '任务管理'}
     },
     {
+      path: '/subscription',
+      name: 'subscription',
+      component: () => import('../views/SubscriptionView.vue'),
+      meta: { title: '我的订阅', keepAlive: true }
+    },
+    {
       path: '/:pathMatch(.*)*', // 捕获所有未匹配的路由
       name: 'NotFound',
       component: () => import('../views/NotFoundView.vue'),
@@ -80,6 +86,11 @@ router.beforeEach(async (to, from, next) => {
   // 预取资源库页chunk
   if (to.name === 'resource-library') {
     import('../views/ResourceLibraryView.vue')
+    import('../components/AnimeCard.vue')
+  }
+  // 预取订阅页chunk
+  if (to.name === 'subscription') {
+    import('../views/SubscriptionView.vue')
     import('../components/AnimeCard.vue')
   }
 

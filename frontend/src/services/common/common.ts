@@ -5,6 +5,7 @@
 import axios, { type AxiosResponse } from 'axios'
 import { useFeedbackStore } from '../../stores/feedbackStore';
 import { debounce, throttle } from '../../utils/debounce'
+import { UserManager } from '../../utils/userManager'
 
 // API基础配置
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
@@ -26,11 +27,14 @@ export interface ApiResponse<T = unknown> {
     total?: number;
 }
 
-// 请求拦截器 - 自动开启loading
+// 请求拦截器 - 自动开启loading，并注入X-User-Id
 apiClient.interceptors.request.use(
     (config) => {
         const feedbackStore = useFeedbackStore();
         feedbackStore.showLoading();
+        // 自动注入 X-User-Id
+        config.headers = config.headers || {};
+        config.headers['X-User-Id'] = UserManager.getUserId();
         return config;
     },
     (error) => {

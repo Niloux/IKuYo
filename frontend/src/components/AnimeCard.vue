@@ -1,5 +1,5 @@
 <template>
-  <div class="anime-card" @click="$emit('click')" ref="cardRef">
+  <div class="anime-card" @click="handleCardClick" ref="cardRef">
     <!-- 番剧封面 -->
     <div class="card-image">
       <img
@@ -13,6 +13,19 @@
       <div class="rating-badge" v-if="props.anime.rating && props.anime.rating.score > 0">
         {{ props.anime.rating.score.toFixed(1) }}
       </div>
+
+      <!-- 订阅按钮 -->
+      <button
+        v-if="props.showSubscriptionButton"
+        @click.stop="handleSubscriptionToggle"
+        class="subscription-btn"
+        :class="{ subscribed: isSubscribed }"
+        :disabled="subscriptionLoading"
+      >
+        <span v-if="subscriptionLoading">⏳</span>
+        <span v-else-if="isSubscribed">💖</span>
+        <span v-else>🤍</span>
+      </button>
     </div>
 
     <!-- 番剧信息 -->
@@ -34,17 +47,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, withDefaults, defineProps } from 'vue'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import defaultCover from '../assets/ikuyo-avatar.png'
 import { createLazyObserver } from '../utils/lazyLoad'
 import Skeleton from './common/Skeleton.vue'
+import { useSubscriptionStore } from '../stores/subscriptionStore'
+import { useFeedbackStore } from '../stores/feedbackStore'
 
-// Props定义
-const props = defineProps<{ anime: BangumiCalendarItem }>()
+// Props定义（修正默认值）
+const props = withDefaults(defineProps<{
+  anime: BangumiCalendarItem
+  showSubscriptionButton?: boolean
+}>(), {
+  showSubscriptionButton: true
+})
 
 // Events定义
-defineEmits<{
+const emit = defineEmits<{
   click: []
   imageLoad: []
 }>()
@@ -53,6 +73,29 @@ defineEmits<{
 const shouldLoadImage = ref(false)
 const cardRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
+
+// 订阅功能
+const subscriptionStore = useSubscriptionStore()
+const subscriptionLoading = ref(false)
+
+// 检查是否已订阅
+const isSubscribed = computed(() => {
+  return subscriptionStore.isSubscribed(props.anime.id)
+})
+
+// 处理订阅状态切换
+const handleSubscriptionToggle = async () => {
+  try {
+    subscriptionLoading.value = true
+    await subscriptionStore.toggleSubscription(props.anime)
+  } catch (error) {
+    const feedbackStore = useFeedbackStore();
+    feedbackStore.showError('订阅操作失败，请重试')
+    console.error('订阅操作失败:', error)
+  } finally {
+    subscriptionLoading.value = false
+  }
+}
 
 onMounted(() => {
   if (cardRef.value) {
@@ -107,6 +150,10 @@ const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.src = defaultCover
 }
+
+const handleCardClick = () => {
+  emit('click')
+}
 </script>
 
 <style scoped>
@@ -157,6 +204,40 @@ const onImageError = (event: Event) => {
   border-radius: 4px;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.subscription-btn {
+  background: red !important;
+  z-index: 9999 !important;
+  position: absolute !important;
+  bottom: 10px !important;
+  right: 10px !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 2rem !important;
+}
+
+.subscription-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.subscription-btn.subscribed {
+  background: rgba(255, 20, 147, 0.1);
+}
+
+.subscription-btn.subscribed:hover {
+  background: rgba(255, 20, 147, 0.2);
+}
+
+.subscription-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .card-content {

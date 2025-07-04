@@ -22,6 +22,9 @@
         <RouterLink to="/library" class="nav-item" active-class="active">
           <span class="nav-text">资源库</span>
         </RouterLink>
+        <RouterLink to="/subscription" class="nav-item" active-class="active">
+          <span class="nav-text">订阅</span>
+        </RouterLink>
         <RouterLink to="/tasks" class="nav-item" active-class="active">
           <span class="nav-text">任务</span>
         </RouterLink>
@@ -49,6 +52,9 @@
       </RouterLink>
       <RouterLink to="/library" class="mobile-nav-item" @click="closeMobileMenu">
         资源库
+      </RouterLink>
+      <RouterLink to="/subscription" class="mobile-nav-item" @click="closeMobileMenu">
+        我的订阅
       </RouterLink>
       <RouterLink to="/tasks" class="mobile-nav-item" @click="closeMobileMenu">
         任务

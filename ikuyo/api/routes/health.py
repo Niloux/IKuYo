@@ -5,9 +5,9 @@
 """
 
 from datetime import datetime
-from sqlmodel import select
 
 from fastapi import APIRouter
+from sqlmodel import select
 
 from ikuyo.api.models.schemas import HealthResponse
 from ikuyo.core.bangumi_service import BangumiService
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/health", tags=["Health"])
 bangumi_service = BangumiService()
 
 
-@router.get("/", response_model=HealthResponse)
+@router.get("", response_model=HealthResponse)
 def health_check():
     """
     健康检查接口
