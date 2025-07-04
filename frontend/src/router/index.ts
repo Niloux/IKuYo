@@ -57,10 +57,30 @@ const router = createRouter({
 })
 
 // 全局路由守卫 - 设置页面标题
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 设置页面标题
   if (to.meta?.title) {
     document.title = to.meta.title as string
+  }
+
+  // 预取详情页chunk：如即将进入anime-detail或library-detail，提前加载详情页和相关组件
+  if (to.name === 'anime-detail' || to.name === 'library-detail') {
+    // 预加载详情页视图
+    import('../views/AnimeDetailView.vue')
+    // 预加载详情页主要异步组件
+    import('../components/EpisodeDisplay.vue')
+    import('../components/AnimeResourcesList.vue')
+  }
+  // 预取任务管理页chunk
+  if (to.name === 'task-management') {
+    import('../views/TaskManagementView.vue')
+    import('../components/TaskModal.vue')
+    import('../components/ScheduledJobModal.vue')
+  }
+  // 预取资源库页chunk
+  if (to.name === 'resource-library') {
+    import('../views/ResourceLibraryView.vue')
+    import('../components/AnimeCard.vue')
   }
 
   // 导航来源追踪现在完全由组件内的onBeforeRouteLeave处理

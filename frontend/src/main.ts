@@ -39,4 +39,23 @@ app.config.errorHandler = (err, vm, info) => {
   // alert('应用发生错误，请刷新页面或联系管理员。');
 };
 
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    // 预取次要页面和组件chunk
+    import('./views/AboutView.vue')
+    import('./views/ResourceLibraryView.vue')
+    import('./components/AnimeCard.vue')
+    import('./components/TaskModal.vue')
+    import('./components/ScheduledJobModal.vue')
+  })
+} else {
+  setTimeout(() => {
+    import('./views/AboutView.vue')
+    import('./views/ResourceLibraryView.vue')
+    import('./components/AnimeCard.vue')
+    import('./components/TaskModal.vue')
+    import('./components/ScheduledJobModal.vue')
+  }, 2000)
+}
+
 app.mount('#app')
