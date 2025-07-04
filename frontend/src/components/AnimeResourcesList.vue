@@ -35,7 +35,7 @@
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
-      <p>正在加载资源列表...</p>
+      <p>正在加载全部资源...</p>
     </div>
 
     <!-- 错误状态 -->
@@ -171,14 +171,15 @@ const selectedResolution = ref('')
 const selectedSubtitleType = ref('')
 const currentLimit = ref(100)
 const currentOffset = ref(0)
+const fullResources = ref(9999)
 
 // 组装查询参数
 const getQuery = () => ({
   bangumiId: props.bangumiId,
   resolution: selectedResolution.value || undefined,
   subtitleType: selectedSubtitleType.value || undefined,
-  limit: currentLimit.value,
-  offset: currentOffset.value
+  limit: fullResources.value,
+  offset: 0
 })
 
 // 监听筛选和分页变化自动拉取数据

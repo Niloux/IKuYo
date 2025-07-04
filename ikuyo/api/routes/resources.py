@@ -68,7 +68,7 @@ def get_anime_resources(
     episode: Optional[int] = Query(None, description="指定集数，不提供则返回所有集数"),
     resolution: Optional[str] = Query(None, description="分辨率筛选"),
     subtitle_type: Optional[str] = Query(None, description="字幕类型筛选"),
-    limit: int = Query(100, description="返回数量限制", ge=1, le=500),
+    limit: int = Query(100, description="返回数量限制", ge=1, le=9999),
     offset: int = Query(0, description="偏移量", ge=0),
 ):
     """
