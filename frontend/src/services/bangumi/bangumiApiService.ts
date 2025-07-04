@@ -5,6 +5,7 @@
 import { apiClient } from '../common/common';
 import type { ApiResponse } from '../common/common';
 import type { BangumiCalendarItem, BangumiSubject, BangumiWeekday, EpisodeAvailabilityData, BangumiEpisodesData, BangumiEpisode, EpisodeResourcesData } from './bangumiTypes';
+import { debounceRequest, throttleRequest, debounceAsync, throttleAsync } from '../common/common'
 
 /**
  * 数据转换工具：BangumiSubject 转换为 BangumiCalendarItem
@@ -122,26 +123,36 @@ export class BangumiApiService {
     /**
      * 资源库搜索
      */
-    static async searchLibrary(
-        query: string, page: number = 1, limit: number = 12): Promise<
-            {
+    static searchLibrary = (
+        query: string, page: number = 1, limit: number = 12,
+        options?: { debounce?: boolean, throttle?: boolean, delay?: number }
+    ): Promise<{
+        bangumi_ids: number[]
+        pagination: {
+            current_page: number
+            per_page: number
+            total: number
+            total_pages: number
+            has_next: boolean
+            has_prev: boolean
+        }
+    }> => {
+        const fn = async (q: string, p: number, l: number) => {
+            const response: ApiResponse<{
                 bangumi_ids: number[]
-                pagination: {
-                    current_page: number
-                    per_page: number
-                    total: number
-                    total_pages: number
-                    has_next: boolean
-                    has_prev: boolean
-                }
-            }> {
-        const response: ApiResponse<{
-            bangumi_ids: number[]
-            pagination: any
-        }> = await apiClient.get('/animes/search', {
-            params: { q: query, page, limit }
-        });
-        return response.data;
+                pagination: any
+            }> = await apiClient.get('/animes/search', {
+                params: { q, page: p, limit: l }
+            });
+            return response.data;
+        }
+        if (options?.debounce) {
+            return debounceAsync(fn, options.delay)(query, page, limit)
+        } else if (options?.throttle) {
+            return throttleAsync(fn, options.delay)(query, page, limit)
+        } else {
+            return fn(query, page, limit)
+        }
     }
 
     /**

@@ -114,7 +114,7 @@ const handleSearchInput = () => {
   }
   searchTimeout = setTimeout(() => {
     if (searchQuery.value.trim()) {
-      searchStore.performSearch()
+      searchStore.performSearch(1, { debounce: true, delay: 300 })
     } else {
       // 如果搜索框为空，清空结果
       searchStore.clearSearchState()

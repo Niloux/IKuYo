@@ -47,7 +47,10 @@ export const useSearchStore = defineStore('search', () => {
   }
 
   // 执行搜索
-  const performSearch = async (page: number = 1) => {
+  const performSearch = async (
+    page: number = 1,
+    options?: { debounce?: boolean; throttle?: boolean; delay?: number }
+  ) => {
     if (!searchQuery.value.trim()) return
 
     try {
@@ -56,7 +59,7 @@ export const useSearchStore = defineStore('search', () => {
       hasSearched.value = true
 
       // 搜索获取bangumi_id列表
-      const searchData = await BangumiApiService.searchLibrary(searchQuery.value, page, 12)
+      const searchData = await BangumiApiService.searchLibrary(searchQuery.value, page, 12, options)
 
       // 更新分页信息
       Object.assign(pagination, searchData.pagination)
@@ -85,9 +88,9 @@ export const useSearchStore = defineStore('search', () => {
   }
 
   // 跳转到页面
-  const goToPage = (page: number) => {
+  const goToPage = (page: number, options?: { debounce?: boolean; throttle?: boolean; delay?: number }) => {
     if (page >= 1 && page <= pagination.total_pages) {
-      performSearch(page)
+      performSearch(page, options)
     }
   }
 

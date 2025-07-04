@@ -71,3 +71,31 @@ export class BatchDebouncer {
     this.executePendingOperations()
   }
 }
+
+/**
+ * 节流函数
+ * @param func 要节流的函数
+ * @param delay 节流间隔（毫秒）
+ * @returns 节流后的函数
+ */
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let lastCall = 0
+  let timeoutId: number | null = null
+
+  return (...args: Parameters<T>) => {
+    const now = Date.now()
+    if (now - lastCall >= delay) {
+      lastCall = now
+      func(...args)
+    } else if (!timeoutId) {
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now()
+        func(...args)
+        timeoutId = null
+      }, delay - (now - lastCall)) as unknown as number
+    }
+  }
+}
