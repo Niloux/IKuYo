@@ -6,13 +6,14 @@ IKuYo动漫资源查询API
 """
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ikuyo.api.routes import bangumi, health, resources, crawler, scheduler
+from ikuyo.api.routes import bangumi, crawler, health, resources, scheduler, subscription
 from ikuyo.core.database import create_db_and_tables
-from ikuyo.core.scheduler import UnifiedScheduler
 from ikuyo.core.redis_client import get_redis_manager
+from ikuyo.core.scheduler import UnifiedScheduler
 
 
 @asynccontextmanager
@@ -64,6 +65,7 @@ app.include_router(resources.router, prefix="/api/v1")
 app.include_router(bangumi.router, prefix="/api/v1")
 app.include_router(crawler.router, prefix="/api/v1")
 app.include_router(scheduler.router, prefix="/api/v1")
+app.include_router(subscription.router, prefix="/api/v1")
 
 
 @app.get("/")
