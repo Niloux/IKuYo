@@ -191,7 +191,6 @@ onBeforeRouteLeave((to: any, from: any) => {
 .content-card {
   width: 100%;
   padding: 2rem;
-  background: #f2f2f7;
 }
 
 .search-section {
