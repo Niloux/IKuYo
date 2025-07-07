@@ -140,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, defineEmits } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useResourceStore } from '../stores/resourceStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
 import Skeleton from './common/Skeleton.vue'
