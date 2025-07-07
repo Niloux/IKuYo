@@ -80,3 +80,10 @@ class SubscriptionRepository:
             self.session.commit()
             return True
         return False
+
+    def get_all_bangumi_ids_by_user(self, user_id: str) -> list[int]:
+        """获取指定用户所有订阅的bangumi_id列表"""
+        result = self.session.exec(
+            select(UserSubscription.bangumi_id).where(UserSubscription.user_id == user_id)
+        ).all()
+        return [row[0] if isinstance(row, tuple) else row for row in result]

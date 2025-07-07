@@ -105,6 +105,14 @@ class SubscriptionApiService {
             }
         }
     }
+
+    /**
+     * 获取所有已订阅bangumi_id（轻量接口）
+     */
+    async getAllSubscriptionIds(): Promise<number[]> {
+        const res: { ids: number[] } = await apiClient.get('/subscriptions/ids')
+        return res.ids || []
+    }
 }
 
 // 导出单例实例

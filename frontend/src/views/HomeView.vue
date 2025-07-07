@@ -154,8 +154,8 @@ onMounted(() => {
   if (!hasCalendarData.value) {
     loadCalendar()
   }
-  // 拉取订阅数据，避免首页订阅状态不同步
-  subscriptionStore.fetchSubscriptions()
+  // 拉取全部订阅ID，确保首页订阅状态准确
+  subscriptionStore.fetchAllSubscriptionIds()
 })
 </script>
 

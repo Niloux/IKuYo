@@ -98,6 +98,19 @@ async def unsubscribe(
     return {"message": "Unsubscribed successfully"}
 
 
+@router.get("/ids")
+async def get_subscription_ids(
+    user_id: str = Depends(get_user_id),
+    session: Session = Depends(get_session)
+):
+    """
+    获取当前用户所有已订阅番剧的bangumi_id列表（轻量接口）
+    """
+    repo = SubscriptionRepository(session)
+    ids = repo.get_all_bangumi_ids_by_user(user_id)
+    return {"ids": ids}
+
+
 @router.get("/{bangumi_id}")
 async def check_subscription(
     bangumi_id: int,

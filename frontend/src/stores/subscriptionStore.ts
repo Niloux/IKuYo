@@ -38,6 +38,9 @@ export const useSubscriptionStore = defineStore('subscription', () => {
 
     const feedbackStore = useFeedbackStore()
 
+    // 全量订阅ID集合（用于全局判断）
+    const allSubscribedBangumiIds = ref<Set<number> | null>(null)
+
     /**
      * 计算属性：订阅的番剧ID集合，用于快速查询订阅状态
      */
@@ -46,9 +49,24 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     })
 
     /**
-     * 检查是否已订阅指定番剧
+     * 获取所有订阅ID（轻量接口）
+     */
+    const fetchAllSubscriptionIds = async () => {
+        try {
+            const ids = await subscriptionApiService.getAllSubscriptionIds()
+            allSubscribedBangumiIds.value = new Set(ids)
+        } catch (err) {
+            feedbackStore.showError('获取全部订阅ID失败')
+        }
+    }
+
+    /**
+     * 判断是否已订阅指定番剧
      */
     const isSubscribed = (bangumiId: number): boolean => {
+        if (allSubscribedBangumiIds.value) {
+            return allSubscribedBangumiIds.value.has(bangumiId)
+        }
         return subscribedBangumiIds.value.has(bangumiId)
     }
 
@@ -244,13 +262,13 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         error,
         pagination,
         currentParams,
-
+        allSubscribedBangumiIds,
         // 计算属性
         subscribedBangumiIds,
-
         // 方法
         isSubscribed,
         fetchSubscriptions,
+        fetchAllSubscriptionIds,
         optimisticSubscribe,
         optimisticUnsubscribe,
         subscribe,
