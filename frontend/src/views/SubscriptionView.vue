@@ -96,12 +96,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onActivated } from 'vue'
 import { useSubscriptionStore } from '../stores/subscriptionStore'
 import AnimeCard from '../components/AnimeCard.vue'
 import type { GetSubscriptionsParams } from '../services/subscription/subscriptionTypes'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import { useRouter } from 'vue-router'
+import { ensureScrollToTop } from '../utils/scrollUtils'
 
 const router = useRouter()
 const subscriptionStore = useSubscriptionStore()
@@ -145,7 +146,12 @@ const goToDetail = (anime: BangumiCalendarItem) => {
 
 // 页面初始化
 onMounted(() => {
+  ensureScrollToTop()
   subscriptionStore.fetchSubscriptions()
+})
+
+onActivated(() => {
+  ensureScrollToTop()
 })
 </script>
 
