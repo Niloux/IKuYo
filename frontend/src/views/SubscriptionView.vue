@@ -8,39 +8,6 @@
       </p>
     </div>
 
-    <!-- 搜索和排序工具栏 -->
-    <div class="toolbar">
-      <div class="search-box">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索订阅的番剧..."
-          @keyup.enter="handleSearch"
-          class="search-input"
-        />
-        <button @click="handleSearch" class="search-btn">
-          🔍
-        </button>
-      </div>
-
-      <div class="sort-controls">
-        <select v-model="sortBy" @change="handleSort" class="sort-select">
-          <option value="subscribed_at">订阅时间</option>
-          <option value="rating">评分</option>
-          <option value="air_date">首播日期</option>
-          <option value="name">名称</option>
-        </select>
-
-        <button
-          @click="toggleSortOrder"
-          class="sort-order-btn"
-          :class="{ active: sortOrder === 'desc' }"
-        >
-          {{ sortOrder === 'desc' ? '↓' : '↑' }}
-        </button>
-      </div>
-    </div>
-
     <!-- 空状态 -->
     <div v-if="!loading && subscriptions.length === 0" class="empty-state">
       <div class="empty-icon">📺</div>
@@ -54,37 +21,73 @@
     </div>
 
     <!-- 动画卡片网格 -->
-    <div v-if="!loading && subscriptions.length > 0" class="anime-grid">
-      <AnimeCard
-        v-for="subscription in subscriptions"
-        :key="subscription.bangumi_id"
-        :anime="subscription.anime"
-        :show-subscription-button="true"
-        @click="goToDetail(subscription.anime)"
-      />
-    </div>
+    <div v-if="!loading && subscriptions.length > 0" class="subscription-section">
+      <div class="toolbar">
+        <div class="search-box">
+          <input
+            v-model="searchQuery"
+            @input="handleSearch"
+            type="text"
+            placeholder="搜索订阅番剧"
+            class="search-input"
+          />
+          <button @click="handleSearch" class="search-btn">搜索</button>
+        </div>
+        <div class="sort-controls">
+          <select
+            v-model="sortBy"
+            @change="handleSort"
+            class="sort-select"
+          >
+            <option value="subscribed_at">订阅时间</option>
+            <option value="rating">评分</option>
+            <option value="air_date">首播日期</option>
+            <option value="name">名称</option>
+          </select>
+          <button
+            @click="toggleSortOrder"
+            :class="{ 'sort-order-btn': true, active: sortOrder === 'desc' }"
+          >
+            降序
+          </button>
+          <button
+            @click="toggleSortOrder"
+            :class="{ 'sort-order-btn': true, active: sortOrder === 'asc' }"
+          >
+            升序
+          </button>
+        </div>
+      </div>
+      <div class="anime-grid">
+        <AnimeCard
+          v-for="subscription in subscriptions"
+          :key="subscription.bangumi_id"
+          :anime="subscription.anime"
+          :show-subscription-button="true"
+          @click="goToDetail(subscription.anime)"
+        />
+      </div>
+      <div v-if="pagination.pages > 1" class="pagination">
+        <button
+          @click="goToPage(pagination.page - 1)"
+          :disabled="pagination.page <= 1"
+          class="page-btn"
+        >
+          上一页
+        </button>
 
-    <!-- 分页 -->
-    <div v-if="!loading && pagination.pages > 1" class="pagination">
-      <button
-        @click="goToPage(pagination.page - 1)"
-        :disabled="pagination.page <= 1"
-        class="page-btn"
-      >
-        上一页
-      </button>
+        <span class="page-info">
+          {{ pagination.page }} / {{ pagination.pages }}
+        </span>
 
-      <span class="page-info">
-        {{ pagination.page }} / {{ pagination.pages }}
-      </span>
-
-      <button
-        @click="goToPage(pagination.page + 1)"
-        :disabled="pagination.page >= pagination.pages"
-        class="page-btn"
-      >
-        下一页
-      </button>
+        <button
+          @click="goToPage(pagination.page + 1)"
+          :disabled="pagination.page >= pagination.pages"
+          class="page-btn"
+        >
+          下一页
+        </button>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -157,7 +160,7 @@ onActivated(() => {
 
 <style scoped>
 .subscription-view {
-  padding: 20px;
+  padding: 10px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -175,6 +178,49 @@ onActivated(() => {
 .page-header p {
   color: var(--color-text-muted);
   margin: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--color-text-muted);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: var(--color-text);
+}
+
+.empty-state p {
+  margin-bottom: 5px;
+}
+
+.empty-state a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.empty-state a:hover {
+  text-decoration: underline;
+}
+
+.subscription-section {
+  background: var(--color-bg-white);
+  border-radius: var(--radius-md, 16px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 2rem;
+  margin-bottom: 30px;
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+.subscription-section:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
 }
 
 .toolbar {
@@ -253,40 +299,10 @@ onActivated(() => {
   border-color: var(--color-primary);
 }
 
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  color: var(--color-text-muted);
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
-}
-
-.empty-state h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  color: var(--color-text);
-}
-
-.empty-state p {
-  margin-bottom: 5px;
-}
-
-.empty-state a {
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.empty-state a:hover {
-  text-decoration: underline;
-}
-
 .anime-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
   margin-bottom: 30px;
 }
 
@@ -306,6 +322,7 @@ onActivated(() => {
   cursor: pointer;
   font-size: 14px;
   transition: all 0.3s;
+  color: var(--color-text);
 }
 
 .page-btn:hover:not(:disabled) {
@@ -346,6 +363,19 @@ onActivated(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .anime-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .pagination {
+    gap: 15px;
+  }
+
+  .subscription-section {
+    padding: 1rem;
+  }
+
   .toolbar {
     flex-direction: column;
     gap: 15px;
@@ -353,15 +383,6 @@ onActivated(() => {
 
   .search-box {
     max-width: 100%;
-  }
-
-  .anime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-  }
-
-  .pagination {
-    gap: 15px;
   }
 }
 </style>
