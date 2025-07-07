@@ -15,7 +15,6 @@
         </div>
       </div>
       <div class="results-section">
-        <Skeleton :loading="loading" type="list" :rows="8" customClass="library-skeleton" />
         <div v-if="!loading && searchResults.length > 0">
           <div class="results-header">
             <h2>搜索结果</h2>
@@ -33,7 +32,7 @@
           </div>
           <div v-if="pagination.total_pages > 1" class="pagination">
             <button
-              @click="searchStore.goToPage(pagination.current_page - 1)"
+              @click="goToPage(pagination.current_page - 1)"
               :disabled="!pagination.has_prev"
               class="pagination-btn"
             >
@@ -44,13 +43,13 @@
                 v-for="page in searchStore.getVisiblePages()"
                 :key="page"
                 :class="['page-number', { active: page === pagination.current_page }]"
-                @click="searchStore.goToPage(page)"
+                @click="goToPage(page)"
               >
                 {{ page }}
               </span>
             </div>
             <button
-              @click="searchStore.goToPage(pagination.current_page + 1)"
+              @click="goToPage(pagination.current_page + 1)"
               :disabled="!pagination.has_next"
               class="pagination-btn"
             >
@@ -81,11 +80,12 @@ import { defineAsyncComponent } from 'vue'
 import { useSearchStore } from '../stores/searchStore'
 import { ensureScrollToTop, getCurrentScrollPosition, restoreScrollPosition } from '../utils/scrollUtils'
 import { onBeforeRouteLeave } from 'vue-router'
-import Skeleton from '../components/common/Skeleton.vue'
+import { useFeedbackStore } from '../stores/feedbackStore'
 
 const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
+const feedbackStore = useFeedbackStore()
 
 // 从store获取响应式状态
 const {
@@ -108,31 +108,49 @@ const SCROLL_KEY = 'library_scroll_position'
 
 const AnimeCard = defineAsyncComponent(() => import('../components/AnimeCard.vue'))
 
-const handleSearchInput = () => {
+const handleSearchInput = async () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout)
   }
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     if (searchQuery.value.trim()) {
-      searchStore.performSearch(1, { debounce: true, delay: 300 })
+      feedbackStore.showLoading()
+      try {
+        await searchStore.performSearch(1, { debounce: true, delay: 300 })
+      } finally {
+        feedbackStore.hideLoading()
+      }
     } else {
-      // 如果搜索框为空，清空结果
       searchStore.clearSearchState()
     }
   }, 150) as unknown as number
 }
 
-// 重试搜索的包装函数
-const retrySearch = () => {
-  searchStore.performSearch()
+const retrySearch = async () => {
+  feedbackStore.showLoading()
+  try {
+    await searchStore.performSearch()
+  } finally {
+    feedbackStore.hideLoading()
+  }
 }
 
-// 跳转到资源库详情页
 const goToLibraryDetail = (bangumiId: number) => {
   // 保存滚动位置
   const currentScroll = getCurrentScrollPosition()
   sessionStorage.setItem(SCROLL_KEY, String(currentScroll))
   router.push(`/library/detail/${bangumiId}`)
+}
+
+const goToPage = async (page: number, options?: { debounce?: boolean; throttle?: boolean; delay?: number }) => {
+  if (page >= 1 && page <= pagination.value.total_pages) {
+    feedbackStore.showLoading()
+    try {
+      await searchStore.performSearch(page, options)
+    } finally {
+      feedbackStore.hideLoading()
+    }
+  }
 }
 
 // keep-alive组件恢复时的处理
