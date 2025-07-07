@@ -117,6 +117,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
 
     /**
      * 乐观订阅：立即更新UI，然后调用API
+     * 同步本地allSubscribedBangumiIds集合，提升首页订阅按钮响应速度
      */
     const optimisticSubscribe = async (anime: BangumiCalendarItem) => {
         // 立即添加到列表（乐观更新）
@@ -134,6 +135,13 @@ export const useSubscriptionStore = defineStore('subscription', () => {
 
         subscriptions.value.unshift(optimisticSubscription)
 
+        // 本地同步allSubscribedBangumiIds集合（如已初始化）
+        let addedToAllIds = false
+        if (allSubscribedBangumiIds.value) {
+            allSubscribedBangumiIds.value.add(anime.id)
+            addedToAllIds = true
+        }
+
         try {
             // 调用API确认订阅
             await subscriptionApiService.subscribe(anime.id)
@@ -141,6 +149,10 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         } catch (err) {
             // 如果失败，移除乐观添加的项目
             subscriptions.value = subscriptions.value.filter(sub => sub.bangumi_id !== anime.id)
+            // 回滚allSubscribedBangumiIds集合
+            if (allSubscribedBangumiIds.value && addedToAllIds) {
+                allSubscribedBangumiIds.value.delete(anime.id)
+            }
             const errorMsg = err instanceof Error ? err.message : '订阅失败'
             feedbackStore.showError(errorMsg)
             throw err
@@ -149,6 +161,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
 
     /**
      * 乐观取消订阅：立即更新UI，然后调用API
+     * 同步本地allSubscribedBangumiIds集合，提升首页订阅按钮响应速度
      */
     const optimisticUnsubscribe = async (bangumiId: number) => {
         // 保存原始数据以便回滚
@@ -157,6 +170,12 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         // 立即从列表中移除（乐观更新）
         subscriptions.value = subscriptions.value.filter(sub => sub.bangumi_id !== bangumiId)
 
+        // 本地同步allSubscribedBangumiIds集合（如已初始化）
+        let removedFromAllIds = false
+        if (allSubscribedBangumiIds.value) {
+            removedFromAllIds = allSubscribedBangumiIds.value.delete(bangumiId)
+        }
+
         try {
             // 调用API确认取消订阅
             await subscriptionApiService.unsubscribe(bangumiId)
@@ -164,6 +183,10 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         } catch (err) {
             // 如果失败，恢复原始数据
             subscriptions.value = originalSubscriptions
+            // 回滚allSubscribedBangumiIds集合
+            if (allSubscribedBangumiIds.value && removedFromAllIds) {
+                allSubscribedBangumiIds.value.add(bangumiId)
+            }
             const errorMsg = err instanceof Error ? err.message : '取消订阅失败'
             feedbackStore.showError(errorMsg)
             throw err
