@@ -443,34 +443,50 @@ const EpisodeDisplay = defineAsyncComponent(() => import('../components/EpisodeD
 /* 响应式设计 */
 @media (max-width: 768px) {
   .anime-detail {
-    padding: 1rem;
+    padding: 0.5rem;
   }
-
   .anime-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 1.2rem;
+    padding: 1rem 0.5rem;
   }
-
   .anime-cover img {
-    width: 200px;
-    height: 267px;
+    width: 140px;
+    height: 187px;
+    border-radius: 8px;
   }
-
   .anime-title {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
+    margin-bottom: 0.3rem;
   }
-
+  .anime-subtitle {
+    font-size: 0.98rem;
+    margin-bottom: 0.7rem;
+  }
   .anime-meta {
-    align-items: center;
+    font-size: 0.92rem;
+    margin-bottom: 1rem;
+    gap: 0.25rem;
   }
-
-  .meta-item {
-    justify-content: center;
+  .anime-summary {
+    padding: 1.2rem 0.7rem;
+    font-size: 0.98rem;
+    border-radius: 8px;
   }
-
+  .anime-summary h3 {
+    font-size: 1.08rem;
+    margin-bottom: 0.7rem;
+  }
   .tags-container {
-    justify-content: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .tag-item {
+    font-size: 0.8rem;
+    padding: 0.28rem 0.6rem;
+    border-radius: 12px;
   }
 }
 </style>

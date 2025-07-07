@@ -283,12 +283,24 @@ onMounted(() => {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .anime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
   }
-
   .day-section {
-    padding: 1.5rem;
+    padding: 1rem 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.2rem;
+  }
+  .day-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.25rem;
+    gap: 0.5rem;
+  }
+  .today-badge {
+    font-size: 0.7rem;
+    padding: 0.18rem 0.4rem;
+    border-radius: 8px;
   }
 }
 </style>

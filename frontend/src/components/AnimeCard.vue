@@ -293,12 +293,47 @@ const handleCardClick = () => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .card-content {
-    padding: 0.75rem;
+  .anime-card {
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    min-width: 0;
+    max-width: 100vw;
+    margin: 0 auto 1rem auto;
   }
-
+  .card-image {
+    aspect-ratio: 3/4;
+    min-height: 160px;
+  }
+  .card-content {
+    padding: 0.75rem 0.5rem;
+  }
   .anime-title {
     font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  .anime-subtitle {
+    font-size: 0.92rem;
+    margin-bottom: 0.25rem;
+  }
+  .anime-meta {
+    font-size: 0.85rem;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .subscription-btn {
+    width: 44px;
+    height: 44px;
+    left: 6px;
+    top: 6px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    padding: 0;
+  }
+  .rating-badge {
+    font-size: 0.95rem;
+    padding: 0.18rem 0.4rem;
+    top: 0.4rem;
+    right: 0.4rem;
   }
 }
 </style>

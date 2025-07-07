@@ -416,25 +416,49 @@ onActivated(() => {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .anime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
   }
-
-  .pagination {
-    gap: 15px;
-  }
-
   .subscription-section {
-    padding: 1rem;
+    padding: 0.7rem 0.2rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
   }
-
   .toolbar {
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
+    margin-bottom: 1rem;
   }
-
-  .search-box {
-    max-width: 100%;
+  .search-input {
+    font-size: 1rem;
+    padding: 0.7rem 0.5rem;
+    border-radius: 8px 0 0 8px;
+  }
+  .search-btn {
+    font-size: 1rem;
+    padding: 0.7rem 0.7rem;
+    border-radius: 0 8px 8px 0;
+  }
+  .sort-controls {
+    gap: 6px;
+  }
+  .sort-select, .sort-order-btn {
+    font-size: 0.98rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 6px;
+  }
+  .pagination {
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .page-btn {
+    font-size: 0.98rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+  }
+  .page-info {
+    font-size: 0.95rem;
   }
 }
 </style>
