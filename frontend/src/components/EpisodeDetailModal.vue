@@ -20,7 +20,7 @@
             <strong>时长:</strong> {{ episodeData.duration }}
           </span>
           <span v-if="episodeData?.airdate" class="meta-item">
-            <strong>首播:</strong> {{ formatDate(episodeData.airdate) }}
+                            <strong>首播:</strong> {{ formattedAirdate }}
           </span>
           <span v-if="episodeData?.comment" class="meta-item">
             <strong>评论:</strong> {{ episodeData.comment }}条
@@ -264,20 +264,24 @@ const downloadResource = (url: string, type: 'magnet' | 'torrent') => {
   }
 }
 
-// 格式化日期
-const formatDate = (dateStr: string): string => {
+// 优化：缓存日期格式化选项
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric'
+}
+
+// 优化：使用computed缓存格式化的播出日期
+const formattedAirdate = computed(() => {
+  const dateStr = props.episodeData?.airdate
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
+    return date.toLocaleDateString('zh-CN', dateFormatOptions)
   } catch {
     return dateStr
   }
-}
+})
 
 // 监听ESC键关闭
 const handleKeyDown = (event: KeyboardEvent) => {

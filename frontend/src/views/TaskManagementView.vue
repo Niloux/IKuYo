@@ -46,7 +46,7 @@
       :errors="createTaskFormErrors"
       :onSubmit="submitCreateTask"
       :onCancel="closeCreateTaskModal"
-      :onUpdateTask="(t) => { newTask = t }"
+      :onUpdateTask="(t: CrawlerTaskCreate) => { newTask = t }"
     />
 
     <!-- 定时任务模态框 -->
@@ -57,7 +57,7 @@
       :editing="!!editingJob"
       :onSubmit="submitScheduledJob"
       :onCancel="closeScheduledJobModal"
-      :onUpdateJob="(j) => { currentScheduledJob = j }"
+      :onUpdateJob="updateScheduledJob"
     />
   </div>
 </template>
@@ -67,6 +67,7 @@ import { ref, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useTaskStore } from '../stores/taskStore'
 import { useSchedulerStore } from '../stores/schedulerStore'
 import { useFeedbackStore } from '../stores/feedbackStore'
+import { useErrorHandler } from '../utils/useErrorHandler'
 import TaskTable from '../components/TaskTable.vue'
 import ScheduledJobTable from '../components/ScheduledJobTable.vue'
 import { defineAsyncComponent } from 'vue'
@@ -77,6 +78,7 @@ import { ensureScrollToTop } from '../utils/scrollUtils'
 const taskStore = useTaskStore()
 const schedulerStore = useSchedulerStore()
 const feedbackStore = useFeedbackStore()
+const { handleApiError, showSuccess, handleValidationErrors } = useErrorHandler()
 
 const showCreateTaskModal = ref(false)
 const showScheduledJobModal = ref(false)
@@ -196,7 +198,9 @@ function validateScheduledJobForm() {
 }
 
 const submitCreateTask = async () => {
+  // 保持原有的验证逻辑不变
   if (!validateCreateTaskForm()) return
+
   try {
     const payload: CrawlerTaskCreate = {
       mode: newTask.value.mode,
@@ -219,7 +223,8 @@ const submitCreateTask = async () => {
       setupTaskWebSocket(createdTask.id)
     }
   } catch (e: any) {
-    feedbackStore.showError(`创建任务失败: ${e.message}`)
+    // 使用新的API错误处理器，保持相同的错误信息格式
+    handleApiError(e, '创建任务失败')
   }
 }
 
@@ -240,6 +245,10 @@ const openCreateScheduledJobModal = () => {
 
 const closeScheduledJobModal = () => {
   showScheduledJobModal.value = false
+}
+
+const updateScheduledJob = (j: ScheduledJobCreate & { parameters_json?: string }) => {
+  currentScheduledJob.value = j
 }
 
 const editScheduledJob = (job: ScheduledJobResponse) => {
@@ -266,7 +275,7 @@ const submitScheduledJob = async () => {
       try {
         parsedParameters = JSON.parse(currentScheduledJob.value.parameters_json)
       } catch (e) {
-        feedbackStore.showError('参数JSON格式不正确！')
+        handleApiError('参数JSON格式不正确！')
         return
       }
     }
@@ -282,16 +291,16 @@ const submitScheduledJob = async () => {
 
     if (editingJob.value) {
       // 更新现有任务
-      await taskStore.updateScheduledJob(editingJob.value.job_id, payload as ScheduledJobUpdate)
-      feedbackStore.showError('定时任务更新成功！')
+      await schedulerStore.updateScheduledJob(editingJob.value.job_id, payload as ScheduledJobUpdate)
+      showSuccess('定时任务更新成功！')
     } else {
       // 创建新任务
-      await taskStore.createScheduledJob(payload as ScheduledJobCreate)
-      feedbackStore.showError('定时任务创建成功！')
+      await schedulerStore.createScheduledJob(payload as ScheduledJobCreate)
+      showSuccess('定时任务创建成功！')
     }
     closeScheduledJobModal()
   } catch (e: any) {
-    feedbackStore.showError(`操作失败: ${e.message}`)
+    handleApiError(e, '操作失败')
   }
 }
 
@@ -299,34 +308,34 @@ const cancelTask = async (taskId: number) => {
   if (confirm('确定要取消这个任务吗？')) {
     try {
       const cancelledTask = await taskStore.cancelTask(taskId)
-      feedbackStore.showError('任务已取消！')
+      showSuccess('任务已取消！')
       // 如果任务被取消，关闭对应的WebSocket连接
       if (activeWebSockets.value.has(taskId)) {
         activeWebSockets.value.get(taskId)?.close()
         activeWebSockets.value.delete(taskId)
       }
     } catch (e: any) {
-      feedbackStore.showError(`取消任务失败: ${e.message}`)
+      handleApiError(e, '取消任务失败')
     }
   }
 }
 
 const toggleScheduledJob = async (jobId: string) => {
   try {
-    await taskStore.toggleScheduledJob(jobId)
-    feedbackStore.showError('定时任务状态已更新！')
+    await schedulerStore.toggleScheduledJob(jobId)
+    showSuccess('定时任务状态已更新！')
   } catch (e: any) {
-    feedbackStore.showError(`更新定时任务状态失败: ${e.message}`)
+    handleApiError(e, '更新定时任务状态失败')
   }
 }
 
 const deleteScheduledJob = async (jobId: string) => {
   if (confirm('确定要删除这个定时任务吗？')) {
     try {
-      await taskStore.deleteScheduledJob(jobId)
-      feedbackStore.showError('定时任务已删除！')
+      await schedulerStore.deleteScheduledJob(jobId)
+      showSuccess('定时任务已删除！')
     } catch (e: any) {
-      feedbackStore.showError(`删除定时任务失败: ${e.message}`)
+      handleApiError(e, '删除定时任务失败')
     }
   }
 }

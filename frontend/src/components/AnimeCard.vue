@@ -45,7 +45,7 @@
         {{ anime.name }}
       </p>
       <div class="anime-meta">
-        <span class="air-date">{{ formatAirDate(anime.air_date) }}</span>
+        <span class="air-date">{{ formattedAirDate }}</span>
         <span class="rating-count" v-if="anime.rating && anime.rating.total > 0">
           {{ anime.rating.total }}人评价
         </span>
@@ -120,8 +120,9 @@ onUnmounted(() => {
   }
 })
 
-// 格式化播出日期
-const formatAirDate = (dateStr: string): string => {
+// 优化：缓存格式化的播出日期
+const formattedAirDate = computed(() => {
+  const dateStr = props.anime.air_date
   if (!dateStr) return '未知'
 
   try {
@@ -134,23 +135,15 @@ const formatAirDate = (dateStr: string): string => {
   } catch {
     return dateStr
   }
-}
+})
 
-// 将HTTP URL转换为HTTPS（修复CORS问题）
-const convertToHttps = (url: string): string => {
-  if (url.startsWith('http://')) {
-    return url.replace('http://', 'https://')
-  }
-  return url
-}
-
-// 获取HTTPS图片URL
+// 优化：简化图片URL处理，直接在computed中处理HTTPS转换
 const imageUrl = computed(() => {
   const imgObj = props.anime.images
-  if (imgObj && imgObj.large) {
-    return convertToHttps(imgObj.large)
-  }
-  return defaultCover
+  if (!imgObj?.large) return defaultCover
+
+  // 直接替换HTTP为HTTPS，避免多次函数调用
+  return imgObj.large.replace(/^http:/, 'https:')
 })
 
 // 图片加载失败处理

@@ -210,12 +210,18 @@ const closeModal = () => {
 }
 
 
-// 格式化日期
+// 优化：缓存日期格式化选项
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  day: 'numeric'
+}
+
+// 优化：格式化日期
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    return date.toLocaleDateString('zh-CN', dateFormatOptions)
   } catch {
     return dateStr
   }

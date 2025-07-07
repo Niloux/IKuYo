@@ -207,17 +207,20 @@ const hasNextPage = computed(() =>
   currentOffset.value + currentLimit.value < totalResources.value
 )
 
-// 格式化发布日期
+// 优化：缓存日期格式化选项，避免重复创建
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit'
+}
+
+// 优化：格式化发布日期
 const formatReleaseDate = (dateStr: string): string => {
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    })
+    return date.toLocaleDateString('zh-CN', dateFormatOptions)
   } catch {
     return dateStr
   }

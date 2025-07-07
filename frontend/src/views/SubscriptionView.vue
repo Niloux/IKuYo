@@ -20,8 +20,23 @@
       </p>
     </div>
 
+          <!-- 优化：骨架屏加载状态 -->
+      <div v-if="shouldShowSkeleton" class="subscription-section">
+      <div class="toolbar">
+        <div class="search-box">
+          <div class="skeleton-line search-skeleton"></div>
+        </div>
+        <div class="sort-controls">
+          <div class="skeleton-line sort-skeleton"></div>
+        </div>
+      </div>
+      <div class="anime-grid">
+        <Skeleton v-for="n in 12" :key="`skeleton-${n}`" type="card" />
+      </div>
+    </div>
+
     <!-- 动画卡片网格 -->
-    <div v-if="!loading && subscriptions.length > 0" class="subscription-section">
+    <div v-else-if="!loading && subscriptions.length > 0" class="subscription-section">
       <div class="toolbar">
         <div class="search-box">
           <input
@@ -90,8 +105,8 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-state">
+    <!-- 传统加载状态保持作为兜底 -->
+    <div v-else-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>加载中...</p>
     </div>
@@ -102,6 +117,7 @@
 import { ref, onMounted, computed, onActivated } from 'vue'
 import { useSubscriptionStore } from '../stores/subscriptionStore'
 import AnimeCard from '../components/AnimeCard.vue'
+import Skeleton from '../components/common/Skeleton.vue'
 import type { GetSubscriptionsParams } from '../services/subscription/subscriptionTypes'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import { useRouter } from 'vue-router'
@@ -119,6 +135,11 @@ const sortOrder = ref<GetSubscriptionsParams['order']>('desc')
 const subscriptions = computed(() => subscriptionStore.subscriptions)
 const loading = computed(() => subscriptionStore.loading)
 const pagination = computed(() => subscriptionStore.pagination)
+
+// 优化：计算属性，只有在初次加载且无订阅数据时才显示骨架屏
+const shouldShowSkeleton = computed(() => {
+  return loading.value && subscriptions.value.length === 0 && !searchQuery.value
+})
 
 // 搜索处理
 const handleSearch = () => {
@@ -147,10 +168,15 @@ const goToDetail = (anime: BangumiCalendarItem) => {
   }
 }
 
+// 数据获取
+const loadSubscriptions = async () => {
+  await subscriptionStore.fetchSubscriptions()
+}
+
 // 页面初始化
 onMounted(() => {
   ensureScrollToTop()
-  subscriptionStore.fetchSubscriptions()
+  loadSubscriptions()
 })
 
 onActivated(() => {
@@ -359,6 +385,32 @@ onActivated(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* 优化：骨架屏样式 */
+.skeleton-line {
+  background: #e0e0e0;
+  border-radius: 4px;
+  animation: skeleton-loading 1.2s infinite linear;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+}
+
+.search-skeleton {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.sort-skeleton {
+  height: 36px;
+  width: 150px;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* 响应式设计 */

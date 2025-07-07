@@ -4,16 +4,14 @@ import { useAsyncAction } from './asyncUtils'
 
 import CrawlerApiService from '../services/crawler/crawlerApiService'
 import type { CrawlerTaskCreate, TaskResponse } from '../services/crawler/crawlerTypes'
-import ScheduledJobApiService from '../services/scheduler/schedulerApiService'
-import type { ScheduledJobCreate, ScheduledJobResponse, ScheduledJobUpdate } from '../services/scheduler/schedulerTypes'
 
 /**
- * Pinia 任务管理 Store
- * 管理即时任务相关状态、异步操作和WebSocket进度
+ * Pinia 即时任务管理 Store
+ * 专注管理即时任务相关状态、异步操作和WebSocket进度
+ * 定时任务请使用 schedulerStore
  */
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref<TaskResponse[]>([])
-  const scheduledJobs = ref<ScheduledJobResponse[]>([])
   const currentPage = ref(1)
   const pageSize = ref(10)
   // WebSocket连接管理
@@ -58,48 +56,7 @@ export const useTaskStore = defineStore('task', () => {
     return result
   }
 
-  // --- 定时任务相关操作 ---
-  // 获取所有计划任务列表
-  const fetchScheduledJobsAsync = useAsyncAction(() => ScheduledJobApiService.listScheduledJobs())
-  const fetchScheduledJobs = async () => {
-    const result = await fetchScheduledJobsAsync.run()
-    scheduledJobs.value = result
-    return result
-  }
-
-  // 创建新的计划任务
-  const createScheduledJobAsync = useAsyncAction((jobCreateData: ScheduledJobCreate) => ScheduledJobApiService.createScheduledJob(jobCreateData))
-  const createScheduledJob = async (jobCreateData: ScheduledJobCreate) => {
-    const result = await createScheduledJobAsync.run(jobCreateData)
-    await fetchScheduledJobs()
-    return result
-  }
-
-  // 更新计划任务
-  const updateScheduledJobAsync = useAsyncAction((job_id: string, jobUpdateData: ScheduledJobUpdate) => ScheduledJobApiService.updateScheduledJob(job_id, jobUpdateData))
-  const updateScheduledJob = async (job_id: string, jobUpdateData: ScheduledJobUpdate) => {
-    const result = await updateScheduledJobAsync.run(job_id, jobUpdateData)
-    await fetchScheduledJobs()
-    return result
-  }
-
-  // 删除计划任务
-  const deleteScheduledJobAsync = useAsyncAction((job_id: string) => ScheduledJobApiService.deleteScheduledJob(job_id))
-  const deleteScheduledJob = async (job_id: string) => {
-    const result = await deleteScheduledJobAsync.run(job_id)
-    await fetchScheduledJobs()
-    return result
-  }
-
-  // 切换计划任务启用/禁用状态
-  const toggleScheduledJobAsync = useAsyncAction((job_id: string) => ScheduledJobApiService.toggleScheduledJob(job_id))
-  const toggleScheduledJob = async (job_id: string) => {
-    const result = await toggleScheduledJobAsync.run(job_id)
-    await fetchScheduledJobs()
-    return result
-  }
-
-  // WebSocket相关逻辑保持不变
+  // --- WebSocket 相关操作 ---
   const connectTaskProgressWs = (
     taskId: number,
     onMessageCallback: (data: any) => void,
@@ -177,11 +134,25 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   return {
-    tasks, scheduledJobs, currentPage, pageSize,
-    fetchTasks, createTask, cancelTask,
-    fetchScheduledJobs, createScheduledJob, updateScheduledJob, deleteScheduledJob, toggleScheduledJob,
-    fetchTasksAsync, createTaskAsync, cancelTaskAsync,
-    fetchScheduledJobsAsync, createScheduledJobAsync, updateScheduledJobAsync, deleteScheduledJobAsync, toggleScheduledJobAsync,
-    connectTaskProgressWs, startTaskProgressWs, stopTaskProgressWs, stopAllTaskProgressWs
+    // 状态
+    tasks,
+    currentPage,
+    pageSize,
+
+    // 即时任务操作
+    fetchTasks,
+    createTask,
+    cancelTask,
+
+    // 异步状态
+    fetchTasksAsync,
+    createTaskAsync,
+    cancelTaskAsync,
+
+    // WebSocket操作
+    connectTaskProgressWs,
+    startTaskProgressWs,
+    stopTaskProgressWs,
+    stopAllTaskProgressWs
   }
 })

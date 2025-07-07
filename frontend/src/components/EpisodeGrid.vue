@@ -159,26 +159,29 @@ const jumpPage = ref<number>(1)
 const showEpisodeModal = ref(false)
 const selectedEpisodeData = ref<any>(null)
 
-// 计算属性 - 集数列表
-const episodes = computed(() => {
-  const episodeList = []
-
-  // 创建Bangumi数据的映射表
-  const bangumiMap = new Map()
+// 优化：缓存Bangumi数据映射表，避免重复创建
+const bangumiMap = computed(() => {
+  const map = new Map()
   if (props.bangumiEpisodes && props.bangumiEpisodes.length > 0) {
     props.bangumiEpisodes
       .filter(ep => ep.type === 0) // 只处理正片
       .forEach(bangumiEp => {
         const episodeNumber = Math.floor(bangumiEp.sort || bangumiEp.ep || 0)
-        bangumiMap.set(episodeNumber, bangumiEp)
+        map.set(episodeNumber, bangumiEp)
       })
   }
+  return map
+})
+
+// 优化：集数列表计算
+const episodes = computed(() => {
+  const episodeList = []
 
   // 基于totalEpisodes生成完整列表，并尽可能使用真实Bangumi数据
   for (let i = 1; i <= props.totalEpisodes; i++) {
     const episodeKey = i.toString()
     const episodeData = availabilityData.value?.episodes[episodeKey]
-    const bangumiEp = bangumiMap.get(i)
+    const bangumiEp = bangumiMap.value.get(i)
 
     episodeList.push({
       number: i,
