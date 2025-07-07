@@ -56,6 +56,7 @@ def extract_episode_number(title: str) -> Optional[int]:
         r"(\d{1,3})集",  # 06集 格式
         # 方括号格式（优先级最低，需要严格过滤）
         r"\[(\d{1,3})\]",  # [06] 格式（但要排除年份和哈希）
+        r"【(\d{1,3})】",  # 【06】中文方括号
     ]
 
     for pattern in patterns:
