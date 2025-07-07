@@ -107,8 +107,12 @@ const resourceStore = useResourceStore()
 const episodeAvailabilityStore = useEpisodeAvailabilityStore()
 const feedbackStore = useFeedbackStore()
 const { subject, episodes, availability } = storeToRefs(animeDetailStore)
-const loading = computed(() => animeDetailStore.fetchAllAsync.loading)
-const error = computed(() => animeDetailStore.fetchAllAsync.error)
+const loading = computed(() =>
+  isResourceMode ? animeDetailStore.fetchSubjectAsync.loading : animeDetailStore.fetchAllAsync.loading
+)
+const error = computed(() =>
+  isResourceMode ? animeDetailStore.fetchSubjectAsync.error : animeDetailStore.fetchAllAsync.error
+)
 
 // 获取番剧ID
 const animeId = computed(() => parseInt(route.params.id as string))
@@ -120,7 +124,11 @@ const isResourceMode = route.meta.showResources === true
 onMounted(() => {
   ensureScrollToTop()
   if (animeId.value) {
-    animeDetailStore.fetchAll(animeId.value)
+    if (isResourceMode) {
+      animeDetailStore.fetchSubject(animeId.value)
+    } else {
+      animeDetailStore.fetchAll(animeId.value)
+    }
     // 资源拉取已由AnimeResourcesList.vue负责，这里无需再调用resourceStore.fetchResources
   }
 })
@@ -128,7 +136,11 @@ onMounted(() => {
 // 监听animeId变化，自动拉取数据
 watch(animeId, (newId, oldId) => {
   if (newId && newId !== oldId) {
-    animeDetailStore.fetchAll(newId)
+    if (isResourceMode) {
+      animeDetailStore.fetchSubject(newId)
+    } else {
+      animeDetailStore.fetchAll(newId)
+    }
     // 资源拉取已由AnimeResourcesList.vue负责，这里无需再调用resourceStore.fetchResources
   }
 })
