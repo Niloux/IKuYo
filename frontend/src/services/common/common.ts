@@ -31,7 +31,13 @@ export interface ApiResponse<T = unknown> {
 apiClient.interceptors.request.use(
     (config) => {
         const feedbackStore = useFeedbackStore();
-        feedbackStore.showLoading();
+        // 只对非订阅相关API自动开启全局Loading
+        const url = config.url || '';
+        // 兼容绝对和相对路径，判断是否为订阅相关API
+        const isSubscriptionApi = /\/subscriptions(\/|$)/.test(url);
+        if (!isSubscriptionApi) {
+            feedbackStore.showLoading();
+        }
         // 自动注入 X-User-Id
         config.headers = config.headers || {};
         config.headers['X-User-Id'] = UserManager.getUserId();
