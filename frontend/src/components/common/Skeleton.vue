@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 // Skeleton骨架屏通用组件，支持延迟展示
-import { defineProps, ref, watch, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 
 const props = defineProps({
   loading: {

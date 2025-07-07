@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, withDefaults, defineProps } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { BangumiCalendarItem } from '../services/bangumi/bangumiTypes'
 import defaultCover from '../assets/ikuyo-avatar.png'
 import { createLazyObserver } from '../utils/lazyLoad'
